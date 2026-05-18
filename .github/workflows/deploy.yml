@@ -29,11 +29,17 @@ jobs:
       - name: Deploy main worker
         run: npx wrangler deploy
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          # Legacy Global API Key auth (CLOUDFLARE_API_KEY + CLOUDFLARE_EMAIL).
+          # Swap to a scoped CLOUDFLARE_API_TOKEN (Workers + R2 edit) later.
+          CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
+          CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_EMAIL }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       - name: Deploy cron worker
         working-directory: cron-worker
         run: npx wrangler deploy
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          # Legacy Global API Key auth (CLOUDFLARE_API_KEY + CLOUDFLARE_EMAIL).
+          # Swap to a scoped CLOUDFLARE_API_TOKEN (Workers + R2 edit) later.
+          CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
+          CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_EMAIL }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
