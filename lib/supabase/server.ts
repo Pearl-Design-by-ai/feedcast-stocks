@@ -9,7 +9,7 @@
 import { cookies, headers } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { getCookieOptions } from './cookie-storage';
+import { getCookieOptions, SESSION_STORAGE_KEY } from './cookie-storage';
 
 export async function getSupabaseServerClient(): Promise<SupabaseClient> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -27,6 +27,8 @@ export async function getSupabaseServerClient(): Promise<SupabaseClient> {
 
   return createServerClient(url, anonKey, {
     cookieOptions: getCookieOptions(host),
+    // Pinned to match Feedcast's cookie name — see cookie-storage.ts.
+    auth: { storageKey: SESSION_STORAGE_KEY },
     cookies: {
       getAll() {
         return cookieStore.getAll();

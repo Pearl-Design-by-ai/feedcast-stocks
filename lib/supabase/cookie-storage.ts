@@ -12,6 +12,16 @@
 
 export const SESSION_COOKIE_DOMAIN = '.feedcast.news';
 
+/**
+ * Auth-cookie storage key. Pinned to the SAME value the main Feedcast app
+ * uses (`AUTH_STORAGE_KEY` in `web/lib/supabase.ts`). `@supabase/ssr`
+ * otherwise derives this name from the Supabase URL host, and the two apps'
+ * `NEXT_PUBLIC_SUPABASE_URL` values differ — so the derived cookie names
+ * diverged and this app could not see the SSO session set by Feedcast.
+ * Must stay byte-for-byte identical to Feedcast's value.
+ */
+export const SESSION_STORAGE_KEY = 'sb-zaoqirzyqlhgegpxelqo-all-auth-token';
+
 type CookieOptions = {
   domain?: string;
   path: string;

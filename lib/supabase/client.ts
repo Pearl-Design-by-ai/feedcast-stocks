@@ -8,7 +8,7 @@
 
 import { createBrowserClient } from '@supabase/ssr';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { getCookieOptions } from './cookie-storage';
+import { getCookieOptions, SESSION_STORAGE_KEY } from './cookie-storage';
 
 let _client: SupabaseClient | null = null;
 
@@ -24,6 +24,8 @@ export function getSupabaseBrowserClient(): SupabaseClient {
 
   _client = createBrowserClient(url, anonKey, {
     cookieOptions: getCookieOptions(host),
+    // Pinned to match Feedcast's cookie name — see cookie-storage.ts.
+    auth: { storageKey: SESSION_STORAGE_KEY },
   });
 
   return _client;

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
-import { getCookieOptions } from '@/lib/supabase/cookie-storage';
+import {
+  getCookieOptions,
+  SESSION_STORAGE_KEY,
+} from '@/lib/supabase/cookie-storage';
 
 /**
  * Auth gate. Feedcast Stocks has no sign-in pages of its own — auth is
@@ -31,6 +34,8 @@ export async function middleware(request: NextRequest) {
 
     const supabase = createServerClient(url, anonKey, {
         cookieOptions: getCookieOptions(request.headers.get('host')),
+        // Pinned to match Feedcast's cookie name — see cookie-storage.ts.
+        auth: { storageKey: SESSION_STORAGE_KEY },
         cookies: {
             getAll() {
                 return request.cookies.getAll();
