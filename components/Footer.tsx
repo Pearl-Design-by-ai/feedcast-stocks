@@ -29,7 +29,7 @@ const Footer = () => {
                                 className="text-gray-400 hover:text-white transition-colors duration-200 relative group"
                             >
                                 <span className="relative">
-                                    GitHub
+                                    Source code
                                     <span className="absolute left-0 bottom-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
                                 </span>
                             </Link>
@@ -63,14 +63,28 @@ const Footer = () => {
                 {/* Divider */}
                 <div className="border-t border-gray-800 mt-8 pt-8">
                     <div className="flex flex-col md:flex-row justify-between items-center">
-                        {/* Copyright */}
+                        {/* Copyright — AGPL-3.0; no "all rights reserved" */}
                         <div className="text-gray-400 text-sm mb-4 md:mb-0">
-                            © {new Date().getFullYear()} FeedCast. All rights reserved.
+                            © {new Date().getFullYear()} FeedCast. Free software, licensed under{" "}
+                            <a
+                                href="https://github.com/Pearl-Design-by-ai/feedcast-stocks/blob/main/LICENSE"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="underline hover:text-gray-200"
+                            >
+                                AGPL-3.0
+                            </a>
+                            .
                         </div>
 
-                        {/* Upstream attribution */}
+                        {/* Upstream attribution + AGPL §13 source offer */}
                         <div className="flex items-center space-x-2">
-                            <p className="text-gray-500 text-xs">Built on <a href="https://github.com/Open-Dev-Society/OpenStock" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-300">OpenStock</a> by Open Dev Society · AGPL-3.0</p>
+                            <p className="text-gray-500 text-xs">
+                                Built on{" "}
+                                <a href="https://github.com/Open-Dev-Society/OpenStock" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-300">OpenStock</a>
+                                {" "}by Open Dev Society ·{" "}
+                                <a href="https://github.com/Pearl-Design-by-ai/feedcast-stocks" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-300">Get the source</a>
+                            </p>
                         </div>
                     </div>
                 </div>
