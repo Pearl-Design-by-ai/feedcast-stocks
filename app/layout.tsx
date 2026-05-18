@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Feedcast Stocks",
-  description: "Feedcast Stocks — track real-time prices, set personalized alerts, and explore detailed company insights. A derivative of OpenStock by Open Dev Society, licensed AGPL-3.0.",
+  title: "FeedCast Stocks",
+  description: "FeedCast Stocks — track real-time prices, set personalized alerts, and explore detailed company insights. A derivative of OpenStock by Open Dev Society, licensed AGPL-3.0.",
 };
 
 export default function RootLayout({

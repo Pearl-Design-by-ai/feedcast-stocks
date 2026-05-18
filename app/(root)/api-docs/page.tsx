@@ -1,7 +1,7 @@
 
 import React from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
+import { FeedcastLogo } from '@/components/FeedcastLogo';
 import {
   Server,
   Cpu,
@@ -17,8 +17,8 @@ import {
 } from 'lucide-react';
 
 export const metadata = {
-  title: 'API & Architecture | OpenStock',
-  description: 'Technical documentation for OpenStock architecture, AI integrations, and background jobs.',
+  title: 'API & Architecture | FeedCast Stocks',
+  description: 'Technical documentation for FeedCast Stocks architecture, AI integrations, and background jobs.',
 };
 
 export default function ApiDocsPage() {
@@ -28,7 +28,7 @@ export default function ApiDocsPage() {
       <section className="text-center space-y-6 pt-10">
         <div className="flex justify-center items-center gap-4 mb-8">
           <div className="bg-gray-800 p-3 rounded-2xl border border-gray-700 shadow-xl">
-            <img src="/assets/images/logo.png" alt="openstock" className="h-10 w-auto invert brightness-0" />
+            <FeedcastLogo size={40} className="text-teal-400" />
           </div>
           <span className="text-gray-600 text-2xl">+</span>
           <div className="bg-gray-800 p-3 rounded-2xl border border-gray-700 shadow-xl">
@@ -37,7 +37,7 @@ export default function ApiDocsPage() {
         </div>
 
         <h1 className="text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-          OpenStock Architecture
+          FeedCast Stocks Architecture
         </h1>
         <p className="text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
           A transparent look at the event-driven, multi-provider system powering your market insights.

@@ -1,7 +1,7 @@
 import Link from "next/link";
-import Image from "next/image";
 import NavItems from "@/components/NavItems";
 import UserDropdown from "@/components/UserDropdown";
+import { FeedcastLogo } from "@/components/FeedcastLogo";
 import {searchStocks} from "@/lib/actions/finnhub.actions";
 
 const Header = async ({ user }: { user: User }) => {
@@ -11,12 +11,8 @@ const Header = async ({ user }: { user: User }) => {
         <header className="sticky top-0 header">
             <div className="container header-wrapper">
                 <Link href="/" className="flex items-center justify-center gap-2">
-                    <Image
-                        src="/assets/images/logo.png"
-                        alt="OpenStock"
-                        width={200}
-                        height={50}
-                    />
+                    <FeedcastLogo size={34} className="text-teal-400" />
+                    <span className="text-xl font-semibold text-gray-100">FeedCast <span className="text-teal-400">Stocks</span></span>
                 </Link>
                 <nav className="hidden sm:block">
                     <NavItems initialStocks={initialStocks}/>

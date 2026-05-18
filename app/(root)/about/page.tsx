@@ -1,21 +1,17 @@
 
 import React from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
+import { FeedcastLogo } from '@/components/FeedcastLogo';
 import {
-    Users,
     Globe,
     Heart,
     Code,
-    Github,
-    Twitter,
-    Linkedin,
     ArrowRight
 } from 'lucide-react';
 
 export const metadata = {
-    title: 'About Us | OpenStock',
-    description: 'The story behind OpenStock and the Open Dev Society.',
+    title: 'About Us | FeedCast Stocks',
+    description: 'The story behind FeedCast Stocks.',
 };
 
 export default function AboutPage() {
@@ -25,7 +21,7 @@ export default function AboutPage() {
             <section className="text-center space-y-8 pt-16 mb-20">
                 <div className="flex justify-center mb-6">
                     <div className="p-4 rounded-2xl border border-teal-500/20 backdrop-blur-sm">
-                        <img src="/assets/images/logo.png" alt="Open Dev Society" className="h-10 w-auto" />
+                        <FeedcastLogo size={40} className="text-teal-400" />
                     </div>
                 </div>
 
@@ -34,7 +30,7 @@ export default function AboutPage() {
                 </h1>
                 <p className="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto leading-relaxed font-light">
                     We believe financial intelligence shouldn't be locked behind paywalls.
-                    OpenStock is built by the community, for the community.
+                    FeedCast Stocks brings real-time markets to everyone.
                 </p>
             </section>
 
@@ -63,26 +59,21 @@ export default function AboutPage() {
             {/* Story Section */}
             <section className="grid md:grid-cols-2 gap-12 items-center mb-24 bg-gray-900/30 p-8 md:p-12 rounded-3xl border border-gray-800">
                 <div className="space-y-6">
-                    <h2 className="text-3xl font-bold text-white">The Open Dev Society</h2>
+                    <h2 className="text-3xl font-bold text-white">Part of FeedCast</h2>
                     <p className="text-gray-400 leading-relaxed text-lg">
-                        OpenStock was born from a simple frustration: why are powerful financial tools so expensive?
+                        FeedCast Stocks is the markets module of the FeedCast platform — built to make powerful financial tools accessible without paywalls.
                     </p>
                     <p className="text-gray-400 leading-relaxed text-lg">
-                        We are a collective of developers, designers, and financial enthusiasts working under the <span className="text-teal-400 font-semibold">Open Dev Society</span> banner. Our mission is to democratize software by building high-quality, open-source alternatives to proprietary platforms.
+                        It is open-source and based on <span className="text-teal-400 font-semibold">OpenStock</span> by Open Dev Society, licensed under AGPL-3.0.
                     </p>
                     <div className="pt-4">
-                        <Link href="https://github.com/Open-Dev-Society" target="_blank" className="inline-flex items-center gap-2 text-teal-400 hover:text-teal-300 font-medium transition-colors group">
+                        <Link href="https://github.com/Pearl-Design-by-ai/feedcast-stocks" target="_blank" className="inline-flex items-center gap-2 text-teal-400 hover:text-teal-300 font-medium transition-colors group">
                             Visit our GitHub <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                         </Link>
                     </div>
                 </div>
-                <div className="relative h-[400px] w-full bg-gradient-to-br from-gray-800 to-black rounded-2xl overflow-hidden border border-gray-700 shadow-2xl group">
-                    <Image
-                        src="/assets/icons/odslogo.svg"
-                        alt="Open Dev Society"
-                        fill
-                        className="object-contain p-20 opacity-80 group-hover:scale-105 transition-transform duration-700"
-                    />
+                <div className="relative h-[400px] w-full bg-gradient-to-br from-gray-800 to-black rounded-2xl overflow-hidden border border-gray-700 shadow-2xl group flex items-center justify-center">
+                    <FeedcastLogo size={180} className="text-teal-400 opacity-80 group-hover:scale-105 transition-transform duration-700" />
                 </div>
             </section>
 

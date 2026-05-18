@@ -2,7 +2,6 @@ import { Metadata } from 'next';
 import {
   HelpCircle,
   MessageCircle,
-  BookOpen,
   Lightbulb,
   Mail,
   Github,
@@ -10,14 +9,14 @@ import {
 } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Help Center | OpenStock',
-  description: 'Community-driven support for OpenStock. No paywalls, just help.',
+  title: 'Help Center | FeedCast Stocks',
+  description: 'Community-driven support for FeedCast Stocks. No paywalls, just help.',
 };
 
 export default function HelpPage() {
   const faqs = [
     {
-      question: "Is OpenStock really free forever?",
+      question: "Is FeedCast Stocks really free forever?",
       answer: "Yes! We run on donations and community contribution. Core features (tracking, alerts, analysis) will remain free. We believe financial tools shouldn't be luxury items."
     },
     {
@@ -51,14 +50,7 @@ export default function HelpPage() {
       </div>
 
       {/* Quick Action Grid */}
-      <div className="grid md:grid-cols-3 gap-4 mb-16">
-        <HelpCard
-          icon={<BookOpen className="text-teal-400" />}
-          title="Read Docs"
-          desc="Deep dive into features and API integration."
-          link="/api-docs"
-          linkText="View Documentation"
-        />
+      <div className="grid md:grid-cols-2 gap-4 mb-16">
         <HelpCard
           icon={<MessageCircle className="text-purple-400" />}
           title="Community Chat"
@@ -70,7 +62,7 @@ export default function HelpPage() {
           icon={<Github className="text-white" />}
           title="Report Bugs"
           desc="Found an issue? Let our developers know."
-          link="https://github.com/Open-Dev-Society/OpenStock/issues"
+          link="https://github.com/Pearl-Design-by-ai/feedcast-stocks/issues"
           linkText="Open Issue"
         />
       </div>

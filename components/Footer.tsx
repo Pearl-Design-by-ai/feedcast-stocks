@@ -1,6 +1,5 @@
 import Link from "next/link";
-import Image from "next/image";
-import OpenDevSocietyBranding from "./OpenDevSocietyBranding";
+import { FeedcastLogo } from "@/components/FeedcastLogo";
 
 const Footer = () => {
     return (
@@ -10,16 +9,11 @@ const Footer = () => {
                     {/* Brand Section */}
                     <div className="col-span-1 md:col-span-2">
                         <Link href="/" className="flex items-center gap-2 mb-4">
-                            <Image
-                                src="/assets/images/logo.png"
-                                alt="OpenStock"
-                                width={150}
-                                height={38}
-                                className="brightness-0 invert"
-                            />
+                            <FeedcastLogo size={28} className="text-teal-400" />
+                            <span className="text-lg font-semibold text-white">FeedCast <span className="text-teal-400">Stocks</span></span>
                         </Link>
                         <p className="text-gray-400 mb-6 max-w-md">
-                            OpenStock is an open-source alternative to expensive market platforms. Track real-time prices, set personalized alerts, and explore detailed company insights — built openly, for everyone, forever free.
+                            FeedCast Stocks tracks real-time prices, sets personalized alerts, and surfaces detailed company insights — part of the FeedCast platform.
                         </p>
                         <div className="mb-8">
                             <Link href="/about" className="text-teal-400 hover:text-teal-300 font-medium inline-flex items-center gap-1 group">
@@ -29,7 +23,7 @@ const Footer = () => {
                         </div>
                         <div className="flex space-x-6">
                             <Link
-                                href="https://github.com/Open-Dev-Society/OpenStock"
+                                href="https://github.com/Pearl-Design-by-ai/feedcast-stocks"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-gray-400 hover:text-white transition-colors duration-200 relative group"
@@ -39,28 +33,6 @@ const Footer = () => {
                                     <span className="absolute left-0 bottom-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
                                 </span>
                             </Link>
-                            <Link
-                                href="https://www.linkedin.com/company/opendevsociety-in/"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-gray-400 hover:text-blue-400 transition-colors duration-200 relative group"
-                            >
-                                <span className="relative">
-                                    LinkedIn
-                                    <span className="absolute left-0 bottom-0 w-0 h-0.5 bg-blue-400 transition-all duration-300 group-hover:w-full"></span>
-                                </span>
-                            </Link>
-                            <Link
-                                href="https://discord.gg/JkJ8kfxgxB"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-gray-400 hover:text-blue-600 transition-colors duration-200 relative group"
-                            >
-                                <span className="relative">
-                                    Discord
-                                    <span className="absolute left-0 bottom-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
-                                </span>
-                            </Link>
                         </div>
                     </div>
 
@@ -68,14 +40,6 @@ const Footer = () => {
                     <div>
                         <h3 className="text-lg font-semibold mb-4">Resources</h3>
                         <ul className="space-y-2">
-                            <li>
-                                <Link href="/api-docs" className="text-gray-400 hover:text-white transition-colors duration-200 relative group">
-                                    <span className="relative">
-                                        API Documentation
-                                        <span className="absolute left-0 bottom-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
-                                    </span>
-                                </Link>
-                            </li>
                             <li>
                                 <Link href="/help" className="text-gray-400 hover:text-white transition-colors duration-200 relative group">
                                     <span className="relative">
@@ -101,12 +65,12 @@ const Footer = () => {
                     <div className="flex flex-col md:flex-row justify-between items-center">
                         {/* Copyright */}
                         <div className="text-gray-400 text-sm mb-4 md:mb-0">
-                            © {new Date().getFullYear()} Open Dev Society. All rights reserved.
+                            © {new Date().getFullYear()} FeedCast. All rights reserved.
                         </div>
 
-                        {/* Open Dev Society Branding */}
+                        {/* Upstream attribution */}
                         <div className="flex items-center space-x-2">
-                            <OpenDevSocietyBranding />
+                            <p className="text-gray-500 text-xs">Built on <a href="https://github.com/Open-Dev-Society/OpenStock" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-300">OpenStock</a> by Open Dev Society · AGPL-3.0</p>
                         </div>
                     </div>
                 </div>
