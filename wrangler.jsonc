@@ -1,0 +1,32 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "feedcast-stocks",
+  "main": "worker-wrapper.mjs",
+  "compatibility_date": "2026-05-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".open-next/assets"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "limits": {
+    "cpu_ms": 300000
+  },
+  // Production domain. Cloudflare provisions SSL via DNS-01 once the
+  // `stocks` hostname resolves through the feedcast.news zone. Until
+  // then the workers.dev fallback URL keeps serving.
+  "routes": [
+    {
+      "pattern": "stocks.feedcast.news",
+      "custom_domain": true
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "NEXT_INC_CACHE_R2_BUCKET",
+      "bucket_name": "feedcast-stocks-cache"
+    }
+  ]
+}
