@@ -26,7 +26,12 @@ version is made available to all users who interact with it over a network.
 
 ### What changed from upstream OpenStock
 
-This fork re-platforms OpenStock onto the Feedcast stack:
+This is a **modified version of OpenStock**, first created on **2026-05-18**
+and maintained by **FeedCast** (Pearl Design). Per AGPL-3.0 §5(a), this notice
+records that the work has been modified; see the git history for the dated
+record of every change.
+
+It re-platforms OpenStock onto the Feedcast stack:
 
 | Area            | OpenStock                     | Feedcast Stocks                          |
 | --------------- | ----------------------------- | ---------------------------------------- |
