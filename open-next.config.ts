@@ -1,9 +1,11 @@
 import { defineCloudflareConfig } from '@opennextjs/cloudflare';
-import r2IncrementalCache from '@opennextjs/cloudflare/overrides/incremental-cache/r2-incremental-cache';
 
-export default defineCloudflareConfig({
-  // Persist ISR-rendered pages + fetch cache to R2 so subsequent edge
-  // requests get sub-100ms TTFB instead of re-rendering on every hit.
-  // Bound via NEXT_INC_CACHE_R2_BUCKET in wrangler.jsonc.
-  incrementalCache: r2IncrementalCache,
-});
+// No ISR/page cache override: this is a real-time market dashboard, so we
+// render fresh on every request rather than serving stale R2-cached pages.
+// Finnhub responses are still de-duped within a request via per-fetch
+// `next.revalidate` windows (see lib/actions/finnhub.actions.ts).
+//
+// Dropping the R2 incremental cache also removes the deploy-time
+// `populate remote R2 incremental cache` step, which was failing with a
+// 403 under the CI Global API Key auth and blocking every deployment.
+export default defineCloudflareConfig({});
