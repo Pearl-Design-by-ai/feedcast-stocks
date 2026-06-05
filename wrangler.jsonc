@@ -22,11 +22,5 @@
       "pattern": "stocks.feedcast.news",
       "custom_domain": true
     }
-  ],
-  "r2_buckets": [
-    {
-      "binding": "NEXT_INC_CACHE_R2_BUCKET",
-      "bucket_name": "feedcast-stocks-cache"
-    }
   ]
 }
