@@ -82,6 +82,8 @@ These three run on every pull request and non-`main` push via
 | `SUPABASE_SERVICE_ROLE_KEY`      | Supabase service-role key (cron + admin lookups)     |
 | `FINNHUB_API_KEY`                | Finnhub market-data API key (server-only)            |
 | `CRON_SECRET`                    | Bearer secret for `POST /api/cron/check-alerts`      |
+| `FEEDCAST_EMAIL_ENDPOINT`        | Optional — Feedcast email endpoint for alert emails  |
+| `FEEDCAST_EMAIL_SECRET`          | Optional — bearer token for the email endpoint       |
 | `ADANOS_API_KEY`                 | Optional — enables the stock sentiment card          |
 | `ADANOS_API_BASE_URL`            | Optional — Adanos API base URL                       |
 
@@ -89,7 +91,36 @@ These three run on every pull request and non-`main` push via
 
 The `stock_watchlist` and `stock_alerts` tables live in the shared Feedcast
 Supabase project. The schema is documented in
-[`supabase/migrations/001_stock_module_tables.sql`](./supabase/migrations/001_stock_module_tables.sql).
+[`supabase/migrations/`](./supabase/migrations/) — `001` creates the tables,
+`002` adds the optional alert `name`, and `003` adds `notified_at` (alert-email
+dedupe).
+
+### Alert emails
+
+When a price alert triggers, the 5-minute cron emails the alert owner via
+Feedcast's transactional email service. It POSTs a template-render request to
+`FEEDCAST_EMAIL_ENDPOINT` (bearer `FEEDCAST_EMAIL_SECRET`):
+
+```json
+{
+  "to": "user@example.com",
+  "template_key": "stock_alert",
+  "variables": {
+    "symbol": "AAPL",
+    "alertName": "Apple at a discount",
+    "conditionText": "rose to or above",
+    "targetPrice": "$180.00",
+    "currentPrice": "$182.40",
+    "watchlistUrl": "https://stocks.feedcast.news/watchlist"
+  }
+}
+```
+
+The branded `stock_alert` template lives in Feedcast's shared `email_templates`
+table — see [`supabase/seed/stock_alert_email_template.sql`](./supabase/seed/stock_alert_email_template.sql).
+`notified_at` is stamped only on a successful 2xx, so a failed send retries on
+the next run and nobody is emailed twice. If the two env vars are unset, alerts
+still trigger — they just don't email.
 
 ## Deployment
 

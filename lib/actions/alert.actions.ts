@@ -139,6 +139,7 @@ export async function reactivateAlert(alertId: string | number) {
             .update({
                 triggered: false,
                 active: true,
+                notified_at: null,
                 expires_at: defaultExpiry(),
                 updated_at: new Date().toISOString(),
             })
