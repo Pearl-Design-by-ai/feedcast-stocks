@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { getUserWatchlist } from '@/lib/actions/watchlist.actions';
 import { getUserAlerts } from '@/lib/actions/alert.actions';
-import { getNews } from '@/lib/actions/finnhub.actions';
+import { getNews, getWatchlistData } from '@/lib/actions/finnhub.actions';
 import WatchlistManager from '@/components/watchlist/WatchlistManager';
 import AlertsPanel from '@/components/watchlist/AlertsPanel';
 import NewsGrid from '@/components/watchlist/NewsGrid';
@@ -29,10 +29,14 @@ export default async function WatchlistPage() {
         getNews() // Initial news fetch
     ]);
 
-    const watchlistSymbols = watchlistItems.map((item: any) => item.symbol);
+    const watchlistSymbols = watchlistItems.map((item) => item.symbol);
 
-    // Fallback news if watchlist has items
-    const relevantNews = watchlistSymbols.length > 0 ? await getNews(watchlistSymbols) : news;
+    // Live market data for the table + (when there are symbols) more relevant
+    // news, fetched together.
+    const [stockData, relevantNews] = await Promise.all([
+        getWatchlistData(watchlistSymbols),
+        watchlistSymbols.length > 0 ? getNews(watchlistSymbols) : Promise.resolve(news),
+    ]);
 
     return (
         <div className="min-h-screen bg-black text-gray-100 p-6 md:p-8">
@@ -53,7 +57,7 @@ export default async function WatchlistPage() {
                 {/* Main Content - Watchlist Table */}
                 <div className="lg:col-span-3 space-y-8">
                     <div className="space-y-6">
-                        <WatchlistManager initialItems={watchlistItems} userId={userId} />
+                        <WatchlistManager initialItems={watchlistItems} initialData={stockData} userId={userId} />
                     </div>
 
                     {/* News Section */}

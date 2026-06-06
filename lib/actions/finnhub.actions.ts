@@ -88,14 +88,48 @@ export async function getCompanyProfile(symbol: string) {
     }
 }
 
-export async function getWatchlistData(symbols: string[]) {
+type FinnhubMetricResponse = {
+    metric?: Record<string, number | null>;
+};
+
+// Trailing P/E from the `stock/metric` endpoint. Cached for an hour to keep
+// well under the Finnhub free-tier rate limit (fundamentals barely move
+// intraday). Returns null when unavailable.
+export async function getPeRatio(symbol: string): Promise<number | null> {
+    try {
+        const token = FINNHUB_API_KEY;
+        if (!token) return null;
+        const url = `${FINNHUB_BASE_URL}/stock/metric?symbol=${encodeURIComponent(symbol)}&metric=all&token=${token}`;
+        const data = await fetchJSON<FinnhubMetricResponse>(url, 3600);
+        const pe = data?.metric?.peTTM ?? data?.metric?.peBasicExclExtraTTM ?? null;
+        return typeof pe === 'number' && Number.isFinite(pe) ? pe : null;
+    } catch (e) {
+        console.error('Error fetching P/E for', symbol, e);
+        return null;
+    }
+}
+
+export type WatchlistStockData = {
+    symbol: string;
+    price: number;
+    change: number;
+    changePercent: number;
+    currency: string;
+    name: string;
+    logo?: string;
+    marketCap?: number;
+    peRatio: number | null;
+};
+
+export async function getWatchlistData(symbols: string[]): Promise<WatchlistStockData[]> {
     if (!symbols || symbols.length === 0) return [];
 
-    // Fetch quotes and profiles in parallel
+    // Fetch quote, profile and fundamentals in parallel per symbol.
     const promises = symbols.map(async (sym) => {
-        const [quote, profile] = await Promise.all([
+        const [quote, profile, peRatio] = await Promise.all([
             getQuote(sym),
-            getCompanyProfile(sym)
+            getCompanyProfile(sym),
+            getPeRatio(sym),
         ]);
 
         return {
@@ -107,11 +141,32 @@ export async function getWatchlistData(symbols: string[]) {
             name: profile?.name || sym,
             logo: profile?.logo,
             marketCap: profile?.marketCapitalization,
-            peRatio: 0 // Finnhub 'quote' and 'profile2' don't easily give real-time PE. Might need 'metric' endpoint, but skipping for now to save rate limits.
+            peRatio,
         };
     });
 
     return await Promise.all(promises);
+}
+
+// Lightweight quote-only refresh for client polling — one Finnhub call per
+// symbol instead of the three `getWatchlistData` makes. Profiles and P/E
+// don't change intraday, so polling only needs fresh prices.
+export async function getWatchlistQuotes(
+    symbols: string[]
+): Promise<{ symbol: string; price: number; change: number; changePercent: number }[]> {
+    if (!symbols || symbols.length === 0) return [];
+
+    return Promise.all(
+        symbols.map(async (sym) => {
+            const quote = await getQuote(sym);
+            return {
+                symbol: sym,
+                price: quote?.c || 0,
+                change: quote?.d || 0,
+                changePercent: quote?.dp || 0,
+            };
+        })
+    );
 }
 
 

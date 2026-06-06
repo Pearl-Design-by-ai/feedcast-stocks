@@ -13,6 +13,7 @@ import {
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { isStockInWatchlist } from '@/lib/actions/watchlist.actions';
 import { getStockSentimentInsights } from '@/lib/actions/adanos.actions';
+import { getCompanyProfile } from '@/lib/actions/finnhub.actions';
 import { formatSymbolForTradingView } from '@/lib/utils';
 
 export default async function StockDetails({ params }: StockDetailsPageProps) {
@@ -25,10 +26,12 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
         data: { user },
     } = await supabase.auth.getUser();
     const userId = user?.id;
-    const [isInWatchlist, sentimentInsights] = await Promise.all([
+    const [isInWatchlist, sentimentInsights, profile] = await Promise.all([
         userId ? isStockInWatchlist(userId, symbol) : Promise.resolve(false),
         getStockSentimentInsights(symbol),
+        getCompanyProfile(symbol),
     ]);
+    const companyName = profile?.name || symbol.toUpperCase();
 
     return (
         <div className="flex min-h-screen p-4 md:p-6 lg:p-8">
@@ -63,7 +66,7 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
                     <div className="flex items-center justify-between">
                         <WatchlistButton
                             symbol={symbol.toUpperCase()}
-                            company={symbol.toUpperCase()}
+                            company={companyName}
                             isInWatchlist={isInWatchlist}
                             userId={userId}
                         />

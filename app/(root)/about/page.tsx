@@ -29,7 +29,7 @@ export default function AboutPage() {
                     Tools for Everyone.
                 </h1>
                 <p className="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto leading-relaxed font-light">
-                    We believe financial intelligence shouldn't be locked behind paywalls.
+                    We believe financial intelligence shouldn&apos;t be locked behind paywalls.
                     FeedCast Stocks brings real-time markets to everyone.
                 </p>
             </section>
@@ -94,8 +94,8 @@ export default function AboutPage() {
     );
 }
 
-function FeatureCard({ icon, title, desc, color }: any) {
-    const borders: any = {
+function FeatureCard({ icon, title, desc, color }: { icon: React.ReactNode; title: string; desc: string; color: string }) {
+    const borders: Record<string, string> = {
         blue: 'hover:border-blue-500/50',
         purple: 'hover:border-purple-500/50',
         red: 'hover:border-red-500/50',
@@ -110,7 +110,7 @@ function FeatureCard({ icon, title, desc, color }: any) {
     );
 }
 
-function SocialButton({ href, icon, label }: any) {
+function SocialButton({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) {
     return (
         <a
             href={href}

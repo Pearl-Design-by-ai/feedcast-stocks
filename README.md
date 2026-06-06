@@ -62,6 +62,17 @@ cp .env.example .env.local   # then fill in the values
 npm run dev                  # http://localhost:3000
 ```
 
+### Quality checks
+
+```bash
+npm run lint        # ESLint (next/core-web-vitals)
+npm run typecheck   # tsc --noEmit
+npm test            # Vitest unit tests
+```
+
+These three run on every pull request and non-`main` push via
+[`.github/workflows/ci.yml`](./.github/workflows/ci.yml).
+
 ### Environment variables
 
 | Variable                        | Purpose                                              |

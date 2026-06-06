@@ -111,7 +111,7 @@ export async function toggleAlert(alertId: string | number, active: boolean) {
         const supabase = await getSupabaseServerClient();
         const { error } = await supabase
             .from(TABLE)
-            .update({ active })
+            .update({ active, updated_at: new Date().toISOString() })
             .eq('id', alertId);
 
         if (error) throw error;
@@ -121,5 +121,32 @@ export async function toggleAlert(alertId: string | number, active: boolean) {
     } catch (error) {
         console.error('Error toggling alert:', error);
         throw new Error('Failed to update alert');
+    }
+}
+
+// Re-arm a triggered alert: clear `triggered`, re-activate it and push the
+// 90-day expiry window out from now so the cron picks it up again.
+export async function reactivateAlert(alertId: string | number) {
+    try {
+        const supabase = await getSupabaseServerClient();
+        const { data, error } = await supabase
+            .from(TABLE)
+            .update({
+                triggered: false,
+                active: true,
+                expires_at: defaultExpiry(),
+                updated_at: new Date().toISOString(),
+            })
+            .eq('id', alertId)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        revalidatePath('/watchlist');
+        return mapAlert(data as AlertRow);
+    } catch (error) {
+        console.error('Error reactivating alert:', error);
+        throw new Error('Failed to reactivate alert');
     }
 }
