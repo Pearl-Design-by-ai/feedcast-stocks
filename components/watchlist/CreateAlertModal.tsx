@@ -39,6 +39,7 @@ export default function CreateAlertModal({
 
     const [targetPrice, setTargetPrice] = useState<string>(currentPrice.toString());
     const [condition, setCondition] = useState<"ABOVE" | "BELOW">("ABOVE");
+    const [alertName, setAlertName] = useState("");
     const [loading, setLoading] = useState(false);
 
     // Update target price when currentPrice changes (e.g. freshly fetched)
@@ -60,8 +61,10 @@ export default function CreateAlertModal({
                 symbol,
                 targetPrice: parsedPrice,
                 condition,
+                name: alertName,
             });
             toast.success("Alert created successfully");
+            setAlertName("");
             setOpen?.(false);
             if (onAlertCreated) onAlertCreated();
         } catch (error) {
@@ -84,6 +87,18 @@ export default function CreateAlertModal({
                     <DialogTitle className="text-2xl font-bold tracking-tight text-white mb-2">Price Alert</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-5 py-2 relative z-10">
+
+                    {/* Alert Name (optional) */}
+                    <div className="grid gap-2">
+                        <Label className="text-gray-400 text-sm font-medium">Alert name <span className="text-gray-600">(optional)</span></Label>
+                        <Input
+                            value={alertName}
+                            onChange={(e) => setAlertName(e.target.value)}
+                            placeholder="e.g. Apple at a discount"
+                            maxLength={80}
+                            className="bg-gray-900 border-gray-700 text-white placeholder:text-gray-600 focus:border-yellow-500 focus:ring-yellow-500/20 transition-all rounded-md h-10"
+                        />
+                    </div>
 
                     {/* Stock Identifier */}
                     <div className="grid gap-2">

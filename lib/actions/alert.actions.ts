@@ -9,6 +9,7 @@ export type AlertRow = {
     id: number;
     user_id: string;
     symbol: string;
+    name: string | null;
     target_price: number;
     condition: 'ABOVE' | 'BELOW';
     active: boolean;
@@ -28,6 +29,7 @@ function mapAlert(row: AlertRow) {
         id: row.id,
         userId: row.user_id,
         symbol: row.symbol,
+        name: row.name,
         targetPrice: row.target_price,
         condition: row.condition,
         active: row.active,
@@ -44,14 +46,17 @@ export async function createAlert(params: {
     symbol: string;
     targetPrice: number;
     condition: 'ABOVE' | 'BELOW';
+    name?: string;
 }) {
     try {
         const supabase = await getSupabaseServerClient();
+        const trimmedName = params.name?.trim();
         const { data, error } = await supabase
             .from(TABLE)
             .insert({
                 user_id: params.userId,
                 symbol: params.symbol.toUpperCase(),
+                name: trimmedName ? trimmedName : null,
                 target_price: params.targetPrice,
                 condition: params.condition,
                 active: true,

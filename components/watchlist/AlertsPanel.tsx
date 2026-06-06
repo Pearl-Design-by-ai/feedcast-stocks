@@ -8,6 +8,7 @@ import { deleteAlert, reactivateAlert } from "@/lib/actions/alert.actions";
 interface AlertItem {
     id: number;
     symbol: string;
+    name: string | null;
     targetPrice: number;
     condition: "ABOVE" | "BELOW";
     active: boolean;
@@ -100,6 +101,11 @@ export default function AlertsPanel({ alerts, onRefresh }: AlertsPanelProps) {
                                                         </span>
                                                     )}
                                                 </div>
+                                                {alert.name && (
+                                                    <div className="text-xs text-gray-300 truncate max-w-[160px]">
+                                                        {alert.name}
+                                                    </div>
+                                                )}
                                                 <div className="text-xs text-gray-400">
                                                     Target: {formatCurrency(alert.targetPrice)}
                                                 </div>
