@@ -13,7 +13,6 @@
 
 const DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions';
 const DEEPSEEK_MODEL = 'deepseek-chat';
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY ?? '';
 
 export interface IndicatorExplanation {
     summary: string; // what it measures, in plain language
@@ -75,7 +74,11 @@ export async function explainIndicator(
     blurb: string,
     category?: string
 ): Promise<ExplainResult> {
-    if (!DEEPSEEK_API_KEY) {
+    // Read the key per-request: on Cloudflare Workers, env/secrets are bound to
+    // the request context, and a secret added after deploy isn't reflected in a
+    // value captured at module load. Reading it here always sees the latest.
+    const apiKey = process.env.DEEPSEEK_API_KEY ?? '';
+    if (!apiKey) {
         return { ok: false, error: 'AI explanations are not configured yet.' };
     }
 
@@ -90,7 +93,7 @@ export async function explainIndicator(
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+                Authorization: `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
                 model: DEEPSEEK_MODEL,
