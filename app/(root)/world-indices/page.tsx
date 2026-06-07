@@ -1,8 +1,14 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import DataDisclaimer from '@/components/DataDisclaimer';
 import TradingViewWidget from '@/components/TradingViewWidget';
 import WorldEtfs from '@/components/world/WorldEtfs';
+import ReturnsTable from '@/components/markets/ReturnsTable';
 import { WORLD_GROUPS } from '@/lib/world-indices';
+
+const RETURN_ROWS = WORLD_GROUPS.flatMap((g) =>
+    g.etfs.map((e) => ({ symbol: e.symbol, label: `${e.name} (${e.code})` }))
+);
 
 export const metadata: Metadata = {
     title: 'World Indices',
@@ -46,6 +52,13 @@ export default function WorldIndicesPage() {
                 </div>
                 <DataDisclaimer className="w-fit" />
             </header>
+
+            <section className="flex flex-col gap-3">
+                <h2 className="text-xl font-semibold text-gray-100">Returns</h2>
+                <Suspense fallback={null}>
+                    <ReturnsTable rows={RETURN_ROWS} />
+                </Suspense>
+            </section>
 
             <section className="flex flex-col gap-3">
                 <h2 className="text-xl font-semibold text-gray-100">Performance Snapshot</h2>

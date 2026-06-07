@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import DataDisclaimer from '@/components/DataDisclaimer';
 import TradingViewWidget from '@/components/TradingViewWidget';
 import InstrumentCard from '@/components/markets/InstrumentCard';
+import ReturnsTable from '@/components/markets/ReturnsTable';
 import { SECTOR_ETFS } from '@/lib/sectors';
 
 export const metadata: Metadata = {
@@ -46,6 +48,15 @@ export default function SectorsPage() {
                 </div>
                 <DataDisclaimer className="w-fit" />
             </header>
+
+            <section className="flex flex-col gap-3">
+                <h2 className="text-xl font-semibold text-gray-100">Returns</h2>
+                <Suspense fallback={null}>
+                    <ReturnsTable
+                        rows={SECTOR_ETFS.map((s) => ({ symbol: s.symbol, label: `${s.name} (${s.code})` }))}
+                    />
+                </Suspense>
+            </section>
 
             <section className="flex flex-col gap-3">
                 <h2 className="text-xl font-semibold text-gray-100">Performance Snapshot</h2>
