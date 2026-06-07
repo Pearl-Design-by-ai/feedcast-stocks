@@ -77,7 +77,10 @@ export async function explainIndicator(
     // Read the key per-request: on Cloudflare Workers, env/secrets are bound to
     // the request context, and a secret added after deploy isn't reflected in a
     // value captured at module load. Reading it here always sees the latest.
-    const apiKey = process.env.DEEPSEEK_API_KEY ?? '';
+    // Trim defensively — a stray trailing newline/space in the secret (common
+    // when pasting into the dashboard or piping into `wrangler secret put`)
+    // otherwise reaches DeepSeek verbatim and triggers a 401.
+    const apiKey = (process.env.DEEPSEEK_API_KEY ?? '').trim();
     if (!apiKey) {
         return { ok: false, error: 'AI explanations are not configured yet.' };
     }
@@ -113,7 +116,19 @@ export async function explainIndicator(
         clearTimeout(timeout);
 
         if (!res.ok) {
-            return { ok: false, error: `DeepSeek request failed (${res.status}).` };
+            // Surface DeepSeek's own reason (e.g. "Authentication Fails") so a
+            // bad/expired key or empty balance is obvious from the dialog.
+            let detail = '';
+            try {
+                const errJson = (await res.json()) as { error?: { message?: string } };
+                detail = errJson?.error?.message ?? '';
+            } catch {
+                // non-JSON error body — ignore
+            }
+            return {
+                ok: false,
+                error: `DeepSeek request failed (${res.status})${detail ? `: ${detail}` : ''}.`,
+            };
         }
 
         const json = (await res.json()) as {
