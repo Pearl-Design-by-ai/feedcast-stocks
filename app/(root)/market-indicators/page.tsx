@@ -7,7 +7,7 @@ import { getCryptoFearGreed } from '@/lib/actions/market-mood.actions';
 export const metadata: Metadata = {
     title: 'Market Indicators',
     description:
-        'A market-wide dashboard across trend, momentum, volume, volatility, breadth, sentiment, rates & credit, macro, valuation and liquidity.',
+        'A market-wide dashboard across trend, momentum, volume, volatility, breadth, sentiment, rates & credit, macro, valuation, liquidity and crypto.',
 };
 
 export default async function MarketIndicatorsPage() {
@@ -20,8 +20,8 @@ export default async function MarketIndicatorsPage() {
                     <h1 className="text-3xl font-bold text-gray-100">Market Indicators</h1>
                     <p className="max-w-3xl text-sm text-gray-400">
                         A market-wide dashboard — trend, momentum, volume &amp; flow, volatility,
-                        breadth, sentiment, rates &amp; credit, macro &amp; cross-asset, valuation
-                        and liquidity — to read the overall regime at a glance.
+                        breadth, sentiment, rates &amp; credit, macro &amp; cross-asset, valuation,
+                        liquidity and crypto — to read the overall regime at a glance.
                     </p>
                 </div>
                 <DataDisclaimer className="w-fit" />
