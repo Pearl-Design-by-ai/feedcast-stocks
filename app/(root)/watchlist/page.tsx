@@ -7,6 +7,7 @@ import { getNews, getWatchlistData } from '@/lib/actions/finnhub.actions';
 import WatchlistManager from '@/components/watchlist/WatchlistManager';
 import WatchlistDigest from '@/components/watchlist/WatchlistDigest';
 import NewsImpact from '@/components/watchlist/NewsImpact';
+import DivergenceRadar from '@/components/watchlist/DivergenceRadar';
 import AlertsPanel from '@/components/watchlist/AlertsPanel';
 import NewsGrid from '@/components/watchlist/NewsGrid';
 import SearchCommand from '@/components/SearchCommand';
@@ -71,6 +72,10 @@ export default async function WatchlistPage() {
 
                     <Suspense fallback={null}>
                         <NewsImpact symbols={watchlistSymbols} />
+                    </Suspense>
+
+                    <Suspense fallback={null}>
+                        <DivergenceRadar symbols={watchlistSymbols} />
                     </Suspense>
 
                     {/* News Section */}
