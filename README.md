@@ -1,7 +1,7 @@
-# Feedcast Markets
+# Feedcast Stocks
 
-**Feedcast Markets** is the market-tracking module of [Feedcast](https://www.feedcast.news),
-served at **markets.feedcast.news**. It lets members track real-time stock
+**Feedcast Stocks** is the market-tracking module of [Feedcast](https://www.feedcast.news),
+served at **stocks.feedcast.news**. It lets members track real-time stock
 prices, build a watchlist, set price alerts, and explore detailed company
 insights through embedded TradingView widgets.
 
@@ -9,7 +9,7 @@ insights through embedded TradingView widgets.
 
 ## Credit & License
 
-Feedcast Markets is a **derivative work of [OpenStock](https://github.com/Open-Dev-Society/OpenStock)**,
+Feedcast Stocks is a **derivative work of [OpenStock](https://github.com/Open-Dev-Society/OpenStock)**,
 an open-source market platform created by **[Open Dev Society](https://github.com/Open-Dev-Society)**.
 
 Huge thanks to the OpenStock authors and contributors — this project would
@@ -33,7 +33,7 @@ record of every change.
 
 It re-platforms OpenStock onto the Feedcast stack:
 
-| Area            | OpenStock                     | Feedcast Markets                          |
+| Area            | OpenStock                     | Feedcast Stocks                          |
 | --------------- | ----------------------------- | ---------------------------------------- |
 | Authentication  | Better Auth                   | Supabase Auth (shared Feedcast SSO)      |
 | Database        | MongoDB + Mongoose            | Supabase Postgres                        |
@@ -111,7 +111,7 @@ Feedcast's transactional email service. It POSTs a template-render request to
     "conditionText": "rose to or above",
     "targetPrice": "$180.00",
     "currentPrice": "$182.40",
-    "watchlistUrl": "https://markets.feedcast.news/watchlist"
+    "watchlistUrl": "https://stocks.feedcast.news/watchlist"
   }
 }
 ```
@@ -125,7 +125,7 @@ still trigger — they just don't email.
 ## Deployment
 
 Deployed to Cloudflare Workers via the [OpenNext](https://opennext.js.org/cloudflare)
-adapter at `markets.feedcast.news`. A separate `feedcast-stocks-cron` Worker
+adapter at `stocks.feedcast.news`. A separate `feedcast-stocks-cron` Worker
 fires every 5 minutes to evaluate price alerts.
 
 ```bash

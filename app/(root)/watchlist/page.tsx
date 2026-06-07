@@ -18,7 +18,7 @@ export default async function WatchlistPage() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-        redirect('https://www.feedcast.news/?signin=markets');
+        redirect('https://www.feedcast.news/?signin=stocks');
     }
 
     const userId = user.id;

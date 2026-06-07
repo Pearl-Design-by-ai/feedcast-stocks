@@ -10,8 +10,8 @@ import {
 } from 'lucide-react';
 
 export const metadata = {
-    title: 'About Us | FeedCast Markets',
-    description: 'The story behind FeedCast Markets.',
+    title: 'About Us | FeedCast Stocks',
+    description: 'The story behind FeedCast Stocks.',
 };
 
 export default function AboutPage() {
@@ -30,7 +30,7 @@ export default function AboutPage() {
                 </h1>
                 <p className="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto leading-relaxed font-light">
                     We believe financial intelligence shouldn&apos;t be locked behind paywalls.
-                    FeedCast Markets brings real-time markets to everyone.
+                    FeedCast Stocks brings real-time markets to everyone.
                 </p>
             </section>
 
@@ -61,7 +61,7 @@ export default function AboutPage() {
                 <div className="space-y-6">
                     <h2 className="text-3xl font-bold text-white">Part of FeedCast</h2>
                     <p className="text-gray-400 leading-relaxed text-lg">
-                        FeedCast Markets is the markets module of the FeedCast platform — built to make powerful financial tools accessible without paywalls.
+                        FeedCast Stocks is the markets module of the FeedCast platform — built to make powerful financial tools accessible without paywalls.
                     </p>
                     <p className="text-gray-400 leading-relaxed text-lg">
                         It is open-source and based on <span className="text-teal-400 font-semibold">OpenStock</span> by Open Dev Society, licensed under AGPL-3.0.

@@ -6,19 +6,19 @@ import {
 } from '@/lib/supabase/cookie-storage';
 
 /**
- * Auth gate. Feedcast Markets has no sign-in pages of its own — auth is
+ * Auth gate. Feedcast Stocks has no sign-in pages of its own — auth is
  * handled by the main Feedcast app (SSO). The Supabase session cookie is
  * scoped to `.feedcast.news`, so a user signed in on `www.feedcast.news`
  * is already signed in here.
  *
  * If there is no authenticated Supabase user, bounce to the Feedcast
- * sign-in with a `?signin=markets` hint so it can return the user here.
+ * sign-in with a `?signin=stocks` hint so it can return the user here.
  *
  * `/api/*` is excluded from the matcher entirely — `/api/cron/*` carries
  * its own Bearer-token auth and must stay reachable.
  */
 
-const SIGN_IN_URL = 'https://www.feedcast.news/?signin=markets';
+const SIGN_IN_URL = 'https://www.feedcast.news/?signin=stocks';
 
 export async function middleware(request: NextRequest) {
     // `response` collects any refreshed-session cookies Supabase wants to set.

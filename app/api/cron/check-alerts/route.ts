@@ -23,7 +23,7 @@ export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
 const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
-const WATCHLIST_URL = 'https://markets.feedcast.news/watchlist';
+const WATCHLIST_URL = 'https://stocks.feedcast.news/watchlist';
 
 type AlertRow = {
   id: number;

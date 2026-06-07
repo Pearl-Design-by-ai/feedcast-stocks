@@ -10,14 +10,14 @@ import {
 } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Help Center | FeedCast Markets',
-  description: 'Community-driven support for FeedCast Markets. No paywalls, just help.',
+  title: 'Help Center | FeedCast Stocks',
+  description: 'Community-driven support for FeedCast Stocks. No paywalls, just help.',
 };
 
 export default function HelpPage() {
   const faqs = [
     {
-      question: "Is FeedCast Markets really free forever?",
+      question: "Is FeedCast Stocks really free forever?",
       answer: "Yes! We run on donations and community contribution. Core features (tracking, alerts, analysis) will remain free. We believe financial tools shouldn't be luxury items."
     },
     {

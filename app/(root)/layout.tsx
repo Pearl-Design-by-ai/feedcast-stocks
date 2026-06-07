@@ -1,12 +1,11 @@
 import Header from "@/components/Header";
-import SideNav from "@/components/SideNav";
 import { redirect } from "next/navigation";
 import Footer from "@/components/Footer";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 // Auth is handled by the main Feedcast app (SSO). Unauthenticated users
 // are bounced to the Feedcast sign-in.
-const SIGN_IN_URL = 'https://www.feedcast.news/?signin=markets';
+const SIGN_IN_URL = 'https://www.feedcast.news/?signin=stocks';
 
 const Layout = async ({ children }: { children: React.ReactNode }) => {
     const supabase = await getSupabaseServerClient();
@@ -28,27 +27,15 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
     };
 
     return (
-        <div className="min-h-screen flex flex-col text-foreground">
+        <main className="min-h-screen text-gray-400">
             <Header user={sessionUser} />
 
-            {/* Unified, centered app shell mirroring Feedcast: the left rail
-                and the content column live inside one mx-auto block so on wide
-                screens the whole UI reads as a single centered surface. */}
-            <main className="flex-1">
-                <div className="mx-auto w-full max-w-[1660px]">
-                    <div className="flex pl-3 md:pl-4">
-                        <SideNav />
-                        <div className="flex-1 min-w-0">
-                            <div className="container py-8 md:py-10">
-                                {children}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </main>
+            <div className="container py-10">
+                {children}
+            </div>
 
             <Footer />
-        </div>
+        </main>
     )
 }
 export default Layout

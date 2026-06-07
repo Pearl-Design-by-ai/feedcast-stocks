@@ -17,8 +17,8 @@ import {
 } from 'lucide-react';
 
 export const metadata = {
-  title: 'API & Architecture | FeedCast Markets',
-  description: 'Technical documentation for FeedCast Markets architecture, AI integrations, and background jobs.',
+  title: 'API & Architecture | FeedCast Stocks',
+  description: 'Technical documentation for FeedCast Stocks architecture, AI integrations, and background jobs.',
 };
 
 export default function ApiDocsPage() {
@@ -37,7 +37,7 @@ export default function ApiDocsPage() {
         </div>
 
         <h1 className="text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-          FeedCast Markets Architecture
+          FeedCast Stocks Architecture
         </h1>
         <p className="text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
           A transparent look at the event-driven, multi-provider system powering your market insights.

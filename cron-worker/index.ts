@@ -1,5 +1,5 @@
 /**
- * Feedcast Markets cron Worker — fires a Cloudflare Cron Trigger and
+ * Feedcast Stocks cron Worker — fires a Cloudflare Cron Trigger and
  * forwards to the main app Worker's price-alert endpoint.
  *
  * Why a separate Worker instead of extending the main OpenNext worker:
@@ -12,7 +12,7 @@
  */
 
 interface Env {
-  /** Main app worker URL, e.g. https://markets.feedcast.news */
+  /** Main app worker URL, e.g. https://stocks.feedcast.news */
   APP_URL: string;
   /** Shared secret enforced by the /api/cron/check-alerts route. */
   CRON_SECRET: string;

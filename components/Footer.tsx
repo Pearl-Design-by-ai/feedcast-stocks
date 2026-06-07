@@ -10,10 +10,10 @@ const Footer = () => {
                     <div className="col-span-1 md:col-span-2">
                         <Link href="/" className="flex items-center gap-2 mb-4">
                             <FeedcastLogo size={28} className="text-teal-400" />
-                            <span className="text-lg font-semibold text-white">FeedCast <span className="text-teal-400">Markets</span></span>
+                            <span className="text-lg font-semibold text-white">FeedCast <span className="text-teal-400">Stocks</span></span>
                         </Link>
                         <p className="text-gray-400 mb-6 max-w-md">
-                            FeedCast Markets tracks the markets, sets personalized alerts, and surfaces detailed company insights — part of the FeedCast platform.
+                            FeedCast Stocks tracks the markets, sets personalized alerts, and surfaces detailed company insights — part of the FeedCast platform.
                         </p>
                         <div className="mb-8">
                             <Link href="/about" className="text-teal-400 hover:text-teal-300 font-medium inline-flex items-center gap-1 group">

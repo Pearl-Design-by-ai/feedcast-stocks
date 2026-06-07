@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, Menu } from "lucide-react";
+import { Menu, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import {
     DropdownMenu,
@@ -11,10 +11,13 @@ import { Button } from "@/components/ui/button";
 import { NAV_ITEMS, MARKETS_NAV } from "@/lib/constants";
 import SearchCommand from "@/components/SearchCommand";
 
+const FEEDCAST_HOME = "https://www.feedcast.news/";
+const ROW = "flex items-center rounded-md px-3 py-2.5 text-[15px] text-gray-200 transition-colors hover:bg-gray-700/70 hover:text-teal-400";
+
 /**
- * Mobile-only hamburger menu holding the content navigation. The market pages
- * are listed flat under a "Markets" heading (instead of a nested dropdown).
- * On sm+ the inline header nav is used, so the trigger is hidden there.
+ * Mobile hamburger menu, styled to match the Feedcast Markets menu: a "Back to
+ * Feedcast" link at the top, the main pages, then a "Markets" section. On sm+
+ * the inline header nav is used, so the trigger is hidden there.
  */
 const MobileNav = ({ initialStocks }: { initialStocks: StockWithWatchlistStatus[] }) => {
     return (
@@ -27,48 +30,46 @@ const MobileNav = ({ initialStocks }: { initialStocks: StockWithWatchlistStatus[
                     <Menu className="h-5 w-5" />
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="min-w-48 p-3 text-gray-400 bg-gray-800">
-                <ul className="flex flex-col gap-3 font-medium">
-                    <li>
-                        <a
-                            href="https://www.feedcast.news"
-                            className="flex items-center gap-2 text-gray-500 hover:text-teal-400 transition-colors"
-                        >
-                            <ArrowLeft className="h-4 w-4" />
-                            Back to Feedcast
-                        </a>
-                    </li>
-                    <li className="border-t border-gray-700 pt-1" aria-hidden="true" />
-                    {NAV_ITEMS.map(({ href, label }) => {
-                        if (href === '/search') return (
-                            <li key="search-trigger">
-                                <SearchCommand
-                                    renderAs="text"
-                                    label="Search"
-                                    initialStocks={initialStocks}
-                                />
-                            </li>
-                        )
-                        return (
-                            <li key={href}>
-                                <Link href={href} className="hover:text-teal-500 transition-colors">
-                                    {label}
-                                </Link>
-                            </li>
-                        )
-                    })}
+            <DropdownMenuContent
+                align="start"
+                sideOffset={10}
+                className="w-60 rounded-xl border-gray-700 bg-gray-800 p-2 text-gray-200 shadow-xl"
+            >
+                {/* Back to Feedcast */}
+                <a href={FEEDCAST_HOME} className={`${ROW} text-gray-400`}>
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back to Feedcast
+                </a>
 
-                    <li className="mt-1 border-t border-gray-700 pt-3 text-xs uppercase tracking-wide text-gray-500">
-                        {MARKETS_NAV.label}
-                    </li>
-                    {MARKETS_NAV.items.map(({ href, label }) => (
-                        <li key={href}>
-                            <Link href={href} className="hover:text-teal-500 transition-colors">
-                                {label}
-                            </Link>
-                        </li>
-                    ))}
-                </ul>
+                <div className="my-2 h-px bg-gray-700" />
+
+                {/* Main pages */}
+                {NAV_ITEMS.map(({ href, label }) => {
+                    if (href === '/search') return (
+                        <div key="search-trigger" className={ROW}>
+                            <SearchCommand
+                                renderAs="text"
+                                label="Search"
+                                initialStocks={initialStocks}
+                            />
+                        </div>
+                    )
+                    return (
+                        <Link key={href} href={href} className={ROW}>
+                            {label}
+                        </Link>
+                    )
+                })}
+
+                {/* Markets section */}
+                <div className="px-3 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+                    {MARKETS_NAV.label}
+                </div>
+                {MARKETS_NAV.items.map(({ href, label }) => (
+                    <Link key={href} href={href} className={ROW}>
+                        {label}
+                    </Link>
+                ))}
             </DropdownMenuContent>
         </DropdownMenu>
     );
