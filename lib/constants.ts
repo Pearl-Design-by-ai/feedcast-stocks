@@ -4,14 +4,65 @@ export const NAV_ITEMS = [
     { href: '/watchlist', label: 'Watchlist' },
 ];
 
-// Market-analysis pages, grouped under a single "Markets" dropdown in the nav.
+// Market-analysis pages grouped under "Markets". Each item carries its
+// in-page section ids so the left rail can expand into a sub-accordion that
+// deep-links straight to a section (`/page#sectionId`) for quick access.
+// `sections[].id` MUST match the category ids in the page data
+// (lib/market-indicators, lib/currencies, lib/world-indices, lib/fixed-income).
 export const MARKETS_NAV = {
     label: 'Markets',
     items: [
-        { href: '/market-indicators', label: 'Indicators' },
-        { href: '/currency', label: 'Currency' },
-        { href: '/world-indices', label: 'World Indices' },
-        { href: '/fixed-income', label: 'Fixed Income' },
+        {
+            href: '/market-indicators',
+            label: 'Indicators',
+            sections: [
+                { id: 'trend', label: 'Trend' },
+                { id: 'momentum', label: 'Momentum' },
+                { id: 'volume-flow', label: 'Volume & Flow' },
+                { id: 'volatility', label: 'Volatility' },
+                { id: 'breadth', label: 'Market Breadth' },
+                { id: 'sentiment', label: 'Sentiment' },
+                { id: 'rates-credit', label: 'Rates & Credit' },
+                { id: 'macro', label: 'Macro & Cross-Asset' },
+                { id: 'valuation', label: 'Valuation' },
+                { id: 'money', label: 'Money & Liquidity' },
+                { id: 'crypto', label: 'Crypto' },
+            ],
+        },
+        {
+            href: '/currency',
+            label: 'Currency',
+            sections: [
+                { id: 'majors', label: 'Major Pairs' },
+                { id: 'europe', label: 'European' },
+                { id: 'asia-pacific', label: 'Asia-Pacific' },
+                { id: 'americas-emea', label: 'Americas & EMEA' },
+            ],
+        },
+        {
+            href: '/world-indices',
+            label: 'World Indices',
+            sections: [
+                { id: 'global', label: 'US & Global' },
+                { id: 'americas', label: 'Americas' },
+                { id: 'europe', label: 'Europe' },
+                { id: 'asia-pacific', label: 'Asia-Pacific' },
+                { id: 'emerging', label: 'Emerging Markets' },
+            ],
+        },
+        {
+            href: '/fixed-income',
+            label: 'Fixed Income',
+            sections: [
+                { id: 'treasuries', label: 'US Treasuries' },
+                { id: 'core', label: 'Core / Aggregate' },
+                { id: 'ig-corp', label: 'Investment-Grade' },
+                { id: 'high-yield', label: 'High Yield' },
+                { id: 'tips', label: 'Inflation-Protected (TIPS)' },
+                { id: 'muni', label: 'Municipal' },
+                { id: 'em-bonds', label: 'Emerging-Market Bonds' },
+            ],
+        },
     ],
 };
 

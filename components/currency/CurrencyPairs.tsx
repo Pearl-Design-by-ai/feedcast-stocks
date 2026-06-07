@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { CURRENCY_GROUPS } from '@/lib/currencies';
 import CurrencyPairCard from '@/components/currency/CurrencyPairCard';
+import { useHashAccordion } from '@/hooks/useHashAccordion';
 import { cn } from '@/lib/utils';
+
+const GROUP_IDS = CURRENCY_GROUPS.map((g) => g.id);
 
 /**
  * Region-grouped accordion of USD currency pairs. One region open at a time
@@ -12,7 +14,7 @@ import { cn } from '@/lib/utils';
  * lazy-load on scroll. Panels open with a soft fade/slide.
  */
 export default function CurrencyPairs() {
-    const [openId, setOpenId] = useState<string>(CURRENCY_GROUPS[0].id);
+    const [openId, setOpenId] = useHashAccordion(GROUP_IDS, CURRENCY_GROUPS[0].id);
 
     return (
         <div className="flex w-full flex-col gap-3">
@@ -23,7 +25,8 @@ export default function CurrencyPairs() {
                 return (
                     <div
                         key={group.id}
-                        className="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/30"
+                        id={group.id}
+                        className="scroll-mt-24 overflow-hidden rounded-xl border border-gray-800 bg-gray-900/30"
                     >
                         <button
                             type="button"

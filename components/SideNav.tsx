@@ -17,6 +17,7 @@ import {
     Menu,
     PanelLeftClose,
     ArrowLeft,
+    ChevronDown,
     LayoutDashboard,
     Star,
     Activity,
@@ -68,6 +69,15 @@ export default function SideNav() {
             return next;
         });
     };
+
+    // Which "Markets" group is expanded into its section sub-list. Auto-opens
+    // the group for the page you're on; manual toggles override until you
+    // navigate elsewhere.
+    const [openMarket, setOpenMarket] = useState<string | null>(null);
+    useEffect(() => {
+        const active = MARKETS_NAV.items.find((i) => pathname.startsWith(i.href));
+        setOpenMarket(active ? active.href : null);
+    }, [pathname]);
 
     const compact = !open;
     const labelClass = compact ? 'sr-only' : '';
@@ -173,18 +183,59 @@ export default function SideNav() {
 
                     <div className={dividerClass}>{compact ? null : MARKETS_NAV.label}</div>
 
-                    {MARKETS_NAV.items.map(({ href, label }) => {
-                        const Icon = MARKET_ICONS[href] ?? Activity;
+                    {MARKETS_NAV.items.map((item) => {
+                        const Icon = MARKET_ICONS[item.href] ?? Activity;
+                        const active = isActive(item.href);
+                        const expanded = !compact && openMarket === item.href;
                         return (
-                            <Link
-                                key={href}
-                                href={href}
-                                className={rowClass(isActive(href))}
-                                title={compact ? label : undefined}
-                            >
-                                <Icon size={18} className="shrink-0" />
-                                <span className={labelClass}>{label}</span>
-                            </Link>
+                            <div key={item.href}>
+                                <div className="flex items-center">
+                                    <Link
+                                        href={item.href}
+                                        className={cn(rowClass(active), 'flex-1 min-w-0')}
+                                        title={compact ? item.label : undefined}
+                                    >
+                                        <Icon size={18} className="shrink-0" />
+                                        <span className={labelClass}>{item.label}</span>
+                                    </Link>
+                                    {!compact && item.sections && (
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setOpenMarket((o) =>
+                                                    o === item.href ? null : item.href,
+                                                )
+                                            }
+                                            aria-label={`Toggle ${item.label} sections`}
+                                            aria-expanded={expanded}
+                                            className="ml-0.5 shrink-0 rounded-md p-1.5 text-gray-500 transition-colors hover:bg-gray-700 hover:text-gray-100"
+                                        >
+                                            <ChevronDown
+                                                className={cn(
+                                                    'h-4 w-4 transition-transform duration-200',
+                                                    expanded && 'rotate-180',
+                                                )}
+                                            />
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Section sub-list — deep-links into the page's
+                                    in-content accordion for quick access. */}
+                                {expanded && item.sections && (
+                                    <div className="mt-0.5 mb-1 ml-5 flex flex-col border-l border-gray-700 pl-2">
+                                        {item.sections.map((s) => (
+                                            <Link
+                                                key={s.id}
+                                                href={`${item.href}#${s.id}`}
+                                                className="rounded-md px-3 py-1.5 text-[13px] text-gray-500 transition-colors hover:bg-gray-700 hover:text-teal-400"
+                                            >
+                                                {s.label}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         );
                     })}
                 </nav>
