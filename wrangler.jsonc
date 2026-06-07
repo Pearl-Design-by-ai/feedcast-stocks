@@ -14,12 +14,15 @@
   "limits": {
     "cpu_ms": 300000
   },
-  // Production domain. Cloudflare provisions SSL via DNS-01 once the
-  // `stocks` hostname resolves through the feedcast.news zone. Until
-  // then the workers.dev fallback URL keeps serving.
+  // Production domains. Cloudflare provisions SSL via DNS-01 and binds each
+  // hostname directly to this Worker (custom domains, so no origin / no 522).
   "routes": [
     {
       "pattern": "stocks.feedcast.news",
+      "custom_domain": true
+    },
+    {
+      "pattern": "markets.feedcast.news",
       "custom_domain": true
     }
   ]
