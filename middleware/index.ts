@@ -20,19 +20,7 @@ import {
 
 const SIGN_IN_URL = 'https://www.feedcast.news/?signin=markets';
 
-// Legacy host — the module was rebranded from `stocks` to `markets`.
-// Permanently redirect any leftover bookmarks/links to the new domain.
-const LEGACY_HOST = 'stocks.feedcast.news';
-const CANONICAL_HOST = 'markets.feedcast.news';
-
 export async function middleware(request: NextRequest) {
-    // Rebrand redirect: stocks.feedcast.news → markets.feedcast.news (same path).
-    if (request.headers.get('host') === LEGACY_HOST) {
-        const target = new URL(request.url);
-        target.host = CANONICAL_HOST;
-        return NextResponse.redirect(target, 301);
-    }
-
     // `response` collects any refreshed-session cookies Supabase wants to set.
     const response = NextResponse.next({ request });
 
