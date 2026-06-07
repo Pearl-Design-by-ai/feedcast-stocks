@@ -9,9 +9,14 @@ export const MARKETS_NAV = {
     label: 'Markets',
     items: [
         { href: '/market-indicators', label: 'Indicators' },
-        { href: '/currency', label: 'Currency' },
+        { href: '/sectors', label: 'Sectors' },
         { href: '/world-indices', label: 'World Indices' },
+        { href: '/currency', label: 'Currency' },
+        { href: '/commodities', label: 'Commodities' },
         { href: '/fixed-income', label: 'Fixed Income' },
+        { href: '/crypto', label: 'Crypto' },
+        { href: '/economic-calendar', label: 'Economic Calendar' },
+        { href: '/screener', label: 'Screener' },
     ],
 };
 
@@ -313,6 +318,48 @@ export const MINI_SYMBOL_WIDGET_CONFIG = (symbol: string) => ({
     largeChartUrl: '',
     chartOnly: false,
 });
+
+// Economic calendar (TradingView events widget).
+export const ECONOMIC_CALENDAR_WIDGET_CONFIG = {
+    colorTheme: 'dark',
+    isTransparent: true,
+    locale: 'en',
+    countryFilter: 'us,eu,jp,gb,cn,de,fr,ca,au,ch,it,es,in,br,tr',
+    importanceFilter: '0,1',
+    backgroundColor: '#141414',
+    width: '100%',
+    height: 650,
+};
+
+// Stock screener (TradingView screener widget).
+export const SCREENER_WIDGET_CONFIG = {
+    defaultColumn: 'overview',
+    defaultScreen: 'most_capitalized',
+    market: 'america',
+    showToolbar: true,
+    colorTheme: 'dark',
+    isTransparent: true,
+    locale: 'en',
+    width: '100%',
+    height: 650,
+};
+
+// Crypto market-cap heatmap.
+export const CRYPTO_HEATMAP_WIDGET_CONFIG = {
+    dataSource: 'Crypto',
+    blockSize: 'market_cap_calc',
+    blockColor: 'change',
+    locale: 'en',
+    symbolUrl: '',
+    colorTheme: 'dark',
+    hasTopBar: false,
+    isDataSetEnabled: false,
+    isZoomEnabled: true,
+    hasSymbolTooltip: true,
+    isMonoSize: false,
+    width: '100%',
+    height: 500,
+};
 
 export const POPULAR_STOCK_SYMBOLS = [
     // Tech Giants (the big technology companies)
