@@ -6,6 +6,20 @@
 @theme inline {
     --color-background: var(--background);
     --color-foreground: var(--foreground);
+    /* Neutral gray ramp — resolved per theme (see :root / .dark below). The app
+       uses high grays (600–950) for surfaces/borders and low grays (100–400)
+       for text, so the light theme simply inverts the ramp. */
+    --color-gray-50: var(--gray-50);
+    --color-gray-100: var(--gray-100);
+    --color-gray-200: var(--gray-200);
+    --color-gray-300: var(--gray-300);
+    --color-gray-400: var(--gray-400);
+    --color-gray-500: var(--gray-500);
+    --color-gray-600: var(--gray-600);
+    --color-gray-700: var(--gray-700);
+    --color-gray-800: var(--gray-800);
+    --color-gray-900: var(--gray-900);
+    --color-gray-950: var(--gray-950);
     --font-sans: var(--font-geist-sans);
     --font-mono: var(--font-geist-mono);
     --color-sidebar-ring: var(--sidebar-ring);
@@ -45,6 +59,19 @@
 
 :root {
     --radius: 0.625rem;
+    /* Light theme gray ramp (inverted: high number = lighter surface,
+       low number = darker text) so the dark-first UI flips cleanly. */
+    --gray-50: #0b0f17;
+    --gray-100: #111827;
+    --gray-200: #1f2937;
+    --gray-300: #374151;
+    --gray-400: #4b5563;
+    --gray-500: #6b7280;
+    --gray-600: #aab0ba;
+    --gray-700: #d7dbe2;
+    --gray-800: #eceef2;
+    --gray-900: #f6f7f9;
+    --gray-950: #ffffff;
     --background: oklch(1 0 0);
     --foreground: oklch(0.129 0.042 264.695);
     --card: oklch(1 0 0);
@@ -79,6 +106,18 @@
 }
 
 .dark {
+    /* Dark theme gray ramp — the app's original values (unchanged look). */
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #CCDADC;
+    --gray-500: #9095A1;
+    --gray-600: #30333A;
+    --gray-700: #212328;
+    --gray-800: #141414;
+    --gray-900: #050505;
+    --gray-950: #030712;
     --background: oklch(0.129 0.042 264.695);
     --foreground: oklch(0.984 0.003 247.858);
     --card: oklch(0.208 0.042 265.755);
@@ -113,15 +152,10 @@
 }
 
 /* === CUSTOM COLOR THEME === */
+/* Note: the neutral gray ramp is defined as theme-aware variables in the
+   `@theme inline` block above (light values in :root, dark in .dark). Only the
+   theme-independent accent colors live here. */
 @theme {
-    /* Extended Gray Scale */
-    --color-gray-900: #050505;
-    --color-gray-800: #141414;
-    --color-gray-700: #212328;
-    --color-gray-600: #30333A;
-    --color-gray-500: #9095A1;
-    --color-gray-400: #CCDADC;
-
     /* Vibrant Colors */
     --color-blue-600: #5862FF;
     --color-yellow-400: #FDD458;
@@ -188,10 +222,10 @@
         @apply text-sm font-medium text-gray-400;
     }
     .form-input {
-        @apply h-12 px-3 py-3 text-white text-base placeholder:text-gray-600 border-gray-600  rounded-lg focus:!border-teal-500 focus:ring-0 ;
+        @apply h-12 px-3 py-3 text-gray-100 text-base placeholder:text-gray-600 border-gray-600  rounded-lg focus:!border-teal-500 focus:ring-0 ;
     }
     .select-trigger {
-        @apply w-full !h-12 px-3 py-3 text-base border-gray-600 bg-gray-800 text-white rounded-lg focus:!border-teal-500 focus:ring-0;
+        @apply w-full !h-12 px-3 py-3 text-base border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:!border-teal-500 focus:ring-0;
     }
     .country-select-trigger {
         @apply h-12 px-3 py-3 text-base w-full justify-between font-normal border-gray-600 bg-gray-800 text-gray-400 rounded-lg focus:!border-teal-500 focus:ring-0;
@@ -203,7 +237,7 @@
         @apply text-gray-500 py-6 text-center !bg-gray-800;
     }
     .country-select-item {
-        @apply text-white cursor-pointer px-3 py-2 rounded-sm bg-gray-800 hover:!bg-gray-600;
+        @apply text-gray-100 cursor-pointer px-3 py-2 rounded-sm bg-gray-800 hover:!bg-gray-600;
     }
     .footer-link {
         @apply text-gray-400 font-medium hover:text-teal-400 hover:underline transition-colors;
