@@ -16,7 +16,9 @@ export const MARKETS_NAV = {
         { href: '/fixed-income', label: 'Fixed Income' },
         { href: '/crypto', label: 'Crypto' },
         { href: '/economic-calendar', label: 'Economic Calendar' },
+        { href: '/calendar', label: 'Earnings & IPO' },
         { href: '/screener', label: 'Screener' },
+        { href: '/compare', label: 'Compare' },
     ],
 };
 
