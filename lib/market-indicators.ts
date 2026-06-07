@@ -470,4 +470,63 @@ export const INDICATOR_CATEGORIES: IndicatorCategory[] = [
             },
         ],
     },
+    {
+        id: 'crypto',
+        label: 'Crypto',
+        blurb: 'Digital-asset trend, momentum and rotation. (Live exchange pairs; market-wide caps open on TradingView.)',
+        indicators: [
+            {
+                num: 55,
+                name: 'Bitcoin (BTC)',
+                blurb: 'BTC/USDT — the crypto bellwether and a broad risk-appetite / liquidity gauge.',
+                widget: chart('BINANCE:BTCUSDT'),
+            },
+            {
+                num: 56,
+                name: 'Ethereum (ETH)',
+                blurb: 'ETH/USDT — the largest smart-contract chain; leadership often signals broader alt risk appetite.',
+                widget: chart('BINANCE:ETHUSDT'),
+            },
+            {
+                num: 57,
+                name: 'BTC vs 200DMA',
+                blurb: 'Bitcoin against its 200-day average — the classic long-term bull/bear dividing line.',
+                widget: chart('BINANCE:BTCUSDT', [
+                    { id: 'MASimple@tv-basicstudies', inputs: { length: 200 } },
+                ]),
+            },
+            {
+                num: 58,
+                name: 'BTC RSI (14)',
+                blurb: 'Bitcoin momentum — >70 overbought, <30 oversold; crypto runs hotter, so extremes stretch further.',
+                widget: chart('BINANCE:BTCUSDT', [
+                    { id: 'RSI@tv-basicstudies', inputs: { length: 14 } },
+                ]),
+            },
+            {
+                num: 59,
+                name: 'BTC MACD',
+                blurb: 'Bitcoin trend momentum — signal-line crossovers flag shifts in the dominant move.',
+                widget: chart('BINANCE:BTCUSDT', ['MACD@tv-basicstudies']),
+            },
+            {
+                num: 60,
+                name: 'ETH / BTC Ratio (Alt-Season)',
+                blurb: 'Ether priced in bitcoin — rising = capital rotating into alts (“alt season”); falling = BTC leadership.',
+                widget: chart('BINANCE:ETHBTC'),
+            },
+            {
+                num: 61,
+                name: 'BTC Dominance',
+                blurb: 'Bitcoin’s share of total crypto market cap — high/rising = risk-off within crypto; falling = alt appetite.',
+                widget: tvChart('CRYPTOCAP:BTC.D'),
+            },
+            {
+                num: 62,
+                name: 'Total Crypto Market Cap',
+                blurb: 'Aggregate value of all crypto — the asset class’s overall risk-on/off tide.',
+                widget: tvChart('CRYPTOCAP:TOTAL'),
+            },
+        ],
+    },
 ];
