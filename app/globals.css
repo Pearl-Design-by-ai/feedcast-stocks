@@ -113,20 +113,32 @@
 }
 
 /* === CUSTOM COLOR THEME === */
+/* Aligned to the main Feedcast app (www.feedcast.news) so Feedcast Markets
+   reads as the same product: neutral dark surfaces on a #1A1A1A background
+   with the gold #C8A44E accent. The teal-* scale is repurposed as the accent
+   ramp (kept named `teal` so the ~20 components referencing it pick up the
+   gold without per-file edits); green/red stay reserved for price up/down. */
 @theme {
-    /* Extended Gray Scale */
-    --color-gray-900: #050505;
-    --color-gray-800: #141414;
-    --color-gray-700: #212328;
-    --color-gray-600: #30333A;
-    --color-gray-500: #9095A1;
-    --color-gray-400: #CCDADC;
+    /* Dark surface ramp — mirrors Feedcast's dark tokens
+       (--background #1A1A1A, --card #242424, --card-hover #2A2A2A,
+        --border #333, --muted #B5B5B5, --foreground #E8E8E8) */
+    --color-gray-900: #1A1A1A; /* page background (body) */
+    --color-gray-800: #242424; /* header / cards / elevated surfaces */
+    --color-gray-700: #2A2A2A; /* raised rows, table headers */
+    --color-gray-600: #333333; /* borders, dividers */
+    --color-gray-500: #B5B5B5; /* secondary / muted text */
+    --color-gray-400: #E8E8E8; /* primary text */
+
+    /* Accent — Feedcast gold (--accent #C8A44E / --accent-hover #B8943E) */
+    --color-teal-300: #D8BC6E;
+    --color-teal-400: #C8A44E;
+    --color-teal-500: #C8A44E;
+    --color-teal-600: #B8943E;
 
     /* Vibrant Colors */
     --color-blue-600: #5862FF;
     --color-yellow-400: #FDD458;
     --color-yellow-500: #E8BA40;
-    --color-teal-400: #0FEDBE;
     --color-red-500: #FF495B;
     --color-orange-500: #FF8243;
     --color-purple-500: #D13BFF;
@@ -391,30 +403,30 @@
 /* TradingView Advanced Chart Widget Styles */
 .tradingview-widget-container {
     position: relative;
-    background-color: #141414 !important;
+    background-color: #1A1A1A !important;
     border-radius: 8px !important;
     overflow: hidden !important;
 }
 
 .tv-embed-widget-wrapper__body {
-    background-color: #141414 !important;
+    background-color: #1A1A1A !important;
 }
 
 .tradingview-widget-container__widget {
-    background-color: #141414 !important;
+    background-color: #1A1A1A !important;
     height: 100% !important;
 
 }
 
 .widget-stock-heatmap-container .screenerMapWrapper-BBVfGP0b {
     overflow: hidden !important;
-    background: #141414 !important;
-    background-color: #141414 !important;
+    background: #1A1A1A !important;
+    background-color: #1A1A1A !important;
 }
 
 .canvasContainer-tyaAU8aH {
-    background: #141414 !important;
-    background-color: #141414 !important;
+    background: #1A1A1A !important;
+    background-color: #1A1A1A !important;
 }
 
 .tv-site-widget--bg_none {
@@ -441,17 +453,17 @@
 }
 
 .tv-embed-widget-wrapper .tv-embed-widget-wrapper__body {
-    background: #141414 !important;
-    background-color: #141414 !important;
+    background: #1A1A1A !important;
+    background-color: #1A1A1A !important;
 }
 
 .tradingview-widget-container iframe {
-    background-color: #141414 !important;
+    background-color: #1A1A1A !important;
     width: 100% !important;
 }
 
 .custom-chart.tradingview-widget-container iframe {
-    border: 1px solid #30333A;
+    border: 1px solid #333333;
     border-radius: 8px !important;
     overflow: hidden !important;
 }
@@ -477,11 +489,11 @@
 }
 
 .scrollbar-hide-default:hover {
-    scrollbar-color: #30333A transparent;
+    scrollbar-color: #333333 transparent;
 }
 
 .scrollbar-hide-default:hover::-webkit-scrollbar-thumb {
-    background-color: #30333A;
+    background-color: #333333;
 }
 
 .scrollbar-hide-default::-webkit-scrollbar-thumb:hover {
