@@ -1,6 +1,7 @@
 import TradingViewWidget from "@/components/TradingViewWidget";
 import WatchlistButton from "@/components/WatchlistButton";
 import StockSentimentCard from "@/components/stocks/StockSentimentCard";
+import DataDisclaimer from "@/components/DataDisclaimer";
 import {
     SYMBOL_INFO_WIDGET_CONFIG,
     CANDLE_CHART_WIDGET_CONFIG,
@@ -13,6 +14,7 @@ import {
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { isStockInWatchlist } from '@/lib/actions/watchlist.actions';
 import { getStockSentimentInsights } from '@/lib/actions/adanos.actions';
+import { getCompanyProfile } from '@/lib/actions/finnhub.actions';
 import { formatSymbolForTradingView } from '@/lib/utils';
 
 export default async function StockDetails({ params }: StockDetailsPageProps) {
@@ -25,13 +27,16 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
         data: { user },
     } = await supabase.auth.getUser();
     const userId = user?.id;
-    const [isInWatchlist, sentimentInsights] = await Promise.all([
+    const [isInWatchlist, sentimentInsights, profile] = await Promise.all([
         userId ? isStockInWatchlist(userId, symbol) : Promise.resolve(false),
         getStockSentimentInsights(symbol),
+        getCompanyProfile(symbol),
     ]);
+    const companyName = profile?.name || symbol.toUpperCase();
 
     return (
-        <div className="flex min-h-screen p-4 md:p-6 lg:p-8">
+        <div className="flex flex-col min-h-screen p-4 md:p-6 lg:p-8">
+            <DataDisclaimer className="mb-6 w-fit" />
             <section className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
                 {/* Left column */}
                 <div className="flex flex-col gap-6">
@@ -63,7 +68,7 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
                     <div className="flex items-center justify-between">
                         <WatchlistButton
                             symbol={symbol.toUpperCase()}
-                            company={symbol.toUpperCase()}
+                            company={companyName}
                             isInWatchlist={isInWatchlist}
                             userId={userId}
                         />

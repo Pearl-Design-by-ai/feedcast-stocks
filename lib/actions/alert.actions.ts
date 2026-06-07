@@ -9,6 +9,7 @@ export type AlertRow = {
     id: number;
     user_id: string;
     symbol: string;
+    name: string | null;
     target_price: number;
     condition: 'ABOVE' | 'BELOW';
     active: boolean;
@@ -28,6 +29,7 @@ function mapAlert(row: AlertRow) {
         id: row.id,
         userId: row.user_id,
         symbol: row.symbol,
+        name: row.name,
         targetPrice: row.target_price,
         condition: row.condition,
         active: row.active,
@@ -44,14 +46,17 @@ export async function createAlert(params: {
     symbol: string;
     targetPrice: number;
     condition: 'ABOVE' | 'BELOW';
+    name?: string;
 }) {
     try {
         const supabase = await getSupabaseServerClient();
+        const trimmedName = params.name?.trim();
         const { data, error } = await supabase
             .from(TABLE)
             .insert({
                 user_id: params.userId,
                 symbol: params.symbol.toUpperCase(),
+                name: trimmedName ? trimmedName : null,
                 target_price: params.targetPrice,
                 condition: params.condition,
                 active: true,
@@ -111,7 +116,7 @@ export async function toggleAlert(alertId: string | number, active: boolean) {
         const supabase = await getSupabaseServerClient();
         const { error } = await supabase
             .from(TABLE)
-            .update({ active })
+            .update({ active, updated_at: new Date().toISOString() })
             .eq('id', alertId);
 
         if (error) throw error;
@@ -121,5 +126,33 @@ export async function toggleAlert(alertId: string | number, active: boolean) {
     } catch (error) {
         console.error('Error toggling alert:', error);
         throw new Error('Failed to update alert');
+    }
+}
+
+// Re-arm a triggered alert: clear `triggered`, re-activate it and push the
+// 90-day expiry window out from now so the cron picks it up again.
+export async function reactivateAlert(alertId: string | number) {
+    try {
+        const supabase = await getSupabaseServerClient();
+        const { data, error } = await supabase
+            .from(TABLE)
+            .update({
+                triggered: false,
+                active: true,
+                notified_at: null,
+                expires_at: defaultExpiry(),
+                updated_at: new Date().toISOString(),
+            })
+            .eq('id', alertId)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        revalidatePath('/watchlist');
+        return mapAlert(data as AlertRow);
+    } catch (error) {
+        console.error('Error reactivating alert:', error);
+        throw new Error('Failed to reactivate alert');
     }
 }

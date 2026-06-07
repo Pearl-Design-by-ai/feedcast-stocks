@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import WatchlistStockChip from './WatchlistStockChip';
-import TradingViewWatchlist from './TradingViewWatchlist';
+import WatchlistTable from './WatchlistTable';
 import { Button } from '@/components/ui/button';
 import { ArrowDownAZ, ArrowUpZA, ArrowUpDown } from 'lucide-react';
+import type { WatchlistStockData } from '@/lib/actions/finnhub.actions';
 
 interface WatchlistItem {
     id?: number;
@@ -16,10 +18,21 @@ interface WatchlistItem {
 
 interface WatchlistManagerProps {
     initialItems: WatchlistItem[];
+    initialData: WatchlistStockData[];
     userId: string;
 }
 
-export default function WatchlistManager({ initialItems, userId }: WatchlistManagerProps) {
+function sortBySymbol<T extends { symbol: string }>(list: T[], order: 'asc' | 'desc' | null): T[] {
+    if (!order) return list;
+    return [...list].sort((a, b) =>
+        order === 'asc'
+            ? a.symbol.localeCompare(b.symbol)
+            : b.symbol.localeCompare(a.symbol)
+    );
+}
+
+export default function WatchlistManager({ initialItems, initialData, userId }: WatchlistManagerProps) {
+    const router = useRouter();
     // Sort state: 'asc' (A-Z), 'desc' (Z-A), or null (added order/default)
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
 
@@ -29,17 +42,14 @@ export default function WatchlistManager({ initialItems, userId }: WatchlistMana
         else setSortOrder(null);
     };
 
-    const sortedItems = useMemo(() => {
-        if (!sortOrder) return initialItems;
-
-        return [...initialItems].sort((a, b) => {
-            if (sortOrder === 'asc') {
-                return a.symbol.localeCompare(b.symbol);
-            } else {
-                return b.symbol.localeCompare(a.symbol);
-            }
-        });
-    }, [initialItems, sortOrder]);
+    const sortedItems = useMemo(
+        () => sortBySymbol(initialItems, sortOrder),
+        [initialItems, sortOrder]
+    );
+    const sortedData = useMemo(
+        () => sortBySymbol(initialData, sortOrder),
+        [initialData, sortOrder]
+    );
 
     const watchlistSymbols = sortedItems.map((item) => item.symbol);
 
@@ -94,9 +104,7 @@ export default function WatchlistManager({ initialItems, userId }: WatchlistMana
                 )}
             </div>
 
-            <div className="min-h-[550px]">
-                <TradingViewWatchlist symbols={watchlistSymbols} />
-            </div>
+            <WatchlistTable data={sortedData} userId={userId} onRefresh={() => router.refresh()} />
         </div>
     );
 }

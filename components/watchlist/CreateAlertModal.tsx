@@ -49,15 +49,22 @@ export default function CreateAlertModal({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        const parsedPrice = parseFloat(targetPrice);
+        if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
+            toast.error("Enter a valid target price greater than 0");
+            return;
+        }
         setLoading(true);
         try {
             await createAlert({
                 userId,
                 symbol,
-                targetPrice: parseFloat(targetPrice),
+                targetPrice: parsedPrice,
                 condition,
+                name: alertName,
             });
             toast.success("Alert created successfully");
+            setAlertName("");
             setOpen?.(false);
             if (onAlertCreated) onAlertCreated();
         } catch (error) {
@@ -81,13 +88,14 @@ export default function CreateAlertModal({
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-5 py-2 relative z-10">
 
-                    {/* Alert Name */}
+                    {/* Alert Name (optional) */}
                     <div className="grid gap-2">
-                        <Label className="text-gray-400 text-sm font-medium">Alert Name</Label>
+                        <Label className="text-gray-400 text-sm font-medium">Alert name <span className="text-gray-600">(optional)</span></Label>
                         <Input
                             value={alertName}
                             onChange={(e) => setAlertName(e.target.value)}
-                            placeholder="e.g. Apple at Discount"
+                            placeholder="e.g. Apple at a discount"
+                            maxLength={80}
                             className="bg-gray-900 border-gray-700 text-white placeholder:text-gray-600 focus:border-yellow-500 focus:ring-yellow-500/20 transition-all rounded-md h-10"
                         />
                     </div>
@@ -120,7 +128,7 @@ export default function CreateAlertModal({
                     {/* Condition */}
                     <div className="grid gap-2">
                         <Label className="text-gray-400 text-sm font-medium">Condition</Label>
-                        <Select value={condition} onValueChange={(val: any) => setCondition(val)}>
+                        <Select value={condition} onValueChange={(val) => setCondition(val as "ABOVE" | "BELOW")}>
                             <SelectTrigger className="bg-[#1C1C1F] border-gray-800 text-gray-200 hover:border-gray-700 transition-colors">
                                 <SelectValue />
                             </SelectTrigger>

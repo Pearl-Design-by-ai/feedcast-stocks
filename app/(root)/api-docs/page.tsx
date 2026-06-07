@@ -214,8 +214,8 @@ function Badge({ children, color }: { children: React.ReactNode, color: 'green' 
   );
 }
 
-function JobCard({ icon, title, trigger, desc, color }: any) {
-  const colorClasses: any = {
+function JobCard({ icon, title, trigger, desc, color }: { icon: React.ReactNode; title: string; trigger: string; desc: string; color: string }) {
+  const colorClasses: Record<string, string> = {
     purple: 'text-purple-400 bg-purple-500/10 border-purple-500/20 hover:border-purple-500/40',
     teal: 'text-teal-400 bg-teal-500/10 border-teal-500/20 hover:border-teal-500/40',
     yellow: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20 hover:border-yellow-500/40',
@@ -232,7 +232,7 @@ function JobCard({ icon, title, trigger, desc, color }: any) {
   );
 }
 
-function StackItem({ title, desc, url }: any) {
+function StackItem({ title, desc, url }: { title: string; desc: string; url: string }) {
   return (
     <Link href={url} target="_blank" className="block group">
       <div className="bg-gray-800/40 hover:bg-gray-800 p-6 rounded-xl border border-gray-700 hover:border-gray-600 transition-all flex items-center justify-between">

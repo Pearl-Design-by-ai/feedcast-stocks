@@ -13,7 +13,7 @@ const Footer = () => {
                             <span className="text-lg font-semibold text-white">FeedCast <span className="text-teal-400">Stocks</span></span>
                         </Link>
                         <p className="text-gray-400 mb-6 max-w-md">
-                            FeedCast Stocks tracks real-time prices, sets personalized alerts, and surfaces detailed company insights — part of the FeedCast platform.
+                            FeedCast Stocks tracks the markets, sets personalized alerts, and surfaces detailed company insights — part of the FeedCast platform.
                         </p>
                         <div className="mb-8">
                             <Link href="/about" className="text-teal-400 hover:text-teal-300 font-medium inline-flex items-center gap-1 group">
@@ -62,6 +62,11 @@ const Footer = () => {
 
                 {/* Divider */}
                 <div className="border-t border-gray-800 mt-8 pt-8">
+                    {/* Delayed-data disclaimer — shown site-wide */}
+                    <p className="text-gray-500 text-xs mb-6 text-center md:text-left">
+                        Market data is delayed (typically ~15 minutes) and provided for
+                        informational purposes only — not real-time, and not financial advice.
+                    </p>
                     <div className="flex flex-col md:flex-row justify-between items-center">
                         {/* Copyright — AGPL-3.0; no "all rights reserved" */}
                         <div className="text-gray-400 text-sm mb-4 md:mb-0">

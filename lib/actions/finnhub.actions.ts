@@ -64,16 +64,67 @@ function getExchangeLabel(symbol: string, exchange?: string) {
     return FINNHUB_EXCHANGE_SUFFIXES.has(suffix) ? suffix : 'US';
 }
 
-export async function getQuote(symbol: string) {
-    try {
-        const token = FINNHUB_API_KEY;
-        const url = `${FINNHUB_BASE_URL}/quote?symbol=${encodeURIComponent(symbol)}&token=${token}`;
-        // No caching for real-time price
-        return await fetchJSON<FinnhubQuote>(url, 0);
-    } catch (e) {
-        console.error('Error fetching quote for', symbol, e);
-        return null;
+// ---------------------------------------------------------------------------
+// In-memory quote cache (per server isolate).
+//
+// Finnhub quotes are ~15-20 min delayed, so a short shared TTL is invisible to
+// users but collapses many concurrent watchlist polls into a single Finnhub
+// call per symbol per window — keeping us well under the 60 req/min free-tier
+// limit no matter how many users are polling. Cloudflare keeps Worker isolates
+// warm and reuses them across requests, so this cache is shared across the
+// requests an isolate serves. R2/ISR isn't relied on (it's intentionally off,
+// see open-next.config.ts). The alert cron uses its own uncached fetch, so
+// alert accuracy is never affected by this cache.
+// ---------------------------------------------------------------------------
+const QUOTE_CACHE_TTL_MS = 30_000;
+const quoteCache = new Map<string, { value: FinnhubQuote; expiresAt: number }>();
+const quoteInflight = new Map<string, Promise<FinnhubQuote | null>>();
+
+function readQuoteCache(key: string): FinnhubQuote | undefined {
+    const hit = quoteCache.get(key);
+    if (hit && hit.expiresAt > Date.now()) return hit.value;
+    if (hit) quoteCache.delete(key);
+    return undefined;
+}
+
+function writeQuoteCache(key: string, value: FinnhubQuote) {
+    // Bound memory: sweep expired entries if the map grows unexpectedly large.
+    if (quoteCache.size > 2000) {
+        const now = Date.now();
+        for (const [k, v] of quoteCache) {
+            if (v.expiresAt <= now) quoteCache.delete(k);
+        }
     }
+    quoteCache.set(key, { value, expiresAt: Date.now() + QUOTE_CACHE_TTL_MS });
+}
+
+export async function getQuote(symbol: string): Promise<FinnhubQuote | null> {
+    const key = symbol.toUpperCase();
+
+    const cached = readQuoteCache(key);
+    if (cached) return cached;
+
+    // Collapse simultaneous requests for the same symbol into one fetch.
+    const existing = quoteInflight.get(key);
+    if (existing) return existing;
+
+    const fetchPromise = (async () => {
+        try {
+            const token = FINNHUB_API_KEY;
+            const url = `${FINNHUB_BASE_URL}/quote?symbol=${encodeURIComponent(symbol)}&token=${token}`;
+            const quote = await fetchJSON<FinnhubQuote>(url, 0);
+            if (quote) writeQuoteCache(key, quote);
+            return quote;
+        } catch (e) {
+            console.error('Error fetching quote for', symbol, e);
+            return null;
+        } finally {
+            quoteInflight.delete(key);
+        }
+    })();
+
+    quoteInflight.set(key, fetchPromise);
+    return fetchPromise;
 }
 
 export async function getCompanyProfile(symbol: string) {
@@ -88,14 +139,48 @@ export async function getCompanyProfile(symbol: string) {
     }
 }
 
-export async function getWatchlistData(symbols: string[]) {
+type FinnhubMetricResponse = {
+    metric?: Record<string, number | null>;
+};
+
+// Trailing P/E from the `stock/metric` endpoint. Cached for an hour to keep
+// well under the Finnhub free-tier rate limit (fundamentals barely move
+// intraday). Returns null when unavailable.
+export async function getPeRatio(symbol: string): Promise<number | null> {
+    try {
+        const token = FINNHUB_API_KEY;
+        if (!token) return null;
+        const url = `${FINNHUB_BASE_URL}/stock/metric?symbol=${encodeURIComponent(symbol)}&metric=all&token=${token}`;
+        const data = await fetchJSON<FinnhubMetricResponse>(url, 3600);
+        const pe = data?.metric?.peTTM ?? data?.metric?.peBasicExclExtraTTM ?? null;
+        return typeof pe === 'number' && Number.isFinite(pe) ? pe : null;
+    } catch (e) {
+        console.error('Error fetching P/E for', symbol, e);
+        return null;
+    }
+}
+
+export type WatchlistStockData = {
+    symbol: string;
+    price: number;
+    change: number;
+    changePercent: number;
+    currency: string;
+    name: string;
+    logo?: string;
+    marketCap?: number;
+    peRatio: number | null;
+};
+
+export async function getWatchlistData(symbols: string[]): Promise<WatchlistStockData[]> {
     if (!symbols || symbols.length === 0) return [];
 
-    // Fetch quotes and profiles in parallel
+    // Fetch quote, profile and fundamentals in parallel per symbol.
     const promises = symbols.map(async (sym) => {
-        const [quote, profile] = await Promise.all([
+        const [quote, profile, peRatio] = await Promise.all([
             getQuote(sym),
-            getCompanyProfile(sym)
+            getCompanyProfile(sym),
+            getPeRatio(sym),
         ]);
 
         return {
@@ -107,11 +192,32 @@ export async function getWatchlistData(symbols: string[]) {
             name: profile?.name || sym,
             logo: profile?.logo,
             marketCap: profile?.marketCapitalization,
-            peRatio: 0 // Finnhub 'quote' and 'profile2' don't easily give real-time PE. Might need 'metric' endpoint, but skipping for now to save rate limits.
+            peRatio,
         };
     });
 
     return await Promise.all(promises);
+}
+
+// Lightweight quote-only refresh for client polling — one Finnhub call per
+// symbol instead of the three `getWatchlistData` makes. Profiles and P/E
+// don't change intraday, so polling only needs fresh prices.
+export async function getWatchlistQuotes(
+    symbols: string[]
+): Promise<{ symbol: string; price: number; change: number; changePercent: number }[]> {
+    if (!symbols || symbols.length === 0) return [];
+
+    return Promise.all(
+        symbols.map(async (sym) => {
+            const quote = await getQuote(sym);
+            return {
+                symbol: sym,
+                price: quote?.c || 0,
+                change: quote?.d || 0,
+                changePercent: quote?.dp || 0,
+            };
+        })
+    );
 }
 
 
