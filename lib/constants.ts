@@ -3,6 +3,7 @@ export const NAV_ITEMS = [
     { href: '/search', label: 'Search' },
     { href: '/watchlist', label: 'Watchlist' },
     { href: '/market-indicators', label: 'Indicators' },
+    { href: '/currency', label: 'Currency' },
 ];
 
 // TradingView Charts
@@ -264,6 +265,44 @@ export const COMPANY_FINANCIALS_WIDGET_CONFIG = (symbol: string) => ({
     height: 464,
     displayMode: 'regular',
     largeChartUrl: '',
+});
+
+// --- Currency / Forex page widgets ---------------------------------------
+
+const FOREX_CURRENCIES = ['EUR', 'USD', 'JPY', 'GBP', 'CHF', 'AUD', 'CAD', 'NZD', 'CNY'];
+
+export const FOREX_HEATMAP_WIDGET_CONFIG = {
+    colorTheme: 'dark',
+    isTransparent: true,
+    locale: 'en',
+    currencies: FOREX_CURRENCIES,
+    backgroundColor: '#141414',
+    width: '100%',
+    height: 400,
+};
+
+export const FOREX_CROSS_RATES_WIDGET_CONFIG = {
+    colorTheme: 'dark',
+    isTransparent: true,
+    locale: 'en',
+    currencies: FOREX_CURRENCIES,
+    backgroundColor: '#141414',
+    width: '100%',
+    height: 400,
+};
+
+// Compact price line for a single FX pair.
+export const MINI_SYMBOL_WIDGET_CONFIG = (symbol: string) => ({
+    symbol,
+    width: '100%',
+    height: 180,
+    locale: 'en',
+    dateRange: '12M',
+    colorTheme: 'dark',
+    isTransparent: true,
+    autosize: false,
+    largeChartUrl: '',
+    chartOnly: false,
 });
 
 export const POPULAR_STOCK_SYMBOLS = [
