@@ -85,32 +85,34 @@ export default function AskMarkets() {
                 <div ref={endRef} />
             </div>
 
-            <form
-                onSubmit={(e) => {
-                    e.preventDefault();
-                    send(input);
-                }}
-                className="flex gap-2"
-            >
-                <input
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    placeholder="Ask about the market…"
-                    aria-label="Ask about the market"
-                    className="h-11 flex-1 rounded-lg border border-gray-700 bg-gray-800 px-3 text-sm text-gray-100 placeholder:text-gray-500 focus:border-teal-500 focus:outline-none"
-                />
-                <button
-                    type="submit"
-                    disabled={loading}
-                    className="inline-flex h-11 items-center gap-2 rounded-lg bg-teal-500 px-4 text-sm font-semibold text-gray-900 transition-colors hover:bg-teal-400 disabled:opacity-50"
+            <div className="sticky bottom-0 z-10 -mx-4 flex flex-col gap-2 border-t border-gray-800 bg-gray-950/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur supports-[backdrop-filter]:bg-gray-950/80 md:static md:mx-0 md:border-0 md:bg-transparent md:px-0 md:pb-0 md:pt-0 md:backdrop-blur-none">
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        send(input);
+                    }}
+                    className="flex gap-2"
                 >
-                    <Send className="h-4 w-4" />
-                </button>
-            </form>
+                    <input
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        placeholder="Ask about the market…"
+                        aria-label="Ask about the market"
+                        className="h-11 flex-1 rounded-lg border border-gray-700 bg-gray-800 px-3 text-sm text-gray-100 placeholder:text-gray-500 focus:border-teal-500 focus:outline-none"
+                    />
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="inline-flex h-11 items-center gap-2 rounded-lg bg-teal-500 px-4 text-sm font-semibold text-gray-900 transition-colors hover:bg-teal-400 disabled:opacity-50"
+                    >
+                        <Send className="h-4 w-4" />
+                    </button>
+                </form>
 
-            <p className="text-[11px] text-gray-600">
-                Answers use live market context &amp; headlines — informational only, not advice.
-            </p>
+                <p className="text-[11px] text-gray-600">
+                    Answers use live market context &amp; headlines — informational only, not advice.
+                </p>
+            </div>
         </div>
     );
 }
