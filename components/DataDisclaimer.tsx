@@ -13,7 +13,7 @@ export default function DataDisclaimer({ className = "" }: { className?: string 
         >
             <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-yellow-400/80" aria-hidden="true" />
             <span>
-                Prices are <strong>delayed by ~15 minutes</strong> and shown for
+                Prices are <strong>delayed</strong> and shown for
                 informational purposes only — not real-time, and not investment advice.
             </span>
         </div>
