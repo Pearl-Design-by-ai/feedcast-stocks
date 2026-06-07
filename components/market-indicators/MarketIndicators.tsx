@@ -1,66 +1,73 @@
 'use client';
 
 import { useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { INDICATOR_CATEGORIES } from '@/lib/market-indicators';
 import IndicatorCard from '@/components/market-indicators/IndicatorCard';
 import { cn } from '@/lib/utils';
 
 /**
- * Market Indicators section — 40 indicators across seven categories, rendered
- * as TradingView charts. Categories are tabbed so only the active group's
- * widgets are in the DOM at a time (cards within a tab lazy-load on scroll).
+ * Market Indicators — 40 indicators across seven categories, presented as a
+ * collapsible accordion. Tapping a category header expands its indicators below
+ * it (one open at a time), which is easier to navigate on mobile and keeps only
+ * the open category's charts mounted (cards also lazy-load on scroll).
  */
 export default function MarketIndicators() {
-    const [activeId, setActiveId] = useState(INDICATOR_CATEGORIES[0].id);
-    const active =
-        INDICATOR_CATEGORIES.find((c) => c.id === activeId) ?? INDICATOR_CATEGORIES[0];
+    const [openId, setOpenId] = useState<string>(INDICATOR_CATEGORIES[0].id);
 
     return (
-        <div className="flex w-full flex-col gap-6">
-            {/* Category tabs */}
-            <nav
-                className="flex flex-wrap gap-2 border-b border-gray-800 pb-3"
-                aria-label="Indicator categories"
-            >
-                {INDICATOR_CATEGORIES.map((cat) => {
-                    const isActive = cat.id === active.id;
-                    return (
+        <div className="flex w-full flex-col gap-3">
+            {INDICATOR_CATEGORIES.map((cat) => {
+                const isOpen = openId === cat.id;
+                const panelId = `indicator-panel-${cat.id}`;
+
+                return (
+                    <div
+                        key={cat.id}
+                        className="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/30"
+                    >
                         <button
-                            key={cat.id}
                             type="button"
-                            onClick={() => setActiveId(cat.id)}
-                            aria-pressed={isActive}
-                            className={cn(
-                                'rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
-                                isActive
-                                    ? 'bg-teal-500/15 text-teal-300'
-                                    : 'text-gray-400 hover:bg-gray-800/60 hover:text-gray-200'
-                            )}
+                            onClick={() => setOpenId(isOpen ? '' : cat.id)}
+                            aria-expanded={isOpen}
+                            aria-controls={panelId}
+                            className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left transition-colors hover:bg-gray-800/50"
                         >
-                            {cat.label}
-                            <span className="ml-1.5 text-xs text-gray-500">
-                                {cat.indicators.length}
+                            <span className="flex flex-col gap-0.5">
+                                <span className="flex items-center gap-2">
+                                    <span className="text-lg font-semibold text-gray-100">
+                                        {cat.label}
+                                    </span>
+                                    <span className="rounded-full bg-gray-800 px-2 py-0.5 text-xs text-gray-400">
+                                        {cat.indicators.length}
+                                    </span>
+                                </span>
+                                <span className="text-sm text-gray-500">{cat.blurb}</span>
                             </span>
+                            <ChevronDown
+                                className={cn(
+                                    'h-5 w-5 shrink-0 text-gray-400 transition-transform duration-200',
+                                    isOpen && 'rotate-180'
+                                )}
+                            />
                         </button>
-                    );
-                })}
-            </nav>
 
-            {/* Active category */}
-            <div className="flex flex-col gap-1">
-                <h2 className="text-xl font-semibold text-gray-100">{active.label}</h2>
-                <p className="text-sm text-gray-400">{active.blurb}</p>
-            </div>
-
-            <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-                {active.indicators.map((indicator) => (
-                    <IndicatorCard
-                        key={indicator.num}
-                        indicator={indicator}
-                        category={active.label}
-                    />
-                ))}
-            </div>
+                        {isOpen && (
+                            <div id={panelId} className="border-t border-gray-800 p-4">
+                                <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                                    {cat.indicators.map((indicator) => (
+                                        <IndicatorCard
+                                            key={indicator.num}
+                                            indicator={indicator}
+                                            category={cat.label}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            })}
         </div>
     );
 }
