@@ -1,6 +1,7 @@
 import TradingViewWidget from "@/components/TradingViewWidget";
 import WatchlistButton from "@/components/WatchlistButton";
 import StockSentimentCard from "@/components/stocks/StockSentimentCard";
+import DataDisclaimer from "@/components/DataDisclaimer";
 import {
     SYMBOL_INFO_WIDGET_CONFIG,
     CANDLE_CHART_WIDGET_CONFIG,
@@ -34,7 +35,8 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
     const companyName = profile?.name || symbol.toUpperCase();
 
     return (
-        <div className="flex min-h-screen p-4 md:p-6 lg:p-8">
+        <div className="flex flex-col min-h-screen p-4 md:p-6 lg:p-8">
+            <DataDisclaimer className="mb-6 w-fit" />
             <section className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
                 {/* Left column */}
                 <div className="flex flex-col gap-6">

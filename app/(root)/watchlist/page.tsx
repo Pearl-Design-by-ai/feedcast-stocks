@@ -8,6 +8,7 @@ import WatchlistManager from '@/components/watchlist/WatchlistManager';
 import AlertsPanel from '@/components/watchlist/AlertsPanel';
 import NewsGrid from '@/components/watchlist/NewsGrid';
 import SearchCommand from '@/components/SearchCommand';
+import DataDisclaimer from '@/components/DataDisclaimer';
 import { Loader2 } from 'lucide-react';
 
 export default async function WatchlistPage() {
@@ -52,6 +53,8 @@ export default async function WatchlistPage() {
                     <SearchCommand renderAs="button" label="Add Stock" initialStocks={[]} />
                 </div>
             </div>
+
+            <DataDisclaimer className="mb-6 max-w-2xl" />
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                 {/* Main Content - Watchlist Table */}
