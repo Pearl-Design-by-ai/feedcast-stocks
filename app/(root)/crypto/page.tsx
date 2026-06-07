@@ -75,7 +75,7 @@ export default async function CryptoPage() {
             {/* Coins */}
             <section className="flex flex-col gap-3">
                 <h2 className="text-xl font-semibold text-gray-100">Coins</h2>
-                <InstrumentAccordion groups={CRYPTO_GROUPS} />
+                <InstrumentAccordion groups={CRYPTO_GROUPS} category="Crypto" />
             </section>
         </div>
     );

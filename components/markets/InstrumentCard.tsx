@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import TradingViewWidget from '@/components/TradingViewWidget';
+import IndicatorExplainButton from '@/components/market-indicators/IndicatorExplainButton';
 import {
     MINI_SYMBOL_WIDGET_CONFIG,
     TECHNICAL_ANALYSIS_WIDGET_CONFIG,
@@ -21,10 +22,13 @@ export default function InstrumentCard({
     title,
     subtitle,
     symbol,
+    category,
 }: {
     title: string;
     subtitle?: string;
     symbol: string;
+    /** When set, shows the AI explainer button and tags the explanation. */
+    category?: string;
 }) {
     const ref = useRef<HTMLDivElement | null>(null);
     const [visible, setVisible] = useState(false);
@@ -47,9 +51,18 @@ export default function InstrumentCard({
 
     return (
         <div className="flex flex-col rounded-xl border border-gray-800 bg-gray-900/40 p-4">
-            <div className="mb-3 flex items-baseline justify-between gap-2">
+            <div className="mb-3 flex items-center justify-between gap-2">
                 <h3 className="text-base font-semibold text-gray-100">{title}</h3>
-                {subtitle && <span className="text-xs text-gray-500">{subtitle}</span>}
+                <div className="flex items-center gap-2">
+                    {subtitle && <span className="text-xs text-gray-500">{subtitle}</span>}
+                    {category && (
+                        <IndicatorExplainButton
+                            name={subtitle ? `${title} (${subtitle})` : title}
+                            blurb={title}
+                            category={category}
+                        />
+                    )}
+                </div>
             </div>
 
             <div ref={ref} style={{ minHeight: TOTAL }}>

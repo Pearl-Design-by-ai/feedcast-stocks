@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { WORLD_GROUPS } from '@/lib/world-indices';
-import WorldEtfCard from '@/components/world/WorldEtfCard';
+import InstrumentCard from '@/components/markets/InstrumentCard';
 import { cn } from '@/lib/utils';
 
 /**
@@ -58,7 +58,13 @@ export default function WorldEtfs() {
                             >
                                 <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
                                     {group.etfs.map((etf) => (
-                                        <WorldEtfCard key={etf.symbol} etf={etf} />
+                                        <InstrumentCard
+                                            key={etf.symbol}
+                                            title={etf.name}
+                                            subtitle={etf.code}
+                                            symbol={etf.symbol}
+                                            category="World Indices"
+                                        />
                                     ))}
                                 </div>
                             </div>

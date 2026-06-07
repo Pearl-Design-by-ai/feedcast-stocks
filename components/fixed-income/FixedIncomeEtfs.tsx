@@ -63,6 +63,7 @@ export default function FixedIncomeEtfs() {
                                             title={etf.name}
                                             subtitle={etf.code}
                                             symbol={etf.symbol}
+                                            category="Fixed Income"
                                         />
                                     ))}
                                 </div>
