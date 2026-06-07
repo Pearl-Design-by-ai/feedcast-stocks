@@ -64,16 +64,67 @@ function getExchangeLabel(symbol: string, exchange?: string) {
     return FINNHUB_EXCHANGE_SUFFIXES.has(suffix) ? suffix : 'US';
 }
 
-export async function getQuote(symbol: string) {
-    try {
-        const token = FINNHUB_API_KEY;
-        const url = `${FINNHUB_BASE_URL}/quote?symbol=${encodeURIComponent(symbol)}&token=${token}`;
-        // No caching for real-time price
-        return await fetchJSON<FinnhubQuote>(url, 0);
-    } catch (e) {
-        console.error('Error fetching quote for', symbol, e);
-        return null;
+// ---------------------------------------------------------------------------
+// In-memory quote cache (per server isolate).
+//
+// Finnhub quotes are ~15-20 min delayed, so a short shared TTL is invisible to
+// users but collapses many concurrent watchlist polls into a single Finnhub
+// call per symbol per window — keeping us well under the 60 req/min free-tier
+// limit no matter how many users are polling. Cloudflare keeps Worker isolates
+// warm and reuses them across requests, so this cache is shared across the
+// requests an isolate serves. R2/ISR isn't relied on (it's intentionally off,
+// see open-next.config.ts). The alert cron uses its own uncached fetch, so
+// alert accuracy is never affected by this cache.
+// ---------------------------------------------------------------------------
+const QUOTE_CACHE_TTL_MS = 30_000;
+const quoteCache = new Map<string, { value: FinnhubQuote; expiresAt: number }>();
+const quoteInflight = new Map<string, Promise<FinnhubQuote | null>>();
+
+function readQuoteCache(key: string): FinnhubQuote | undefined {
+    const hit = quoteCache.get(key);
+    if (hit && hit.expiresAt > Date.now()) return hit.value;
+    if (hit) quoteCache.delete(key);
+    return undefined;
+}
+
+function writeQuoteCache(key: string, value: FinnhubQuote) {
+    // Bound memory: sweep expired entries if the map grows unexpectedly large.
+    if (quoteCache.size > 2000) {
+        const now = Date.now();
+        for (const [k, v] of quoteCache) {
+            if (v.expiresAt <= now) quoteCache.delete(k);
+        }
     }
+    quoteCache.set(key, { value, expiresAt: Date.now() + QUOTE_CACHE_TTL_MS });
+}
+
+export async function getQuote(symbol: string): Promise<FinnhubQuote | null> {
+    const key = symbol.toUpperCase();
+
+    const cached = readQuoteCache(key);
+    if (cached) return cached;
+
+    // Collapse simultaneous requests for the same symbol into one fetch.
+    const existing = quoteInflight.get(key);
+    if (existing) return existing;
+
+    const fetchPromise = (async () => {
+        try {
+            const token = FINNHUB_API_KEY;
+            const url = `${FINNHUB_BASE_URL}/quote?symbol=${encodeURIComponent(symbol)}&token=${token}`;
+            const quote = await fetchJSON<FinnhubQuote>(url, 0);
+            if (quote) writeQuoteCache(key, quote);
+            return quote;
+        } catch (e) {
+            console.error('Error fetching quote for', symbol, e);
+            return null;
+        } finally {
+            quoteInflight.delete(key);
+        }
+    })();
+
+    quoteInflight.set(key, fetchPromise);
+    return fetchPromise;
 }
 
 export async function getCompanyProfile(symbol: string) {
