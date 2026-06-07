@@ -54,7 +54,11 @@ export default function MarketIndicators() {
 
             <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
                 {active.indicators.map((indicator) => (
-                    <IndicatorCard key={indicator.num} indicator={indicator} />
+                    <IndicatorCard
+                        key={indicator.num}
+                        indicator={indicator}
+                        category={active.label}
+                    />
                 ))}
             </div>
         </div>
