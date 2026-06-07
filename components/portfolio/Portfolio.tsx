@@ -1,8 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Trash2, RefreshCw } from 'lucide-react';
+import { Trash2, RefreshCw, Sparkles, Loader2 } from 'lucide-react';
 import { getWatchlistQuotes } from '@/lib/actions/finnhub.actions';
+import { getPortfolioXray } from '@/lib/actions/deepseek.actions';
 import { formatCurrency } from '@/lib/utils';
 
 interface Position {
@@ -23,6 +24,8 @@ export default function Portfolio() {
     const [prices, setPrices] = useState<Record<string, number>>({});
     const [loading, setLoading] = useState(false);
     const [form, setForm] = useState({ symbol: '', quantity: '', cost: '' });
+    const [xray, setXray] = useState<string[] | null>(null);
+    const [xrayLoading, setXrayLoading] = useState(false);
 
     useEffect(() => {
         try {
@@ -84,6 +87,22 @@ export default function Portfolio() {
         }
         persist(next);
         setForm({ symbol: '', quantity: '', cost: '' });
+    }
+
+    async function runXray() {
+        const valued = positions
+            .map((p) => ({ symbol: p.symbol, value: (prices[p.symbol] ?? 0) * p.quantity }))
+            .filter((h) => h.value > 0);
+        const total = valued.reduce((s, h) => s + h.value, 0);
+        if (!valued.length || total <= 0) return;
+        const holdings = valued.map((h) => ({ symbol: h.symbol, weight: (h.value / total) * 100 }));
+        setXrayLoading(true);
+        try {
+            const res = await getPortfolioXray(holdings);
+            setXray(res?.points ?? []);
+        } finally {
+            setXrayLoading(false);
+        }
     }
 
     const rows = positions.map((p) => {
@@ -237,6 +256,49 @@ export default function Portfolio() {
                     </p>
                 )}
             </div>
+
+            {/* AI X-ray */}
+            {rows.length > 0 && (
+                <div className="rounded-xl border border-gray-800 bg-gray-900/40 p-4">
+                    <div className="mb-3 flex items-center justify-between gap-2">
+                        <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-100">
+                            <Sparkles className="h-4 w-4 text-teal-400" /> AI Portfolio X-ray
+                        </h3>
+                        <button
+                            type="button"
+                            onClick={runXray}
+                            disabled={xrayLoading || totalValue <= 0}
+                            className="inline-flex items-center gap-1.5 rounded-md border border-teal-500/30 bg-teal-500/10 px-3 py-1.5 text-xs font-medium text-teal-300 hover:bg-teal-500/20 disabled:opacity-50"
+                        >
+                            {xrayLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                            {xrayLoading ? 'Analyzing…' : xray ? 'Re-run' : 'Run X-ray'}
+                        </button>
+                    </div>
+                    {xray ? (
+                        xray.length ? (
+                            <ul className="flex flex-col gap-2">
+                                {xray.map((p, i) => (
+                                    <li key={i} className="flex gap-2 text-sm leading-relaxed text-gray-300">
+                                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-teal-400/70" />
+                                        {p}
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="text-sm text-gray-500">Couldn’t analyze right now — try again.</p>
+                        )
+                    ) : (
+                        <p className="text-sm text-gray-500">
+                            Get an AI risk read on your holdings — concentration, tilts and what could hurt them.
+                        </p>
+                    )}
+                    {xray && xray.length > 0 && (
+                        <p className="mt-3 text-[11px] text-gray-600">
+                            AI-generated risk commentary — not investment advice.
+                        </p>
+                    )}
+                </div>
+            )}
         </div>
     );
 }

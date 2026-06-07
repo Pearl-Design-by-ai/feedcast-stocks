@@ -384,3 +384,89 @@ export async function getBullBear(symbol: string, name: string): Promise<BullBea
     bullBearCache.set(key, { at: Date.now(), data });
     return data;
 }
+
+// ── Portfolio X-ray & News impact ───────────────────────────────────────────
+
+export interface XrayHolding {
+    symbol: string;
+    weight: number; // percent of portfolio
+}
+
+/** AI risk analysis of a portfolio given holdings + weights. */
+export async function getPortfolioXray(holdings: XrayHolding[]): Promise<MarketBrief | null> {
+    const apiKey = (process.env.DEEPSEEK_API_KEY ?? '').trim();
+    if (!apiKey || !holdings.length) return null;
+
+    const list = holdings
+        .slice(0, 40)
+        .map((h) => `${h.symbol.toUpperCase()} ${h.weight.toFixed(1)}%`)
+        .join(', ');
+
+    const system =
+        'You are a portfolio risk analyst. Given holdings with weights, analyze the portfolio in ' +
+        '4-5 short, specific bullets: concentration, sector/factor tilt, diversification, and the ' +
+        'key risks (what scenarios would hurt it most). Be concrete, factual, no price targets and ' +
+        'no personalized advice. Respond ONLY as JSON: {"points": ["...", "..."]}';
+    const user = `Holdings (symbol weight): ${list}`;
+
+    const parsed = (await summariseHeadlines(apiKey, system, user, true)) as { points?: unknown } | null;
+    const points = Array.isArray(parsed?.points)
+        ? parsed!.points.map((p) => String(p)).filter(Boolean).slice(0, 6)
+        : [];
+    if (!points.length) return null;
+    return { points };
+}
+
+export interface NewsImpactItem {
+    headline: string;
+    symbol: string;
+    impact: 'positive' | 'negative' | 'neutral';
+}
+
+const newsImpactCache = new Map<string, { at: number; data: NewsImpactItem[] }>();
+
+/** Tag recent headlines with which watchlist symbol they hit and the direction. */
+export async function getNewsImpact(symbols: string[]): Promise<NewsImpactItem[] | null> {
+    const apiKey = (process.env.DEEPSEEK_API_KEY ?? '').trim();
+    if (!apiKey || !symbols.length) return null;
+
+    const upper = symbols.map((s) => s.toUpperCase());
+    const key = [...upper].sort().join(',');
+    const cached = newsImpactCache.get(key);
+    if (cached && Date.now() - cached.at < NEWS_BRIEF_TTL_MS) return cached.data;
+
+    const news = await getNews(symbols).catch(() => []);
+    if (!news?.length) return null;
+    const headlines = news.slice(0, 12).map((a) => `- ${a.headline}`).join('\n');
+
+    const system =
+        'For each headline, identify which ONE symbol from the provided list it most affects and the ' +
+        'likely direction for that stock: "positive", "negative" or "neutral". Only use symbols from ' +
+        'the list; skip headlines that do not clearly map to one. Respond ONLY as JSON: ' +
+        '{"items": [{"headline": "...", "symbol": "TICKER", "impact": "positive|negative|neutral"}]}';
+    const user = `Symbols: ${upper.join(', ')}\nHeadlines:\n${headlines}`;
+
+    const parsed = (await summariseHeadlines(apiKey, system, user, true)) as { items?: unknown } | null;
+    const allowed = new Set(upper);
+    const items: NewsImpactItem[] = Array.isArray(parsed?.items)
+        ? parsed!.items
+              .map((raw) => {
+                  const it = raw as { headline?: unknown; symbol?: unknown; impact?: unknown };
+                  const symbol = String(it.symbol ?? '').toUpperCase();
+                  const impact = String(it.impact ?? 'neutral');
+                  const headline = String(it.headline ?? '').trim();
+                  return { headline, symbol, impact } as NewsImpactItem;
+              })
+              .filter(
+                  (it) =>
+                      it.headline &&
+                      allowed.has(it.symbol) &&
+                      ['positive', 'negative', 'neutral'].includes(it.impact)
+              )
+              .slice(0, 12)
+        : [];
+    if (!items.length) return null;
+
+    newsImpactCache.set(key, { at: Date.now(), data: items });
+    return items;
+}
