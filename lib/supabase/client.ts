@@ -3,7 +3,7 @@
 /**
  * Browser Supabase client. Uses `@supabase/ssr`'s `createBrowserClient`
  * with cookie storage scoped to `.feedcast.news` so the auth session is
- * shared between `www.feedcast.news` and `stocks.feedcast.news`.
+ * shared between `www.feedcast.news` and `markets.feedcast.news`.
  */
 
 import { createBrowserClient } from '@supabase/ssr';

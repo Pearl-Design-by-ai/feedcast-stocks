@@ -5,7 +5,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 // Auth is handled by the main Feedcast app (SSO). Unauthenticated users
 // are bounced to the Feedcast sign-in.
-const SIGN_IN_URL = 'https://www.feedcast.news/?signin=stocks';
+const SIGN_IN_URL = 'https://www.feedcast.news/?signin=markets';
 
 const Layout = async ({ children }: { children: React.ReactNode }) => {
     const supabase = await getSupabaseServerClient();

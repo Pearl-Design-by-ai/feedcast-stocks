@@ -1,7 +1,7 @@
 /**
  * Cookie options for the Supabase auth session.
  *
- * Feedcast Stocks runs at `stocks.feedcast.news` and shares the Supabase
+ * Feedcast Markets runs at `markets.feedcast.news` and shares the Supabase
  * project with the main Feedcast app at `www.feedcast.news`. To make the
  * SSO session usable across both subdomains, the auth cookies are scoped
  * to the parent domain `.feedcast.news`.
