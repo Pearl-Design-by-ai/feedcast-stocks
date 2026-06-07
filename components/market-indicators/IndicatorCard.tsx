@@ -37,22 +37,27 @@ export default function IndicatorCard({ indicator }: { indicator: MarketIndicato
                     symbol={widget.symbol}
                     studies={widget.studies ?? []}
                     interval={widget.interval ?? 'D'}
+                    compareSymbols={widget.compareSymbols ?? []}
                 />
             ) : (
-                <ExternalCard source={widget.source} url={widget.url} />
+                <ExternalCard source={widget.source} url={widget.url} note={widget.note} />
             )}
         </div>
     );
 }
 
+type ChartWidget = Extract<MarketIndicator['widget'], { kind: 'chart' }>;
+
 function LazyChart({
     symbol,
     studies,
     interval,
+    compareSymbols,
 }: {
     symbol: string;
-    studies: NonNullable<Extract<MarketIndicator['widget'], { kind: 'chart' }>['studies']>;
+    studies: NonNullable<ChartWidget['studies']>;
     interval: string;
+    compareSymbols: NonNullable<ChartWidget['compareSymbols']>;
 }) {
     const ref = useRef<HTMLDivElement | null>(null);
     const [visible, setVisible] = useState(false);
@@ -79,7 +84,7 @@ function LazyChart({
             {visible ? (
                 <TradingViewWidget
                     scriptUrl={ADVANCED_CHART_SCRIPT}
-                    config={ADVANCED_CHART_WIDGET_CONFIG(symbol, studies, interval)}
+                    config={ADVANCED_CHART_WIDGET_CONFIG(symbol, studies, interval, compareSymbols)}
                     height={CHART_HEIGHT}
                     allowExpand
                 />
@@ -95,23 +100,35 @@ function LazyChart({
     );
 }
 
-function ExternalCard({ source, url }: { source: string; url: string }) {
+function ExternalCard({
+    source,
+    url,
+    note,
+}: {
+    source: string;
+    url: string;
+    note?: string;
+}) {
+    const isTradingView = source === 'TradingView';
+    const message =
+        note ??
+        (isTradingView
+            ? 'A market-internal feed that embedded charts can’t draw. Open the live chart on TradingView.'
+            : 'A survey index with no live chart feed. View the latest reading at the source.');
+
     return (
         <div
             className="mt-auto flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-gray-700 bg-gray-900/60 px-4 text-center"
             style={{ minHeight: CHART_HEIGHT }}
         >
-            <p className="max-w-xs text-sm text-gray-400">
-                A survey/proprietary index with no live chart feed. View the latest reading
-                directly at the source.
-            </p>
+            <p className="max-w-xs text-sm text-gray-400">{message}</p>
             <a
                 href={url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-2')}
             >
-                Open at {source}
+                {isTradingView ? 'Open on TradingView' : `Open at ${source}`}
                 <ExternalLink className="h-4 w-4" />
             </a>
         </div>

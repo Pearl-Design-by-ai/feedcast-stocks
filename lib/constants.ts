@@ -207,7 +207,8 @@ export const BASELINE_WIDGET_CONFIG = (symbol: string) => ({
 export const ADVANCED_CHART_WIDGET_CONFIG = (
     symbol: string,
     studies: Array<string | { id: string; inputs?: Record<string, unknown> }> = [],
-    interval: string = 'D'
+    interval: string = 'D',
+    compareSymbols: Array<{ symbol: string; position: string }> = []
 ) => ({
     allow_symbol_change: false,
     calendar: false,
@@ -228,6 +229,7 @@ export const ADVANCED_CHART_WIDGET_CONFIG = (
     gridColor: '#141414',
     withdateranges: false,
     studies,
+    compareSymbols,
     support_host: 'https://www.tradingview.com',
     width: '100%',
     height: 460,
