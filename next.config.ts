@@ -40,32 +40,6 @@ const nextConfig: NextConfig = {
     typescript: {
         ignoreBuildErrors: true,
     },
-    // Rebrand: the module moved from stocks.feedcast.news to
-    // markets.feedcast.news. Permanently redirect any leftover traffic on
-    // the legacy host to the same path on the canonical one. Done at the
-    // framework routing layer (OpenNext honours next.config redirects) — the
-    // `middleware/` folder is NOT a recognised Next middleware location, so
-    // a redirect placed there would never run.
-    async redirects() {
-        const legacyHost = [{ type: 'host' as const, value: 'stocks.feedcast.news' }];
-        return [
-            // Root needs its own rule: OpenNext fails to substitute an empty
-            // `:path*` into an absolute destination (it emits a literal
-            // `/:path*`), so the catch-all below would mangle the bare host.
-            {
-                source: '/',
-                has: legacyHost,
-                destination: 'https://markets.feedcast.news/',
-                permanent: true,
-            },
-            {
-                source: '/:path*',
-                has: legacyHost,
-                destination: 'https://markets.feedcast.news/:path*',
-                permanent: true,
-            },
-        ];
-    },
 };
 
 export default nextConfig;

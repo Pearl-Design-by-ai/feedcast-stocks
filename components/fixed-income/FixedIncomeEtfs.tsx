@@ -1,12 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { BOND_GROUPS } from '@/lib/fixed-income';
 import InstrumentCard from '@/components/markets/InstrumentCard';
-import { useHashAccordion } from '@/hooks/useHashAccordion';
 import { cn } from '@/lib/utils';
-
-const GROUP_IDS = BOND_GROUPS.map((g) => g.id);
 
 /**
  * Sector-grouped accordion of bond ETFs. One sector open at a time (Treasuries
@@ -14,7 +12,7 @@ const GROUP_IDS = BOND_GROUPS.map((g) => g.id);
  * scroll. Panels open with a soft fade/slide.
  */
 export default function FixedIncomeEtfs() {
-    const [openId, setOpenId] = useHashAccordion(GROUP_IDS, BOND_GROUPS[0].id);
+    const [openId, setOpenId] = useState<string>(BOND_GROUPS[0].id);
 
     return (
         <div className="flex w-full flex-col gap-3">
@@ -25,8 +23,7 @@ export default function FixedIncomeEtfs() {
                 return (
                     <div
                         key={group.id}
-                        id={group.id}
-                        className="scroll-mt-24 overflow-hidden rounded-xl border border-gray-800 bg-gray-900/30"
+                        className="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/30"
                     >
                         <button
                             type="button"

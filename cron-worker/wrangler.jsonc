@@ -9,6 +9,6 @@
     "crons": ["*/5 * * * *"]
   },
   "vars": {
-    "APP_URL": "https://markets.feedcast.news"
+    "APP_URL": "https://stocks.feedcast.news"
   }
 }

@@ -1,12 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { INDICATOR_CATEGORIES } from '@/lib/market-indicators';
 import IndicatorCard from '@/components/market-indicators/IndicatorCard';
-import { useHashAccordion } from '@/hooks/useHashAccordion';
 import { cn } from '@/lib/utils';
-
-const CATEGORY_IDS = INDICATOR_CATEGORIES.map((c) => c.id);
 
 /**
  * Market Indicators — 40 indicators across seven categories, presented as a
@@ -15,9 +13,8 @@ const CATEGORY_IDS = INDICATOR_CATEGORIES.map((c) => c.id);
  * the open category's charts mounted (cards also lazy-load on scroll).
  */
 export default function MarketIndicators() {
-    // Start fully collapsed; one category opens at a time. Synced to the URL
-    // hash so the left-rail sub-nav can deep-link to a category.
-    const [openId, setOpenId] = useHashAccordion(CATEGORY_IDS, '');
+    // Start fully collapsed; one category opens at a time.
+    const [openId, setOpenId] = useState<string>('');
 
     return (
         <div className="flex w-full flex-col gap-3">
@@ -28,8 +25,7 @@ export default function MarketIndicators() {
                 return (
                     <div
                         key={cat.id}
-                        id={cat.id}
-                        className="scroll-mt-24 overflow-hidden rounded-xl border border-gray-800 bg-gray-900/30"
+                        className="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/30"
                     >
                         <button
                             type="button"
