@@ -359,4 +359,115 @@ export const INDICATOR_CATEGORIES: IndicatorCategory[] = [
             },
         ],
     },
+    {
+        id: 'macro',
+        label: 'Macro & Cross-Asset',
+        blurb: 'The broader backdrop — currencies, commodities, bonds and risk leadership. (Live ETF proxies.)',
+        indicators: [
+            {
+                num: 41,
+                name: 'US Dollar Index',
+                blurb: 'Dollar strength (via UUP). A rising USD tightens global liquidity and often pressures risk assets.',
+                widget: chart('AMEX:UUP'),
+            },
+            {
+                num: 42,
+                name: 'Gold',
+                blurb: 'Gold (via GLD) — a haven and real-rates/inflation gauge; strength often signals caution or debasement fears.',
+                widget: chart('AMEX:GLD'),
+            },
+            {
+                num: 43,
+                name: 'Crude Oil (WTI)',
+                blurb: 'Oil (via USO) — growth and inflation pulse; sharp moves feed through to CPI and risk sentiment.',
+                widget: chart('AMEX:USO'),
+            },
+            {
+                num: 44,
+                name: 'Copper',
+                blurb: 'Copper (via CPER) — “Dr. Copper,” a real-economy demand barometer; strength = global growth.',
+                widget: chart('AMEX:CPER'),
+            },
+            {
+                num: 45,
+                name: 'Bitcoin',
+                blurb: 'Bitcoin (via the IBIT spot ETF) — a high-beta risk-appetite and liquidity proxy.',
+                widget: chart('NASDAQ:IBIT'),
+            },
+            {
+                num: 46,
+                name: '20Y+ Treasuries',
+                blurb: 'Long bonds (via TLT) — price moves inverse to long yields; rising TLT = falling rates / risk-off bid.',
+                widget: chart('NASDAQ:TLT'),
+            },
+            {
+                num: 47,
+                name: 'Small Caps (Russell 2000)',
+                blurb: 'Small caps (via IWM) — leadership vs large caps signals risk appetite and breadth of the cycle.',
+                widget: chart('AMEX:IWM'),
+            },
+            {
+                num: 48,
+                name: 'Semiconductors',
+                blurb: 'Chips (via SMH) — the cyclical heart of tech; often leads the broad market up and down.',
+                widget: chart('NASDAQ:SMH'),
+            },
+        ],
+    },
+    {
+        id: 'valuation',
+        label: 'Valuation',
+        blurb: 'How expensive the market is — context for long-run return expectations. (Open at source.)',
+        indicators: [
+            {
+                num: 49,
+                name: 'Buffett Indicator',
+                blurb: 'Total US market cap ÷ GDP — Buffett’s “best single measure” of overall valuation; high = stretched.',
+                widget: external(
+                    'Current Market Valuation',
+                    'https://www.currentmarketvaluation.com/models/buffett-indicator.php'
+                ),
+            },
+            {
+                num: 50,
+                name: 'Shiller CAPE (PE10)',
+                blurb: 'Cyclically-adjusted P/E (10-yr real earnings) — smooths the cycle; elevated CAPE = lower expected returns.',
+                widget: external('multpl.com', 'https://www.multpl.com/shiller-pe'),
+            },
+            {
+                num: 51,
+                name: 'S&P 500 P/E (TTM)',
+                blurb: 'Trailing price-to-earnings for the S&P 500 — the headline valuation multiple vs its history.',
+                widget: external('multpl.com', 'https://www.multpl.com/s-p-500-pe-ratio'),
+            },
+        ],
+    },
+    {
+        id: 'money',
+        label: 'Money & Liquidity',
+        blurb: 'Liquidity and leverage behind the market — fuel for (or drag on) risk assets.',
+        indicators: [
+            {
+                num: 52,
+                name: 'M2 Money Supply',
+                blurb: 'Broad money in the economy — expanding M2 adds liquidity that tends to lift asset prices; contraction tightens.',
+                widget: tvChart('FRED:M2SL'),
+            },
+            {
+                num: 53,
+                name: 'Margin Debt',
+                blurb: 'Borrowing against portfolios (FINRA) — rising leverage fuels rallies but amplifies drawdowns.',
+                widget: external(
+                    'FINRA',
+                    'https://www.finra.org/investors/learn-to-invest/advanced-investing/margin-statistics'
+                ),
+            },
+            {
+                num: 54,
+                name: 'Copper / Gold Ratio',
+                blurb: 'Copper vs gold — a growth-vs-fear gauge that tends to track bond yields and the economic cycle.',
+                widget: tvChart('AMEX:CPER/AMEX:GLD'),
+            },
+        ],
+    },
 ];
