@@ -64,7 +64,6 @@ export const CURRENCY_GROUPS: CurrencyGroup[] = [
             { code: 'USD/BRL', name: 'Brazilian Real', symbol: 'FX_IDC:USDBRL' },
             { code: 'USD/ZAR', name: 'South African Rand', symbol: 'FX:USDZAR' },
             { code: 'USD/TRY', name: 'Turkish Lira', symbol: 'FX_IDC:USDTRY' },
-            { code: 'USD/RUB', name: 'Russian Ruble', symbol: 'FX_IDC:USDRUB' },
         ],
     },
 ];
