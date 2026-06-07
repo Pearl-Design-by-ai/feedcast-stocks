@@ -1,6 +1,8 @@
 'use client';
 
-import { Menu, ArrowLeft } from "lucide-react";
+import { useState } from "react";
+import { usePathname } from "next/navigation";
+import { Menu, ArrowLeft, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import {
     DropdownMenu,
@@ -16,10 +18,15 @@ const ROW = "flex items-center rounded-md px-3 py-2.5 text-[15px] text-gray-200 
 
 /**
  * Primary navigation menu (all viewports): a left-opening hamburger panel,
- * styled to match the Feedcast Markets menu — a "Back to Feedcast" link at the
- * top, the main pages, then a "Markets" section.
+ * styled to match the Feedcast Markets menu — a "Back to Feedcast" link, the
+ * main pages, then an expandable "Markets" sub-menu.
  */
 const MobileNav = ({ initialStocks }: { initialStocks: StockWithWatchlistStatus[] }) => {
+    const pathname = usePathname();
+    const onMarketPage = MARKETS_NAV.items.some((item) => pathname.startsWith(item.href));
+    // Expand the Markets sub-menu by default when already on a market page.
+    const [marketsOpen, setMarketsOpen] = useState(onMarketPage);
+
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -61,15 +68,35 @@ const MobileNav = ({ initialStocks }: { initialStocks: StockWithWatchlistStatus[
                     )
                 })}
 
-                {/* Markets section */}
-                <div className="px-3 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-gray-500">
-                    {MARKETS_NAV.label}
-                </div>
-                {MARKETS_NAV.items.map(({ href, label }) => (
-                    <Link key={href} href={href} className={ROW}>
-                        {label}
-                    </Link>
-                ))}
+                {/* Markets — expandable sub-menu */}
+                <button
+                    type="button"
+                    onClick={() => setMarketsOpen((open) => !open)}
+                    aria-expanded={marketsOpen}
+                    className={`${ROW} w-full justify-between`}
+                >
+                    <span>{MARKETS_NAV.label}</span>
+                    <ChevronDown
+                        className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${marketsOpen ? 'rotate-180' : ''}`}
+                    />
+                </button>
+
+                {marketsOpen && (
+                    <div className="flex flex-col animate-in fade-in-0 slide-in-from-top-1 duration-200">
+                        {MARKETS_NAV.items.map(({ href, label }) => {
+                            const active = pathname.startsWith(href)
+                            return (
+                                <Link
+                                    key={href}
+                                    href={href}
+                                    className={`${ROW} py-2 pl-9 text-[14px] ${active ? 'text-teal-400' : 'text-gray-300'}`}
+                                >
+                                    {label}
+                                </Link>
+                            )
+                        })}
+                    </div>
+                )}
             </DropdownMenuContent>
         </DropdownMenu>
     );
