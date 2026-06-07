@@ -5,6 +5,7 @@ import { getUserWatchlist } from '@/lib/actions/watchlist.actions';
 import { getUserAlerts } from '@/lib/actions/alert.actions';
 import { getNews, getWatchlistData } from '@/lib/actions/finnhub.actions';
 import WatchlistManager from '@/components/watchlist/WatchlistManager';
+import WatchlistDigest from '@/components/watchlist/WatchlistDigest';
 import AlertsPanel from '@/components/watchlist/AlertsPanel';
 import NewsGrid from '@/components/watchlist/NewsGrid';
 import SearchCommand from '@/components/SearchCommand';
@@ -62,6 +63,10 @@ export default async function WatchlistPage() {
                     <div className="space-y-6">
                         <WatchlistManager initialItems={watchlistItems} initialData={stockData} userId={userId} />
                     </div>
+
+                    <Suspense fallback={null}>
+                        <WatchlistDigest symbols={watchlistSymbols} />
+                    </Suspense>
 
                     {/* News Section */}
                     <Suspense fallback={<div className="flex justify-center p-12"><Loader2 className="animate-spin text-gray-500" /></div>}>

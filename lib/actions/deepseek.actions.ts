@@ -236,3 +236,111 @@ export async function getMarketBrief(): Promise<MarketBrief | null> {
         return null;
     }
 }
+
+// ── AI company summary & watchlist digest ──────────────────────────────────
+
+const companyBriefCache = new Map<string, { at: number; text: string }>();
+const digestCache = new Map<string, { at: number; data: MarketBrief }>();
+const NEWS_BRIEF_TTL_MS = 30 * 60 * 1000;
+
+async function summariseHeadlines(
+    apiKey: string,
+    system: string,
+    user: string,
+    asPoints: boolean
+): Promise<unknown | null> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20_000);
+    try {
+        const res = await fetch(DEEPSEEK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+            body: JSON.stringify({
+                model: DEEPSEEK_MODEL,
+                messages: [
+                    { role: 'system', content: system },
+                    { role: 'user', content: user },
+                ],
+                response_format: { type: 'json_object' },
+                temperature: 0.3,
+                max_tokens: asPoints ? 400 : 300,
+                stream: false,
+            }),
+            signal: controller.signal,
+            cache: 'no-store',
+        });
+        if (!res.ok) return null;
+        const json = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
+        const content = (json.choices?.[0]?.message?.content ?? '').trim();
+        const cleaned = content.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+        return JSON.parse(cleaned);
+    } catch {
+        return null;
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
+export interface CompanyBrief {
+    text: string;
+}
+
+/** A 2-3 sentence plain-language company summary grounded in recent headlines. */
+export async function getCompanyBrief(symbol: string, name: string): Promise<CompanyBrief | null> {
+    const apiKey = (process.env.DEEPSEEK_API_KEY ?? '').trim();
+    if (!apiKey) return null;
+
+    const key = symbol.toUpperCase();
+    const cached = companyBriefCache.get(key);
+    if (cached && Date.now() - cached.at < NEWS_BRIEF_TTL_MS) return { text: cached.text };
+
+    const news = await getNews([symbol]).catch(() => []);
+    const headlines = (news ?? [])
+        .slice(0, 10)
+        .map((a) => `- ${a.headline}`)
+        .join('\n');
+
+    const system =
+        'You are a concise equity analyst. In 2-3 plain-language sentences, explain what the ' +
+        'company does and the current narrative around it. Use the headlines for the recent ' +
+        'narrative; do not invent prices/numbers and give no investment advice. Respond ONLY as ' +
+        'JSON: {"summary": "..."}';
+    const user = `Company: ${name} (${key}).${headlines ? `\nRecent headlines:\n${headlines}` : ''}`;
+
+    const parsed = (await summariseHeadlines(apiKey, system, user, false)) as { summary?: unknown } | null;
+    const text = parsed?.summary ? String(parsed.summary).trim() : '';
+    if (!text) return null;
+
+    companyBriefCache.set(key, { at: Date.now(), text });
+    return { text };
+}
+
+/** A short digest of what's happening across a set of watchlist symbols. */
+export async function getWatchlistDigest(symbols: string[]): Promise<MarketBrief | null> {
+    const apiKey = (process.env.DEEPSEEK_API_KEY ?? '').trim();
+    if (!apiKey || !symbols.length) return null;
+
+    const key = [...symbols].map((s) => s.toUpperCase()).sort().join(',');
+    const cached = digestCache.get(key);
+    if (cached && Date.now() - cached.at < NEWS_BRIEF_TTL_MS) return cached.data;
+
+    const news = await getNews(symbols).catch(() => []);
+    if (!news?.length) return null;
+    const headlines = news.slice(0, 16).map((a) => `- ${a.headline}`).join('\n');
+
+    const system =
+        'You are a concise markets editor. Based ONLY on these headlines about a user’s watchlist, ' +
+        'write 3-4 short, factual bullets on what’s happening across these names. No invented ' +
+        'numbers, no advice. Respond ONLY as JSON: {"points": ["...", "..."]}';
+    const user = `Watchlist: ${symbols.map((s) => s.toUpperCase()).join(', ')}\nHeadlines:\n${headlines}`;
+
+    const parsed = (await summariseHeadlines(apiKey, system, user, true)) as { points?: unknown } | null;
+    const points = Array.isArray(parsed?.points)
+        ? parsed!.points.map((p) => String(p)).filter(Boolean).slice(0, 5)
+        : [];
+    if (!points.length) return null;
+
+    const data: MarketBrief = { points };
+    digestCache.set(key, { at: Date.now(), data });
+    return data;
+}

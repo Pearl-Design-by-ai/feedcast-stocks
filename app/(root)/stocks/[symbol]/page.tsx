@@ -1,6 +1,9 @@
 import TradingViewWidget from "@/components/TradingViewWidget";
+import { Suspense } from "react";
 import WatchlistButton from "@/components/WatchlistButton";
 import StockSentimentCard from "@/components/stocks/StockSentimentCard";
+import AnalystRatings from "@/components/stocks/AnalystRatings";
+import CompanyBrief from "@/components/stocks/CompanyBrief";
 import DataDisclaimer from "@/components/DataDisclaimer";
 import {
     SYMBOL_INFO_WIDGET_CONFIG,
@@ -15,6 +18,7 @@ import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { isStockInWatchlist } from '@/lib/actions/watchlist.actions';
 import { getStockSentimentInsights } from '@/lib/actions/adanos.actions';
 import { getCompanyProfile } from '@/lib/actions/finnhub.actions';
+import { getRecommendationTrends } from '@/lib/actions/stock-insights.actions';
 import { formatSymbolForTradingView } from '@/lib/utils';
 
 export default async function StockDetails({ params }: StockDetailsPageProps) {
@@ -27,10 +31,11 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
         data: { user },
     } = await supabase.auth.getUser();
     const userId = user?.id;
-    const [isInWatchlist, sentimentInsights, profile] = await Promise.all([
+    const [isInWatchlist, sentimentInsights, profile, recommendationTrends] = await Promise.all([
         userId ? isStockInWatchlist(userId, symbol) : Promise.resolve(false),
         getStockSentimentInsights(symbol),
         getCompanyProfile(symbol),
+        getRecommendationTrends(symbol),
     ]);
     const companyName = profile?.name || symbol.toUpperCase();
 
@@ -73,6 +78,12 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
                             userId={userId}
                         />
                     </div>
+
+                    <Suspense fallback={null}>
+                        <CompanyBrief symbol={symbol.toUpperCase()} name={companyName} />
+                    </Suspense>
+
+                    <AnalystRatings trends={recommendationTrends} />
 
                     <StockSentimentCard insight={sentimentInsights} />
 
