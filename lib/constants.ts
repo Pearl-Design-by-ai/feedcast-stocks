@@ -9,6 +9,7 @@ export const NAV_ITEMS = [
 export const MARKETS_NAV = {
     label: 'Markets',
     items: [
+        { href: '/market-regime', label: 'Market Regime' },
         { href: '/market-indicators', label: 'Indicators' },
         { href: '/sectors', label: 'Sectors' },
         { href: '/world-indices', label: 'World Indices' },

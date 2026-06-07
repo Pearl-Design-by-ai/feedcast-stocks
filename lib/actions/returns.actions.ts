@@ -19,7 +19,9 @@ function stooqTicker(symbol: string): string {
     return (symbol.split(':').pop() ?? symbol).trim().toLowerCase();
 }
 
-async function fetchCloses(symbol: string): Promise<Array<{ date: string; close: number }>> {
+export async function fetchStooqCloses(
+    symbol: string
+): Promise<Array<{ date: string; close: number }>> {
     const url = `https://stooq.com/q/d/l/?s=${stooqTicker(symbol)}.us&i=d`;
     const res = await fetch(url, { next: { revalidate: 21600 } });
     if (!res.ok) return [];
@@ -45,7 +47,7 @@ export async function getReturns(symbols: string[]): Promise<SymbolReturns[]> {
     return Promise.all(
         symbols.map(async (symbol): Promise<SymbolReturns> => {
             try {
-                const closes = await fetchCloses(symbol);
+                const closes = await fetchStooqCloses(symbol);
                 if (closes.length < 2) return { symbol, w1: null, m1: null, m3: null, ytd: null, y1: null };
                 const n = closes.length;
                 const latest = closes[n - 1].close;
