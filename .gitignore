@@ -45,3 +45,7 @@ next-env.d.ts
 # OpenNext + Wrangler build outputs (Cloudflare)
 .open-next/
 .wrangler/
+
+# PRIVATE markets-engine — proprietary, MUST NOT land in this public AGPL repo.
+# Lives locally / in its own private repo. See markets-engine/README.md.
+/markets-engine/

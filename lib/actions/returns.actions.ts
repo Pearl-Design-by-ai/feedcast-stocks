@@ -1,9 +1,11 @@
 'use server';
 
 /**
- * Multi-period total-return approximations from Stooq's free EOD CSV. We strip
- * the exchange prefix and query `<ticker>.us`; returns are computed from close
- * prices. Cached 6h (EOD data). Best-effort — any failure yields nulls.
+ * Multi-period total-return approximations from Yahoo Finance's free chart API.
+ * (We used to read Stooq's CSV, but stooq.com now serves a JS proof-of-work
+ * anti-bot wall that server-side fetch can't clear.) We strip the exchange
+ * prefix, request 2y of adjusted daily closes, and compute returns from them.
+ * Cached 6h (EOD data). Best-effort — any failure yields nulls.
  */
 
 export interface SymbolReturns {
@@ -15,27 +17,45 @@ export interface SymbolReturns {
     y1: number | null;
 }
 
-function stooqTicker(symbol: string): string {
-    return (symbol.split(':').pop() ?? symbol).trim().toLowerCase();
+function tickerOf(symbol: string): string {
+    return (symbol.split(':').pop() ?? symbol).trim().toUpperCase();
 }
 
-export async function fetchStooqCloses(
+export async function fetchDailyCloses(
     symbol: string
 ): Promise<Array<{ date: string; close: number }>> {
-    const url = `https://stooq.com/q/d/l/?s=${stooqTicker(symbol)}.us&i=d`;
-    const res = await fetch(url, { next: { revalidate: 21600 } });
-    if (!res.ok) return [];
-    const text = await res.text();
-    const lines = text.trim().split('\n');
-    if (lines.length < 2) return [];
-    const out: Array<{ date: string; close: number }> = [];
-    for (let i = 1; i < lines.length; i++) {
-        const cols = lines[i].split(',');
-        const date = cols[0];
-        const close = parseFloat(cols[4]);
-        if (date && Number.isFinite(close)) out.push({ date, close });
+    const t = tickerOf(symbol);
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(t)}?range=2y&interval=1d`;
+    try {
+        const res = await fetch(url, {
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+            next: { revalidate: 21600 },
+        });
+        if (!res.ok) return [];
+        const json = (await res.json()) as {
+            chart?: {
+                result?: Array<{
+                    timestamp?: number[];
+                    indicators?: {
+                        quote?: Array<{ close?: Array<number | null> }>;
+                        adjclose?: Array<{ adjclose?: Array<number | null> }>;
+                    };
+                }>;
+            };
+        };
+        const r = json.chart?.result?.[0];
+        const ts = r?.timestamp ?? [];
+        const closes = r?.indicators?.adjclose?.[0]?.adjclose ?? r?.indicators?.quote?.[0]?.close ?? [];
+        const out: Array<{ date: string; close: number }> = [];
+        for (let i = 0; i < ts.length; i++) {
+            const c = closes[i];
+            if (c == null || !Number.isFinite(c)) continue;
+            out.push({ date: new Date(ts[i] * 1000).toISOString().slice(0, 10), close: c });
+        }
+        return out;
+    } catch {
+        return [];
     }
-    return out;
 }
 
 function pct(latest: number, past: number | undefined): number | null {
@@ -47,7 +67,7 @@ export async function getReturns(symbols: string[]): Promise<SymbolReturns[]> {
     return Promise.all(
         symbols.map(async (symbol): Promise<SymbolReturns> => {
             try {
-                const closes = await fetchStooqCloses(symbol);
+                const closes = await fetchDailyCloses(symbol);
                 if (closes.length < 2) return { symbol, w1: null, m1: null, m3: null, ytd: null, y1: null };
                 const n = closes.length;
                 const latest = closes[n - 1].close;
