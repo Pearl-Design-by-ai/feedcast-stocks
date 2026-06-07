@@ -4,6 +4,7 @@ export const NAV_ITEMS = [
     { href: '/watchlist', label: 'Watchlist' },
     { href: '/market-indicators', label: 'Indicators' },
     { href: '/currency', label: 'Currency' },
+    { href: '/world-indices', label: 'World' },
 ];
 
 // TradingView Charts
