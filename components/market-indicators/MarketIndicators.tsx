@@ -13,7 +13,8 @@ import { cn } from '@/lib/utils';
  * the open category's charts mounted (cards also lazy-load on scroll).
  */
 export default function MarketIndicators() {
-    const [openId, setOpenId] = useState<string>(INDICATOR_CATEGORIES[0].id);
+    // Start fully collapsed; one category opens at a time.
+    const [openId, setOpenId] = useState<string>('');
 
     return (
         <div className="flex w-full flex-col gap-3">
@@ -53,7 +54,10 @@ export default function MarketIndicators() {
                         </button>
 
                         {isOpen && (
-                            <div id={panelId} className="border-t border-gray-800 p-4">
+                            <div
+                                id={panelId}
+                                className="border-t border-gray-800 p-4 animate-in fade-in-0 slide-in-from-top-2 duration-300 ease-out"
+                            >
                                 <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
                                     {cat.indicators.map((indicator) => (
                                         <IndicatorCard
