@@ -121,7 +121,7 @@ function ExternalCard({
     const message =
         note ??
         (isTradingView
-            ? 'A market-internal feed that embedded charts can’t draw. Open the live chart on TradingView.'
+            ? 'A live index/market feed that embedded charts can’t draw. Open it on TradingView.'
             : 'A survey index with no live chart feed. View the latest reading at the source.');
 
     return (
