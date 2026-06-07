@@ -2,6 +2,7 @@ export const NAV_ITEMS = [
     { href: '/', label: 'Dashboard' },
     { href: '/search', label: 'Search' },
     { href: '/watchlist', label: 'Watchlist' },
+    { href: '/market-indicators', label: 'Indicators' },
 ];
 
 // TradingView Charts
@@ -197,6 +198,39 @@ export const BASELINE_WIDGET_CONFIG = (symbol: string) => ({
     studies: [],
     width: '100%',
     height: 600,
+});
+
+// Advanced Real-Time Chart — used by the Market Indicators section. Accepts an
+// arbitrary symbol (index, ratio, FRED/USI breadth series, etc.) plus a list of
+// built-in studies (RSI, MACD, Ichimoku, …). Studies may be plain ids or
+// { id, inputs } objects to override defaults (e.g. SMA length 200, RSI length 2).
+export const ADVANCED_CHART_WIDGET_CONFIG = (
+    symbol: string,
+    studies: Array<string | { id: string; inputs?: Record<string, unknown> }> = [],
+    interval: string = 'D'
+) => ({
+    allow_symbol_change: false,
+    calendar: false,
+    details: false,
+    hide_side_toolbar: true,
+    hide_top_toolbar: false,
+    hide_legend: false,
+    hide_volume: false,
+    hotlist: false,
+    interval,
+    locale: 'en',
+    save_image: false,
+    style: '2',
+    symbol,
+    theme: 'dark',
+    timezone: 'exchange',
+    backgroundColor: '#141414',
+    gridColor: '#141414',
+    withdateranges: false,
+    studies,
+    support_host: 'https://www.tradingview.com',
+    width: '100%',
+    height: 460,
 });
 
 export const TECHNICAL_ANALYSIS_WIDGET_CONFIG = (symbol: string) => ({
