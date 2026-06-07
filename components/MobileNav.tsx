@@ -15,9 +15,9 @@ const FEEDCAST_HOME = "https://www.feedcast.news/";
 const ROW = "flex items-center rounded-md px-3 py-2.5 text-[15px] text-gray-200 transition-colors hover:bg-gray-700/70 hover:text-teal-400";
 
 /**
- * Mobile hamburger menu, styled to match the Feedcast Markets menu: a "Back to
- * Feedcast" link at the top, the main pages, then a "Markets" section. On sm+
- * the inline header nav is used, so the trigger is hidden there.
+ * Primary navigation menu (all viewports): a left-opening hamburger panel,
+ * styled to match the Feedcast Markets menu — a "Back to Feedcast" link at the
+ * top, the main pages, then a "Markets" section.
  */
 const MobileNav = ({ initialStocks }: { initialStocks: StockWithWatchlistStatus[] }) => {
     return (
@@ -25,7 +25,7 @@ const MobileNav = ({ initialStocks }: { initialStocks: StockWithWatchlistStatus[
             <DropdownMenuTrigger asChild>
                 <Button
                     aria-label="Open navigation menu"
-                    className="sm:hidden size-9 bg-gray-800 hover:bg-gray-700 text-gray-400"
+                    className="size-9 bg-gray-800 hover:bg-gray-700 text-gray-400"
                 >
                     <Menu className="h-5 w-5" />
                 </Button>
