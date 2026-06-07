@@ -6,6 +6,7 @@ import TradingViewWidget from '@/components/TradingViewWidget';
 import { ADVANCED_CHART_WIDGET_CONFIG } from '@/lib/constants';
 import type { MarketIndicator } from '@/lib/market-indicators';
 import { buttonVariants } from '@/components/ui/button';
+import IndicatorExplainButton from '@/components/market-indicators/IndicatorExplainButton';
 import { cn } from '@/lib/utils';
 
 const ADVANCED_CHART_SCRIPT =
@@ -19,7 +20,13 @@ const CHART_HEIGHT = 460;
  * doesn't fire eight embed scripts at once. Survey indices with no TradingView
  * data render an info card linking out to the official source.
  */
-export default function IndicatorCard({ indicator }: { indicator: MarketIndicator }) {
+export default function IndicatorCard({
+    indicator,
+    category,
+}: {
+    indicator: MarketIndicator;
+    category?: string;
+}) {
     const { num, name, blurb, widget } = indicator;
 
     return (
@@ -28,7 +35,8 @@ export default function IndicatorCard({ indicator }: { indicator: MarketIndicato
                 <span className="mt-0.5 inline-flex h-6 min-w-6 items-center justify-center rounded-md bg-gray-800 px-1.5 text-xs font-semibold text-teal-400">
                     {num}
                 </span>
-                <h3 className="text-base font-semibold text-gray-100">{name}</h3>
+                <h3 className="flex-1 text-base font-semibold text-gray-100">{name}</h3>
+                <IndicatorExplainButton name={name} blurb={blurb} category={category} />
             </div>
             <p className="mb-3 text-sm leading-relaxed text-gray-400">{blurb}</p>
 
