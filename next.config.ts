@@ -47,10 +47,20 @@ const nextConfig: NextConfig = {
     // `middleware/` folder is NOT a recognised Next middleware location, so
     // a redirect placed there would never run.
     async redirects() {
+        const legacyHost = [{ type: 'host' as const, value: 'stocks.feedcast.news' }];
         return [
+            // Root needs its own rule: OpenNext fails to substitute an empty
+            // `:path*` into an absolute destination (it emits a literal
+            // `/:path*`), so the catch-all below would mangle the bare host.
+            {
+                source: '/',
+                has: legacyHost,
+                destination: 'https://markets.feedcast.news/',
+                permanent: true,
+            },
             {
                 source: '/:path*',
-                has: [{ type: 'host', value: 'stocks.feedcast.news' }],
+                has: legacyHost,
                 destination: 'https://markets.feedcast.news/:path*',
                 permanent: true,
             },
