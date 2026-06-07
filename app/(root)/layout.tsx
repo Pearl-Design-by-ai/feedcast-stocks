@@ -1,6 +1,6 @@
 import Header from "@/components/Header";
 import { redirect } from "next/navigation";
-import Footer from "@/components/Footer";
+import HomeOnlyFooter from "@/components/HomeOnlyFooter";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 // Auth is handled by the main Feedcast app (SSO). Unauthenticated users
@@ -34,7 +34,7 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
                 {children}
             </div>
 
-            <Footer />
+            <HomeOnlyFooter />
         </main>
     )
 }
