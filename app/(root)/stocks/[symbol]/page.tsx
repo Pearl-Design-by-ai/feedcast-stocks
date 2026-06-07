@@ -4,6 +4,7 @@ import WatchlistButton from "@/components/WatchlistButton";
 import StockSentimentCard from "@/components/stocks/StockSentimentCard";
 import AnalystRatings from "@/components/stocks/AnalystRatings";
 import CompanyBrief from "@/components/stocks/CompanyBrief";
+import BullBear from "@/components/stocks/BullBear";
 import DataDisclaimer from "@/components/DataDisclaimer";
 import {
     SYMBOL_INFO_WIDGET_CONFIG,
@@ -84,6 +85,8 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
                     </Suspense>
 
                     <AnalystRatings trends={recommendationTrends} />
+
+                    <BullBear symbol={symbol.toUpperCase()} name={companyName} />
 
                     <StockSentimentCard insight={sentimentInsights} />
 

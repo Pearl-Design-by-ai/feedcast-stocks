@@ -344,3 +344,43 @@ export async function getWatchlistDigest(symbols: string[]): Promise<MarketBrief
     digestCache.set(key, { at: Date.now(), data });
     return data;
 }
+
+// ── Bull vs Bear ────────────────────────────────────────────────────────────
+
+export interface BullBear {
+    bull: string[];
+    bear: string[];
+}
+
+const bullBearCache = new Map<string, { at: number; data: BullBear }>();
+
+/** The strongest bull and bear cases for a ticker, grounded in recent headlines. */
+export async function getBullBear(symbol: string, name: string): Promise<BullBear | null> {
+    const apiKey = (process.env.DEEPSEEK_API_KEY ?? '').trim();
+    if (!apiKey) return null;
+
+    const key = symbol.toUpperCase();
+    const cached = bullBearCache.get(key);
+    if (cached && Date.now() - cached.at < NEWS_BRIEF_TTL_MS) return cached.data;
+
+    const news = await getNews([symbol]).catch(() => []);
+    const headlines = (news ?? []).slice(0, 12).map((a) => `- ${a.headline}`).join('\n');
+
+    const system =
+        'You are a balanced equity analyst. Give the 3 strongest BULL points and the 3 strongest ' +
+        'BEAR points for the company, grounded in the headlines and general knowledge. Be specific ' +
+        'and concise (each point under ~20 words), factual, no price targets, no advice. Respond ' +
+        'ONLY as JSON: {"bull": ["...","...","..."], "bear": ["...","...","..."]}';
+    const user = `Company: ${name} (${key}).${headlines ? `\nRecent headlines:\n${headlines}` : ''}`;
+
+    const parsed = (await summariseHeadlines(apiKey, system, user, true)) as
+        | { bull?: unknown; bear?: unknown }
+        | null;
+    const bull = Array.isArray(parsed?.bull) ? parsed!.bull.map((x) => String(x)).filter(Boolean).slice(0, 4) : [];
+    const bear = Array.isArray(parsed?.bear) ? parsed!.bear.map((x) => String(x)).filter(Boolean).slice(0, 4) : [];
+    if (!bull.length && !bear.length) return null;
+
+    const data: BullBear = { bull, bear };
+    bullBearCache.set(key, { at: Date.now(), data });
+    return data;
+}
