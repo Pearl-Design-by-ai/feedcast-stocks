@@ -2,11 +2,18 @@ export const NAV_ITEMS = [
     { href: '/', label: 'Dashboard' },
     { href: '/search', label: 'Search' },
     { href: '/watchlist', label: 'Watchlist' },
-    { href: '/market-indicators', label: 'Indicators' },
-    { href: '/currency', label: 'Currency' },
-    { href: '/world-indices', label: 'World' },
-    { href: '/fixed-income', label: 'Bonds' },
 ];
+
+// Market-analysis pages, grouped under a single "Markets" dropdown in the nav.
+export const MARKETS_NAV = {
+    label: 'Markets',
+    items: [
+        { href: '/market-indicators', label: 'Indicators' },
+        { href: '/currency', label: 'Currency' },
+        { href: '/world-indices', label: 'World Indices' },
+        { href: '/fixed-income', label: 'Fixed Income' },
+    ],
+};
 
 // TradingView Charts
 export const MARKET_OVERVIEW_WIDGET_CONFIG = {
