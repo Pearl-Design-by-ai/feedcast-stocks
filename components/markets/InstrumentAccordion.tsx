@@ -17,7 +17,13 @@ export interface InstrumentGroup {
  * One group open at a time (first by default); only the open group's widgets
  * mount and cards lazy-load on scroll.
  */
-export default function InstrumentAccordion({ groups }: { groups: InstrumentGroup[] }) {
+export default function InstrumentAccordion({
+    groups,
+    category,
+}: {
+    groups: InstrumentGroup[];
+    category?: string;
+}) {
     const [openId, setOpenId] = useState<string>(groups[0]?.id ?? '');
 
     return (
@@ -69,6 +75,7 @@ export default function InstrumentAccordion({ groups }: { groups: InstrumentGrou
                                             title={item.title}
                                             subtitle={item.subtitle}
                                             symbol={item.symbol}
+                                            category={category}
                                         />
                                     ))}
                                 </div>

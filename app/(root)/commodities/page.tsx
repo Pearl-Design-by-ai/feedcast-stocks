@@ -57,7 +57,7 @@ export default function CommoditiesPage() {
 
             <section className="flex flex-col gap-3">
                 <h2 className="text-xl font-semibold text-gray-100">By Complex</h2>
-                <InstrumentAccordion groups={COMMODITY_GROUPS} />
+                <InstrumentAccordion groups={COMMODITY_GROUPS} category="Commodities" />
             </section>
         </div>
     );

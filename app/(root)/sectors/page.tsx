@@ -67,6 +67,7 @@ export default function SectorsPage() {
                             title={s.name}
                             subtitle={s.code}
                             symbol={s.symbol}
+                            category="Sectors"
                         />
                     ))}
                 </div>

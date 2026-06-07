@@ -11,6 +11,8 @@
  * Server-only key (no NEXT_PUBLIC_): set DEEPSEEK_API_KEY as a Worker secret.
  */
 
+import { getNews } from '@/lib/actions/finnhub.actions';
+
 const DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions';
 const DEEPSEEK_MODEL = 'deepseek-chat';
 
@@ -149,5 +151,88 @@ export async function explainIndicator(
             ok: false,
             error: aborted ? 'The AI request timed out. Please try again.' : 'Something went wrong reaching the AI.',
         };
+    }
+}
+
+// ── AI daily market brief ──────────────────────────────────────────────────
+
+export interface MarketBrief {
+    points: string[];
+}
+
+let briefCache: { at: number; data: MarketBrief } | null = null;
+const BRIEF_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
+const BRIEF_SYSTEM_PROMPT =
+    'You are a concise markets editor. Using ONLY the provided news headlines, write 3-4 short, ' +
+    'factual bullet points summarizing today’s key market themes and overall mood. Do NOT invent ' +
+    'prices, levels or numbers that are not in the headlines, and give no investment advice. Keep ' +
+    'each bullet under ~25 words. Respond ONLY as JSON: {"points": ["...", "..."]}';
+
+/**
+ * A short, DeepSeek-written market brief grounded in the latest general market
+ * news (so it can't hallucinate "today"). Cached ~30 min; returns null when the
+ * key/news are unavailable so the homepage can simply omit the card.
+ */
+export async function getMarketBrief(): Promise<MarketBrief | null> {
+    const apiKey = (process.env.DEEPSEEK_API_KEY ?? '').trim();
+    if (!apiKey) return null;
+
+    if (briefCache && Date.now() - briefCache.at < BRIEF_TTL_MS) return briefCache.data;
+
+    try {
+        const news = await getNews();
+        if (!news?.length) return null;
+
+        const headlines = news
+            .slice(0, 14)
+            .map((a) => {
+                const summary = a.summary ? `: ${String(a.summary).slice(0, 160)}` : '';
+                return `- ${a.headline}${summary}`;
+            })
+            .join('\n');
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 20_000);
+
+        const res = await fetch(DEEPSEEK_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+                model: DEEPSEEK_MODEL,
+                messages: [
+                    { role: 'system', content: BRIEF_SYSTEM_PROMPT },
+                    { role: 'user', content: `Today's market headlines:\n${headlines}` },
+                ],
+                response_format: { type: 'json_object' },
+                temperature: 0.3,
+                max_tokens: 400,
+                stream: false,
+            }),
+            signal: controller.signal,
+            cache: 'no-store',
+        });
+        clearTimeout(timeout);
+        if (!res.ok) return null;
+
+        const json = (await res.json()) as {
+            choices?: Array<{ message?: { content?: string } }>;
+        };
+        const content = (json.choices?.[0]?.message?.content ?? '').trim();
+        const cleaned = content.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+        const parsed = JSON.parse(cleaned) as { points?: unknown };
+        const points = Array.isArray(parsed.points)
+            ? parsed.points.map((p) => String(p)).filter(Boolean).slice(0, 5)
+            : [];
+        if (!points.length) return null;
+
+        const data: MarketBrief = { points };
+        briefCache = { at: Date.now(), data };
+        return data;
+    } catch {
+        return null;
     }
 }

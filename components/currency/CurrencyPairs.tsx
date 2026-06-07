@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { CURRENCY_GROUPS } from '@/lib/currencies';
-import CurrencyPairCard from '@/components/currency/CurrencyPairCard';
+import InstrumentCard from '@/components/markets/InstrumentCard';
 import { cn } from '@/lib/utils';
 
 /**
@@ -58,7 +58,13 @@ export default function CurrencyPairs() {
                             >
                                 <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
                                     {group.pairs.map((pair) => (
-                                        <CurrencyPairCard key={pair.symbol} pair={pair} />
+                                        <InstrumentCard
+                                            key={pair.symbol}
+                                            title={pair.code}
+                                            subtitle={pair.name}
+                                            symbol={pair.symbol}
+                                            category="Currency"
+                                        />
                                     ))}
                                 </div>
                             </div>
