@@ -11,10 +11,9 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {Button} from "@/components/ui/button";
 import {LogOut} from "lucide-react";
-import NavItems from "@/components/NavItems";
 import {getSupabaseBrowserClient} from "@/lib/supabase/client";
 
-const UserDropdown = ({ user, initialStocks }: {user: User, initialStocks: StockWithWatchlistStatus[]}) => {
+const UserDropdown = ({ user }: {user: User}) => {
     const handleSignOut = async () => {
         // Clears the shared `.feedcast.news` session cookie, then sends
         // the user back to the Feedcast home page.
@@ -58,13 +57,9 @@ const UserDropdown = ({ user, initialStocks }: {user: User, initialStocks: Stock
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-gray-600"/>
                 <DropdownMenuItem onClick={handleSignOut} className="text-gray-100 text-md font-medium focus:bg-transparent focus:text-teal-500 transition-colors cursor-pointer">
-                    <LogOut className="h-4 w-4 mr-2 hidden sm:block" />
+                    <LogOut className="h-4 w-4 mr-2" />
                     Logout
                 </DropdownMenuItem>
-                <DropdownMenuSeparator className="block sm:hidden bg-gray-600"/>
-                <nav className="sm:hidden">
-                    <NavItems initialStocks={initialStocks} />
-                </nav>
             </DropdownMenuContent>
         </DropdownMenu>
     )
