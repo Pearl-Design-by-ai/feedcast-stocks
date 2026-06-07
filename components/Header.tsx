@@ -17,7 +17,7 @@ const Header = async ({ user }: { user: User }) => {
                     </div>
                     <Link href="/" className="flex items-center justify-center gap-2">
                         <FeedcastLogo size={34} className="text-teal-400" />
-                        <span className="text-xl font-semibold text-gray-100">FeedCast <span className="text-teal-400">Stocks</span></span>
+                        <span className="text-xl font-semibold text-gray-100">FeedCast <span className="text-teal-400">Markets</span></span>
                     </Link>
                 </div>
 

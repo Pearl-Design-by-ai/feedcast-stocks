@@ -13,7 +13,7 @@ const Footer = () => {
                             <span className="text-lg font-semibold text-white">FeedCast <span className="text-teal-400">Stocks</span></span>
                         </Link>
                         <p className="text-gray-400 mb-6 max-w-md">
-                            FeedCast Stocks tracks the markets, sets personalized alerts, and surfaces detailed company insights — part of the FeedCast platform.
+                            FeedCast Markets tracks the markets, sets personalized alerts, and surfaces detailed company insights — part of the FeedCast platform.
                         </p>
                         <div className="mb-8">
                             <Link href="/about" className="text-teal-400 hover:text-teal-300 font-medium inline-flex items-center gap-1 group">
