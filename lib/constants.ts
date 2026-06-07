@@ -5,6 +5,7 @@ export const NAV_ITEMS = [
     { href: '/market-indicators', label: 'Indicators' },
     { href: '/currency', label: 'Currency' },
     { href: '/world-indices', label: 'World' },
+    { href: '/fixed-income', label: 'Bonds' },
 ];
 
 // TradingView Charts
