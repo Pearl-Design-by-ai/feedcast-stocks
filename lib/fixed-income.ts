@@ -89,7 +89,7 @@ export const BOND_GROUPS: BondGroup[] = [
         etfs: [
             { code: 'EMB', name: 'USD EM Sovereign', symbol: 'NASDAQ:EMB' },
             { code: 'EMLC', name: 'Local-Currency EM', symbol: 'AMEX:EMLC' },
-            { code: 'PCY', name: 'EM Sovereign Debt', symbol: 'NASDAQ:PCY' },
+            { code: 'PCY', name: 'EM Sovereign Debt', symbol: 'AMEX:PCY' },
             { code: 'VWOB', name: 'EM Government Bond', symbol: 'NASDAQ:VWOB' },
         ],
     },
