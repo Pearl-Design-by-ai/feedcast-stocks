@@ -1,9 +1,15 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { ExternalLink } from 'lucide-react';
 import DataDisclaimer from '@/components/DataDisclaimer';
 import TradingViewWidget from '@/components/TradingViewWidget';
 import FixedIncomeEtfs from '@/components/fixed-income/FixedIncomeEtfs';
+import ReturnsTable from '@/components/markets/ReturnsTable';
 import { BOND_GROUPS, TREASURY_YIELDS, FIXED_INCOME_EDU } from '@/lib/fixed-income';
+
+const RETURN_ROWS = BOND_GROUPS.flatMap((g) =>
+    g.etfs.map((e) => ({ symbol: e.symbol, label: `${e.name} (${e.code})` }))
+);
 
 export const metadata: Metadata = {
     title: 'Fixed Income',
@@ -72,6 +78,14 @@ export default function FixedIncomePage() {
                         </a>
                     ))}
                 </div>
+            </section>
+
+            {/* Returns */}
+            <section className="flex flex-col gap-3">
+                <h2 className="text-xl font-semibold text-gray-100">Returns</h2>
+                <Suspense fallback={null}>
+                    <ReturnsTable rows={RETURN_ROWS} />
+                </Suspense>
             </section>
 
             {/* Performance snapshot */}
