@@ -75,6 +75,12 @@ function fmtVol(v?: number): string {
   return String(v);
 }
 
+// Each tile links to the in-app stock detail page (/stocks/<TICKER>). Relative
+// path so it works on any host (preview & prod).
+function stockPageUrl(ticker: string): string {
+  return `/stocks/${encodeURIComponent(ticker)}`;
+}
+
 const SECTOR_HEADER = 18;
 
 type Leaf = {
@@ -230,14 +236,18 @@ export default function StockHeatMap({
                     .filter((d) => d.sector === sec)
                     .sort((a, b) => b.marketCap - a.marketCap)
                     .map((d) => (
-                      <div
+                      <a
                         key={d.ticker}
-                        className="flex min-w-[72px] flex-1 flex-col items-center rounded-md px-2 py-1.5"
+                        href={stockPageUrl(d.ticker)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={`Open ${d.ticker}`}
+                        className="flex min-w-[72px] flex-1 flex-col items-center rounded-md px-2 py-1.5 no-underline active:brightness-110"
                         style={{ backgroundColor: tileColor(d.changePercent) }}
                       >
                         <span className="text-xs font-bold text-white">{d.ticker}</span>
                         <span className="text-[11px] tabular-nums text-white/90">{fmtPct(d.changePercent)}</span>
-                      </div>
+                      </a>
                     ))}
                 </div>
               </div>
@@ -265,12 +275,16 @@ export default function StockHeatMap({
               const showPct = h >= 38;
               const showPrice = h >= 74 && w >= 70;
               return (
-                <div
+                <a
                   key={d.ticker}
+                  href={stockPageUrl(d.ticker)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={`Open ${d.ticker}`}
                   onMouseEnter={() => setHover({ x: l.x0 + w / 2, y: l.y0, d })}
                   onMouseMove={() => setHover((prev) => (prev && prev.d.ticker === d.ticker ? prev : { x: l.x0 + w / 2, y: l.y0, d }))}
                   onMouseLeave={() => setHover(null)}
-                  className="absolute flex cursor-default flex-col items-center justify-center overflow-hidden rounded-[3px] px-1 text-center"
+                  className="absolute flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-[3px] px-1 text-center no-underline outline-none transition-[filter] hover:brightness-110 focus-visible:ring-2 focus-visible:ring-white/70"
                   style={{ left: l.x0, top: l.y0, width: w, height: h, backgroundColor: tileColor(d.changePercent) }}
                 >
                   {w >= 34 && h >= 22 && (
@@ -291,7 +305,7 @@ export default function StockHeatMap({
                       {fmtPct(d.changePercent)}
                     </span>
                   )}
-                </div>
+                </a>
               );
             })}
 
