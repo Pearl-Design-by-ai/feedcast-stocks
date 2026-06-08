@@ -162,7 +162,7 @@ export default function AskMarkets() {
     <div className="flex flex-col gap-4">
       {/* Font-size control */}
       <div className="flex items-center justify-end gap-1.5">
-        <span className="mr-1 text-[11px] uppercase tracking-wide text-gray-600">Text size</span>
+        <span className="mr-1 text-[11px] uppercase tracking-wide text-gray-500">Text size</span>
         <button
           type="button"
           onClick={() => setFont(fontIdx - 1)}
@@ -190,7 +190,7 @@ export default function AskMarkets() {
         </p>
         {QUESTION_GROUPS.map((group) => (
           <div key={group.label}>
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-600">
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
               {group.label}
             </p>
             <div className="flex flex-wrap gap-2">
@@ -242,7 +242,7 @@ export default function AskMarkets() {
         </div>
       )}
 
-      <p className="text-[11px] text-gray-600">
+      <p className="text-[11px] text-gray-500">
         Answers use live market context &amp; headlines — informational only, not advice.
       </p>
     </div>

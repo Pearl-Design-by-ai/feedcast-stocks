@@ -81,7 +81,7 @@ export default function AiCommentary() {
           <div className="text-sm leading-relaxed text-gray-300">
             <MarkdownLite text={comment} />
           </div>
-          <p className="mt-3 border-t border-gray-800 pt-2 text-[11px] text-gray-600">
+          <p className="mt-3 border-t border-gray-800 pt-2 text-[11px] text-gray-500">
             AI-generated from live data — informational only, not investment advice, and may be
             inaccurate.
           </p>
