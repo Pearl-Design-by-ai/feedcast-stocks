@@ -50,7 +50,7 @@ export interface ModuleMeta {
 export const CATALOG: ModuleMeta[] = [
   // TradingView
   { id: 'market-overview', title: 'Market Overview', description: 'Index & sector overview with mini charts.', category: 'TradingView', defaultSpan: 'half' },
-  { id: 'stock-heatmap', title: 'Live Heatmap', description: 'Real-time mega-cap heatmap by sector (~60s, Finnhub).', category: 'TradingView', defaultSpan: 'half' },
+  { id: 'stock-heatmap', title: 'Live Heatmap', description: 'Real-time mega-cap treemap by sector (~60s, Finnhub).', category: 'TradingView', defaultSpan: 'full' },
   { id: 'market-quotes', title: 'Market Quotes', description: 'Live quote table across key stocks.', category: 'TradingView', defaultSpan: 'full' },
   { id: 'top-stories', title: 'Top Stories', description: 'Latest market news headlines.', category: 'TradingView', defaultSpan: 'half' },
   { id: 'screener', title: 'Stock Screener', description: 'Most-capitalized stock screener.', category: 'TradingView', defaultSpan: 'full' },
@@ -83,11 +83,11 @@ const VALID_IDS = new Set(CATALOG.map((m) => m.id));
 export const DEFAULT_LAYOUT: DashboardLayout = {
   tiles: [
     { id: 'market-brief', span: 'full' },
+    { id: 'stock-heatmap', span: 'full' },
     { id: 'market-overview', span: 'half' },
-    { id: 'stock-heatmap', span: 'half' },
-    { id: 'market-quotes', span: 'full' },
-    { id: 'top-stories', span: 'half' },
     { id: 'market-regime', span: 'half' },
+    { id: 'market-quotes', span: 'full' },
+    { id: 'top-stories', span: 'full' },
   ],
 };
 
