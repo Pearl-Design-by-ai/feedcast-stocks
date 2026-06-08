@@ -15,9 +15,6 @@ const Home = () => {
     return (
         <div className="flex min-h-screen home-wrapper">
             <DataDisclaimer className="w-fit" />
-            <Suspense fallback={null}>
-                <MarketBrief />
-            </Suspense>
             <section className="grid w-full gap-8 home-section">
                 <div className="md:col-span-1 xl:col-span-1">
                     <TradingViewWidget
@@ -45,7 +42,12 @@ const Home = () => {
                         height={600}
                     />
                 </div>
-                <div className="h-full md:col-span-1 xl:col-span-1">
+                <div className="h-full md:col-span-1 xl:col-span-1 space-y-8">
+                    {/* AI Market Brief — grouped directly above the Top Stories
+                        news feed so the AI summary leads into the headlines. */}
+                    <Suspense fallback={null}>
+                        <MarketBrief />
+                    </Suspense>
                     <TradingViewWidget
                         scriptUrl={`${scriptUrl}timeline.js`}
                         config={TOP_STORIES_WIDGET_CONFIG}
