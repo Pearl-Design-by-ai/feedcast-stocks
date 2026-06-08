@@ -1,63 +1,30 @@
-import { Suspense } from "react";
-import TradingViewWidget from "@/components/TradingViewWidget";
-import DataDisclaimer from "@/components/DataDisclaimer";
-import MarketBrief from "@/components/MarketBrief";
-import {
-    HEATMAP_WIDGET_CONFIG,
-    MARKET_DATA_WIDGET_CONFIG,
-    MARKET_OVERVIEW_WIDGET_CONFIG,
-    TOP_STORIES_WIDGET_CONFIG
-} from "@/lib/constants";
+import DataDisclaimer from '@/components/DataDisclaimer';
+import DashboardShell from '@/components/dashboard/DashboardShell';
+import DashboardView from '@/components/dashboard/DashboardView';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { getDashboardLayout } from '@/lib/actions/dashboard-layout.actions';
+import { DEFAULT_LAYOUT } from '@/lib/dashboard/catalog';
 
-const Home = () => {
-    const scriptUrl = `https://s3.tradingview.com/external-embedding/embed-widget-`;
+const Home = async () => {
+  const supabase = await getSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const userId = user?.id ?? '';
 
-    return (
-        <div className="flex min-h-screen home-wrapper">
-            <DataDisclaimer className="w-fit" />
-            <section className="grid w-full gap-8 home-section">
-                <div className="md:col-span-1 xl:col-span-1">
-                    <TradingViewWidget
-                        title="Market Overview"
-                        scriptUrl={`${scriptUrl}market-overview.js`}
-                        config={MARKET_OVERVIEW_WIDGET_CONFIG}
-                        className="custom-chart"
-                        height={600}
-                    />
-                </div>
-                <div className="md-col-span xl:col-span-2">
-                    <TradingViewWidget
-                        title="Stock Heatmap"
-                        scriptUrl={`${scriptUrl}stock-heatmap.js`}
-                        config={HEATMAP_WIDGET_CONFIG}
-                        height={600}
-                    />
-                </div>
-            </section>
-            <section className="grid w-full gap-8 home-section">
-                <div className="h-full md:col-span-1 xl:col-span-2">
-                    <TradingViewWidget
-                        scriptUrl={`${scriptUrl}market-quotes.js`}
-                        config={MARKET_DATA_WIDGET_CONFIG}
-                        height={600}
-                    />
-                </div>
-                <div className="h-full md:col-span-1 xl:col-span-1 space-y-8">
-                    {/* AI Market Brief — grouped directly above the Top Stories
-                        news feed so the AI summary leads into the headlines. */}
-                    <Suspense fallback={null}>
-                        <MarketBrief />
-                    </Suspense>
-                    <TradingViewWidget
-                        scriptUrl={`${scriptUrl}timeline.js`}
-                        config={TOP_STORIES_WIDGET_CONFIG}
-                        height={600}
-                    />
-                </div>
+  // A member's saved layout, or the default (the original fixed widgets).
+  const saved = await getDashboardLayout();
+  const layout = saved ?? DEFAULT_LAYOUT;
 
-            </section>
-        </div>
-    )
-}
+  return (
+    <div className="flex min-h-screen w-full flex-col gap-6">
+      <DataDisclaimer className="w-fit" />
+      <DashboardShell
+        initialLayout={layout}
+        view={<DashboardView layout={layout} userId={userId} />}
+      />
+    </div>
+  );
+};
 
 export default Home;

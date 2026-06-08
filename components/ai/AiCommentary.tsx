@@ -35,9 +35,11 @@ function topicFromPath(pathname: string): string | null {
   return TOPIC_PATHS.has(seg) ? seg : null;
 }
 
-export default function AiCommentary() {
+export default function AiCommentary({ topic: topicProp }: { topic?: string } = {}) {
   const pathname = usePathname();
-  const topic = topicFromPath(pathname || '');
+  // An explicit topic (e.g. as a dashboard tile) wins over route detection,
+  // which is what makes this usable on the home page where the path is "/".
+  const topic = topicProp ?? topicFromPath(pathname || '');
   const [comment, setComment] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
