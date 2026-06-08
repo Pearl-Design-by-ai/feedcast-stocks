@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import { Sparkles, Send, Loader2 } from 'lucide-react';
 import { askMarkets, type ChatMessage } from '@/lib/actions/ask.actions';
+import { MarkdownLite } from '@/components/ask/MarkdownLite';
 
 const SUGGESTIONS = [
     'What’s the market regime right now and why?',
@@ -71,7 +72,7 @@ export default function AskMarkets() {
                                     <Sparkles className="h-3.5 w-3.5 text-teal-400" /> AI
                                 </span>
                             )}
-                            {m.content}
+                            {m.role === 'assistant' ? <MarkdownLite text={m.content} /> : m.content}
                         </div>
                     </div>
                 ))}
