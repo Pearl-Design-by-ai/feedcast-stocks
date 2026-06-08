@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { getLiveHeatmap, type HeatmapData, type HeatmapStock } from '@/lib/actions/heatmap.actions';
 import { capWeightB } from '@/lib/market-caps';
@@ -174,7 +174,23 @@ export default function LiveHeatmap() {
   const [data, setData] = useState<HeatmapData | null>(null);
   const [loading, setLoading] = useState(true);
   const [width, setWidth] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const roRef = useRef<ResizeObserver | null>(null);
+
+  // Callback ref: attach the ResizeObserver the moment the container actually
+  // mounts. (A plain useRef + useEffect misses it, because on first render we
+  // show the loading spinner instead of the container, so the ref is still null
+  // when the effect runs and never re-measures once data arrives.)
+  const measureRef = useCallback((el: HTMLDivElement | null) => {
+    roRef.current?.disconnect();
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width ?? 0;
+      if (w > 0) setWidth(w);
+    });
+    ro.observe(el);
+    roRef.current = ro;
+    if (el.clientWidth > 0) setWidth(el.clientWidth);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -195,19 +211,6 @@ export default function LiveHeatmap() {
       active = false;
       clearInterval(id);
     };
-  }, []);
-
-  // Track the column width so the treemap can lay out in real pixels.
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver((entries) => {
-      const w = entries[0]?.contentRect.width ?? 0;
-      if (w > 0) setWidth(w);
-    });
-    ro.observe(el);
-    setWidth(el.clientWidth);
-    return () => ro.disconnect();
   }, []);
 
   if (loading && !data) {
@@ -241,7 +244,7 @@ export default function LiveHeatmap() {
         </span>
       </div>
 
-      <div ref={containerRef} className="space-y-3">
+      <div ref={measureRef} className="space-y-3">
         {data.sectors.map((sec) => (
           <div key={sec.sector}>
             <p className="mb-1.5 text-[11px] uppercase tracking-wide text-gray-500">{sec.sector}</p>
