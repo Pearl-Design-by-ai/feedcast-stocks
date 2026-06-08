@@ -7,9 +7,9 @@ import WorldEtfs from '@/components/world/WorldEtfs';
 import Portfolio from '@/components/portfolio/Portfolio';
 import AskShortcut from '@/components/dashboard/AskShortcut';
 import WatchlistTile from '@/components/dashboard/WatchlistTile';
+import LiveHeatmap from '@/components/markets/LiveHeatmap';
 import {
   MARKET_OVERVIEW_WIDGET_CONFIG,
-  HEATMAP_WIDGET_CONFIG,
   MARKET_DATA_WIDGET_CONFIG,
   TOP_STORIES_WIDGET_CONFIG,
   SCREENER_WIDGET_CONFIG,
@@ -32,7 +32,8 @@ function renderModule(id: ModuleId, userId: string) {
       // when squeezed shorter.
       return tv('market-overview.js', MARKET_OVERVIEW_WIDGET_CONFIG, 600);
     case 'stock-heatmap':
-      return tv('stock-heatmap.js', HEATMAP_WIDGET_CONFIG, 500);
+      // Our own live Finnhub-backed heatmap (replaces TradingView's delayed embed).
+      return <LiveHeatmap />;
     case 'market-quotes':
       return tv('market-quotes.js', MARKET_DATA_WIDGET_CONFIG, 520);
     case 'top-stories':

@@ -50,7 +50,7 @@ export interface ModuleMeta {
 export const CATALOG: ModuleMeta[] = [
   // TradingView
   { id: 'market-overview', title: 'Market Overview', description: 'Index & sector overview with mini charts.', category: 'TradingView', defaultSpan: 'half' },
-  { id: 'stock-heatmap', title: 'Stock Heatmap', description: 'S&P 500 heatmap by sector and market cap.', category: 'TradingView', defaultSpan: 'half' },
+  { id: 'stock-heatmap', title: 'Live Heatmap', description: 'Real-time mega-cap heatmap by sector (~60s, Finnhub).', category: 'TradingView', defaultSpan: 'half' },
   { id: 'market-quotes', title: 'Market Quotes', description: 'Live quote table across key stocks.', category: 'TradingView', defaultSpan: 'full' },
   { id: 'top-stories', title: 'Top Stories', description: 'Latest market news headlines.', category: 'TradingView', defaultSpan: 'half' },
   { id: 'screener', title: 'Stock Screener', description: 'Most-capitalized stock screener.', category: 'TradingView', defaultSpan: 'full' },
