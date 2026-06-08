@@ -12,6 +12,8 @@ export interface HeatmapStock {
   name: string;
   price: number | null;
   changePct: number | null;
+  /** Optional market cap (USD). When present, used to size treemap tiles. */
+  marketCap?: number | null;
 }
 export interface HeatmapData {
   asOf: string;
