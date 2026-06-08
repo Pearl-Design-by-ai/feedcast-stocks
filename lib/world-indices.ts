@@ -75,7 +75,7 @@ export const WORLD_GROUPS: WorldGroup[] = [
             { code: 'INDA', name: 'India', symbol: 'BATS:INDA' },
             { code: 'EZA', name: 'South Africa', symbol: 'AMEX:EZA' },
             { code: 'EIDO', name: 'Indonesia', symbol: 'AMEX:EIDO' },
-            { code: 'TUR', name: 'Turkey', symbol: 'AMEX:TUR' },
+            { code: 'TUR', name: 'Turkey', symbol: 'NASDAQ:TUR' },
             { code: 'KSA', name: 'Saudi Arabia', symbol: 'AMEX:KSA' },
         ],
     },
