@@ -76,6 +76,15 @@
     --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
     --sidebar-border: oklch(0.929 0.013 255.508);
     --sidebar-ring: oklch(0.704 0.04 256.788);
+
+    /* Brand accent — drives the teal-* brand utilities (logo, nav, buttons).
+       Defaults to the main Feedcast app's default accent (gold). The (root)
+       layout overrides this per-member from their saved accent color so the
+       choice they made on www.feedcast.news follows them here. NOTE: this is
+       intentionally NOT named `--accent` to avoid colliding with shadcn's
+       neutral `--accent` (used for menu/hover backgrounds). */
+    --brand: #C8A44E;
+    --brand-hover: #B8943E;
 }
 
 .dark {
@@ -126,7 +135,13 @@
     --color-blue-600: #5862FF;
     --color-yellow-400: #FDD458;
     --color-yellow-500: #E8BA40;
-    --color-teal-400: #0FEDBE;
+    /* Brand utilities resolve to the runtime --brand var so the member's
+       chosen accent (from www.feedcast.news) themes the whole app. The "teal"
+       name is kept only because it's used throughout the markup; up/down
+       price coloring uses green-*/red-*, never teal, so this is safe. */
+    --color-teal-400: var(--brand);
+    --color-teal-500: var(--brand-hover);
+    --color-teal-600: var(--brand-hover);
     --color-red-500: #FF495B;
     --color-orange-500: #FF8243;
     --color-purple-500: #D13BFF;
