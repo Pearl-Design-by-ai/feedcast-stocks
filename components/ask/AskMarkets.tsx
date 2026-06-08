@@ -15,27 +15,81 @@ const QUESTION_GROUPS: { label: string; questions: string[] }[] = [
     questions: [
       "What's the market regime right now and why?",
       'Are conditions risk-on or risk-off today?',
+      "What's the risk score and what's driving it?",
+      'Which signals are bullish vs bearish right now?',
+      'Is the regime fragile or firmly risk-on?',
+    ],
+  },
+  {
+    label: 'Trend & momentum',
+    questions: [
       'Is the S&P 500 above its 200-day trend?',
+      'Is the 50-day above the 200-day (golden/death cross)?',
+      "What's the 3-month momentum signal saying?",
+    ],
+  },
+  {
+    label: 'Breadth & leadership',
+    questions: [
       'Is market breadth confirming the trend?',
       'Is tech (Nasdaq) leading or lagging the S&P?',
+      'Are small caps (Russell 2000) keeping up?',
+      'Is leadership broad or narrow?',
+    ],
+  },
+  {
+    label: 'Credit & sentiment',
+    questions: [
+      'What are credit spreads (HY vs IG) signaling?',
+      'Is the bond market confirming risk appetite?',
       "What's the Crypto Fear & Greed reading?",
     ],
   },
   {
-    label: 'Markets today',
+    label: 'US indices',
     questions: [
-      'How are the major indices doing today?',
-      "What's happening with oil and gold?",
-      'Is the US dollar strong or weak right now?',
-      'How are global markets (FTSE, Nikkei) trading?',
+      'How are the major US indices doing today?',
+      "How's the S&P 500 doing this week?",
+      "How's the Nasdaq performing?",
+      'Are small caps outperforming large caps?',
     ],
   },
   {
-    label: 'Headlines & basics',
+    label: 'Global markets',
+    questions: [
+      'How are global markets (FTSE, Nikkei) trading?',
+      "How's Europe (FTSE) doing?",
+      "How's Asia (Nikkei) doing?",
+    ],
+  },
+  {
+    label: 'Commodities, dollar & crypto',
+    questions: [
+      "What's happening with oil and gold?",
+      'Is oil rising or falling?',
+      'Is gold catching a safe-haven bid?',
+      'Is the US dollar strong or weak right now?',
+      "How's Bitcoin trading?",
+      'What are 10-year bond yields doing?',
+    ],
+  },
+  {
+    label: 'Headlines',
     questions: [
       'What should I watch this week?',
       "What are today's biggest market headlines?",
+      "What's the biggest risk in the headlines right now?",
+    ],
+  },
+  {
+    label: 'Basics',
+    questions: [
       'Explain the yield curve simply.',
+      'What does "market breadth" mean?',
+      "Golden cross vs death cross — what's the difference?",
+      'What does risk-on vs risk-off mean?',
+      'Why does the dollar matter for stocks?',
+      'How do bond yields affect stocks?',
     ],
   },
 ];
