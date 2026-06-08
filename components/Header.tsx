@@ -2,17 +2,15 @@ import Link from "next/link";
 import UserDropdown from "@/components/UserDropdown";
 import MobileNav from "@/components/MobileNav";
 import { FeedcastLogo } from "@/components/FeedcastLogo";
-import {searchStocks} from "@/lib/actions/finnhub.actions";
 
-const Header = async ({ user }: { user: User }) => {
-    const initialStocks = await searchStocks();
-
+const Header = ({ user, initialStocks }: { user: User; initialStocks: StockWithWatchlistStatus[] }) => {
     return (
         <header className="sticky top-0 header">
             <div className="container header-wrapper">
                 <div className="flex items-center gap-3">
-                    {/* Desktop: menu on the left, next to the logo */}
-                    <div className="hidden sm:block">
+                    {/* Tablet (sm–md): hamburger drawer. md+ uses the SideNav rail
+                        instead, so the drawer is hidden there to avoid duplicate nav. */}
+                    <div className="hidden sm:block md:hidden">
                         <MobileNav initialStocks={initialStocks} />
                     </div>
                     <Link href="/" className="flex items-center justify-center gap-2">
