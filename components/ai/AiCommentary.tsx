@@ -67,8 +67,10 @@ export default function AiCommentary() {
   if (!topic) return null;
   if (!loading && !comment) return null;
 
+  // Borderless, flush-left block so the commentary lines up with the page title
+  // and description rather than sitting indented inside a card.
   return (
-    <div className="mb-6 rounded-xl border border-gray-800 bg-gray-900/40 p-4">
+    <div className="mb-6">
       <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-teal-400">
         <Sparkles className="h-3.5 w-3.5" /> AI Commentary
       </div>
@@ -81,10 +83,7 @@ export default function AiCommentary() {
           <div className="text-sm leading-relaxed text-gray-300">
             <MarkdownLite text={comment} />
           </div>
-          <p className="mt-3 border-t border-gray-800 pt-2 text-[11px] text-gray-500">
-            AI-generated from live data — informational only, not investment advice, and may be
-            inaccurate.
-          </p>
+          <p className="mt-2 text-[11px] text-gray-500">AI Generated</p>
         </>
       )}
     </div>
