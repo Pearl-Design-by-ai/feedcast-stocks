@@ -2,8 +2,37 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { getLiveHeatmap, type HeatmapData, type HeatmapStock } from '@/lib/actions/heatmap.actions';
+import {
+  getLiveHeatmap,
+  getHeatmapQuoteFill,
+  type HeatmapData,
+  type HeatmapStock,
+  type HeatmapQuoteFill,
+} from '@/lib/actions/heatmap.actions';
 import { capWeightB } from '@/lib/market-caps';
+
+// Merge gap-filled quotes into the heatmap without overwriting values the
+// engine already provided (only fills where price / changePct are still null).
+function mergeFills(
+  data: HeatmapData,
+  fills: Record<string, HeatmapQuoteFill>
+): HeatmapData {
+  return {
+    ...data,
+    sectors: data.sectors.map((sec) => ({
+      ...sec,
+      stocks: sec.stocks.map((s) => {
+        const f = fills[s.symbol];
+        if (!f) return s;
+        return {
+          ...s,
+          price: s.price ?? f.price,
+          changePct: s.changePct ?? f.changePct,
+        };
+      }),
+    })),
+  };
+}
 
 // Green for up, red for down; alpha scales with magnitude (capped at 4%).
 function tileColor(dp: number | null): string {
@@ -196,11 +225,20 @@ export default function LiveHeatmap() {
     let active = true;
     const load = () =>
       getLiveHeatmap()
-        .then((d) => {
-          if (active) {
-            setData(d);
-            setLoading(false);
-          }
+        .then(async (d) => {
+          if (!active) return;
+          setData(d);
+          setLoading(false);
+          // Gap-fill: the engine occasionally returns null changePct for a
+          // throttled subset of symbols. Fetch just those directly and merge.
+          const missing = d.sectors
+            .flatMap((s) => s.stocks)
+            .filter((s) => s.changePct == null)
+            .map((s) => s.symbol);
+          if (missing.length === 0) return;
+          const fills = await getHeatmapQuoteFill(missing);
+          if (!active || Object.keys(fills).length === 0) return;
+          setData((prev) => (prev ? mergeFills(prev, fills) : prev));
         })
         .catch(() => {
           if (active) setLoading(false);
