@@ -1,7 +1,7 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Sparkles, Loader2, AArrowDown, AArrowUp } from 'lucide-react';
 import { askMarkets, type ChatMessage } from '@/lib/actions/ask.actions';
 import { MarkdownLite } from '@/components/ask/MarkdownLite';
 
@@ -94,45 +94,132 @@ const QUESTION_GROUPS: { label: string; questions: string[] }[] = [
   },
 ];
 
+// Reader-controlled text size for the conversation. Defaults to `base` (16px) —
+// the old `sm` (14px) read too small. Persisted so the choice sticks.
+const FONT_SIZES = ['text-sm', 'text-base', 'text-lg', 'text-xl'] as const;
+const DEFAULT_FONT_IDX = 1;
+const FONT_KEY = 'fcm_ask_font';
+
 export default function AskMarkets() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fontIdx, setFontIdx] = useState(DEFAULT_FONT_IDX);
+  const threadRef = useRef<HTMLDivElement | null>(null);
   const endRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem(FONT_KEY);
+      if (v != null) {
+        const n = parseInt(v, 10);
+        if (n >= 0 && n < FONT_SIZES.length) setFontIdx(n);
+      }
+    } catch {
+      /* localStorage blocked — keep default */
+    }
+  }, []);
+
+  // Bring the latest exchange into view whenever a message is added or the
+  // thinking indicator toggles, so tapping a question scrolls to the answer
+  // instead of leaving the reader stranded up in the question list.
+  useEffect(() => {
+    if (messages.length === 0) return;
+    endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [messages, loading]);
+
+  const setFont = (i: number) => {
+    const n = Math.max(0, Math.min(FONT_SIZES.length - 1, i));
+    setFontIdx(n);
+    try {
+      localStorage.setItem(FONT_KEY, String(n));
+    } catch {
+      /* ignore */
+    }
+  };
 
   async function send(text: string) {
     const question = text.trim();
     if (!question || loading) return;
     setError('');
-    const next: ChatMessage[] = [...messages, { role: 'user', content: question }];
-    setMessages(next);
+    setMessages((prev) => [...prev, { role: 'user', content: question }]);
     setLoading(true);
-    requestAnimationFrame(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }));
     try {
-      const res = await askMarkets(next);
+      const res = await askMarkets([...messages, { role: 'user', content: question }]);
       if (res.ok) {
-        setMessages([...next, { role: 'assistant', content: res.answer }]);
+        setMessages((prev) => [...prev, { role: 'assistant', content: res.answer }]);
       } else {
         setError(res.error);
       }
     } finally {
       setLoading(false);
-      requestAnimationFrame(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }));
     }
   }
 
+  const fontClass = FONT_SIZES[fontIdx];
+
   return (
     <div className="flex flex-col gap-4">
-      {/* Conversation thread */}
+      {/* Font-size control */}
+      <div className="flex items-center justify-end gap-1.5">
+        <span className="mr-1 text-[11px] uppercase tracking-wide text-gray-600">Text size</span>
+        <button
+          type="button"
+          onClick={() => setFont(fontIdx - 1)}
+          disabled={fontIdx === 0}
+          aria-label="Smaller text"
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-700 bg-gray-800/60 text-gray-300 transition-colors hover:border-teal-500/40 hover:text-teal-300 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <AArrowDown className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setFont(fontIdx + 1)}
+          disabled={fontIdx === FONT_SIZES.length - 1}
+          aria-label="Larger text"
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-700 bg-gray-800/60 text-gray-300 transition-colors hover:border-teal-500/40 hover:text-teal-300 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <AArrowUp className="h-4 w-4" />
+        </button>
+      </div>
+
+      {/* Preset questions — the only way to ask. Grouped by the data they tap. */}
+      <div className="space-y-4">
+        <p className="text-xs text-gray-500">
+          {messages.length > 0 ? 'Ask another question' : 'Pick a question to get started'}
+        </p>
+        {QUESTION_GROUPS.map((group) => (
+          <div key={group.label}>
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-600">
+              {group.label}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {group.questions.map((q) => (
+                <button
+                  key={q}
+                  type="button"
+                  onClick={() => send(q)}
+                  disabled={loading}
+                  className="rounded-full border border-gray-700 bg-gray-800/60 px-3 py-1.5 text-sm text-gray-300 transition-colors hover:border-teal-500/40 hover:text-teal-300 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Conversation thread — grows below the questions; auto-scrolls into view. */}
       {messages.length > 0 && (
-        <div className="flex min-h-[120px] flex-col gap-4">
+        <div ref={threadRef} className="flex flex-col gap-4 border-t border-gray-800 pt-4">
           {messages.map((m, i) => (
             <div key={i} className={m.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
               <div
                 className={
                   m.role === 'user'
-                    ? 'max-w-[85%] rounded-2xl rounded-br-sm bg-teal-500/15 px-4 py-2.5 text-sm text-gray-100'
-                    : 'max-w-[85%] rounded-2xl rounded-bl-sm border border-gray-800 bg-gray-900/40 px-4 py-2.5 text-sm leading-relaxed text-gray-300'
+                    ? `max-w-[85%] rounded-2xl rounded-br-sm bg-teal-500/15 px-4 py-2.5 ${fontClass} text-gray-100`
+                    : `max-w-[85%] rounded-2xl rounded-bl-sm border border-gray-800 bg-gray-900/40 px-4 py-2.5 ${fontClass} leading-relaxed text-gray-300`
                 }
               >
                 {m.role === 'assistant' && (
@@ -154,33 +241,6 @@ export default function AskMarkets() {
           <div ref={endRef} />
         </div>
       )}
-
-      {/* Preset questions — the only way to ask. Grouped by the data they tap. */}
-      <div className="space-y-4 border-t border-gray-800 pt-4">
-        <p className="text-xs text-gray-500">
-          {messages.length > 0 ? 'Ask another question' : 'Pick a question to get started'}
-        </p>
-        {QUESTION_GROUPS.map((group) => (
-          <div key={group.label}>
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-600">
-              {group.label}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {group.questions.map((q) => (
-                <button
-                  key={q}
-                  type="button"
-                  onClick={() => send(q)}
-                  disabled={loading}
-                  className="rounded-full border border-gray-700 bg-gray-800/60 px-3 py-1.5 text-xs text-gray-300 transition-colors hover:border-teal-500/40 hover:text-teal-300 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {q}
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
 
       <p className="text-[11px] text-gray-600">
         Answers use live market context &amp; headlines — informational only, not advice.
