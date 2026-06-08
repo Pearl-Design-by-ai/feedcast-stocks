@@ -10,7 +10,10 @@ import {
 
 const SCRIPT = 'https://s3.tradingview.com/external-embedding/embed-widget-';
 const MINI_HEIGHT = 180;
-const GAUGE_HEIGHT = 400;
+// The Technical Analysis gauge (tabs + gauge + Sell/Neutral/Buy counts + logo)
+// needs ~480px; anything shorter makes the cross-origin iframe show its own
+// scrollbars (which we can't style away). Give it room so nothing scrolls.
+const GAUGE_HEIGHT = 500;
 const TOTAL = MINI_HEIGHT + GAUGE_HEIGHT;
 
 /**
