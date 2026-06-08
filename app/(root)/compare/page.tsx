@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import AiCommentary from "@/components/ai/AiCommentary";
 import DataDisclaimer from '@/components/DataDisclaimer';
 import Compare from '@/components/compare/Compare';
 
@@ -20,6 +21,7 @@ export default function ComparePage() {
                 </div>
                 <DataDisclaimer className="w-fit" />
             </header>
+            <AiCommentary />
 
             <Compare />
         </div>

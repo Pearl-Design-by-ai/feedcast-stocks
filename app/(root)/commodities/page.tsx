@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import AiCommentary from "@/components/ai/AiCommentary";
 import DataDisclaimer from '@/components/DataDisclaimer';
 import TradingViewWidget from '@/components/TradingViewWidget';
 import InstrumentAccordion from '@/components/markets/InstrumentAccordion';
@@ -43,6 +44,7 @@ export default function CommoditiesPage() {
                 </div>
                 <DataDisclaimer className="w-fit" />
             </header>
+            <AiCommentary />
 
             <section className="flex flex-col gap-3">
                 <h2 className="text-xl font-semibold text-gray-100">Performance Snapshot</h2>

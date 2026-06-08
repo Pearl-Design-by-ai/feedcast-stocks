@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import AiCommentary from "@/components/ai/AiCommentary";
 import DataDisclaimer from '@/components/DataDisclaimer';
 import TradingViewWidget from '@/components/TradingViewWidget';
 import { ECONOMIC_CALENDAR_WIDGET_CONFIG } from '@/lib/constants';
@@ -25,6 +26,7 @@ export default function EconomicCalendarPage() {
                 </div>
                 <DataDisclaimer className="w-fit" />
             </header>
+            <AiCommentary />
 
             <div className="rounded-xl border border-gray-800 bg-gray-900/40 p-4">
                 <TradingViewWidget

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import AiCommentary from "@/components/ai/AiCommentary";
 import { ExternalLink } from 'lucide-react';
 import DataDisclaimer from '@/components/DataDisclaimer';
 import TradingViewWidget from '@/components/TradingViewWidget';
@@ -34,6 +35,7 @@ export default async function CryptoPage() {
                 </div>
                 <DataDisclaimer className="w-fit" />
             </header>
+            <AiCommentary />
 
             {/* Mood + heatmap */}
             <section className="grid grid-cols-1 gap-5 xl:grid-cols-3">

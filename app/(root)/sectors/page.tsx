@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import AiCommentary from "@/components/ai/AiCommentary";
 import { Suspense } from 'react';
 import DataDisclaimer from '@/components/DataDisclaimer';
 import TradingViewWidget from '@/components/TradingViewWidget';
@@ -48,6 +49,7 @@ export default function SectorsPage() {
                 </div>
                 <DataDisclaimer className="w-fit" />
             </header>
+            <AiCommentary />
 
             <section className="flex flex-col gap-3">
                 <h2 className="text-xl font-semibold text-gray-100">Returns</h2>

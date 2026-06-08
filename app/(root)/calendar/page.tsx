@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import AiCommentary from "@/components/ai/AiCommentary";
 import Link from 'next/link';
 import DataDisclaimer from '@/components/DataDisclaimer';
 import { getEarningsCalendar, getIpoCalendar } from '@/lib/actions/calendar.actions';
@@ -36,6 +37,7 @@ export default async function CalendarPage() {
                 </div>
                 <DataDisclaimer className="w-fit" />
             </header>
+            <AiCommentary />
 
             {/* Earnings */}
             <section className="flex flex-col gap-3">

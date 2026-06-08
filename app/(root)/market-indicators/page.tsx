@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import AiCommentary from "@/components/ai/AiCommentary";
 import DataDisclaimer from '@/components/DataDisclaimer';
 import MarketIndicators from '@/components/market-indicators/MarketIndicators';
 import MarketMood from '@/components/market-indicators/MarketMood';
@@ -26,6 +27,7 @@ export default async function MarketIndicatorsPage() {
                 </div>
                 <DataDisclaimer className="w-fit" />
             </header>
+            <AiCommentary />
 
             <section className="flex flex-col gap-3">
                 <h2 className="text-xl font-semibold text-gray-100">Market Mood</h2>

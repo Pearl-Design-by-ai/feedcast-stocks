@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import AiCommentary from "@/components/ai/AiCommentary";
 import { Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
 import DataDisclaimer from '@/components/DataDisclaimer';
@@ -25,6 +26,7 @@ export default function MarketRegimePage() {
                 </div>
                 <DataDisclaimer className="w-fit" />
             </header>
+            <AiCommentary />
 
             <Suspense
                 fallback={

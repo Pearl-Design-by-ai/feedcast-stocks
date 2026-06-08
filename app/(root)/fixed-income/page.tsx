@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import AiCommentary from "@/components/ai/AiCommentary";
 import { Suspense } from 'react';
 import { ExternalLink } from 'lucide-react';
 import DataDisclaimer from '@/components/DataDisclaimer';
@@ -55,6 +56,7 @@ export default function FixedIncomePage() {
                 </div>
                 <DataDisclaimer className="w-fit" />
             </header>
+            <AiCommentary />
 
             {/* Treasury yields — link out (raw yield feeds are gated in the embed) */}
             <section className="flex flex-col gap-3">
