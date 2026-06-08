@@ -28,7 +28,9 @@ function tv(name: string, config: Record<string, unknown>, height: number) {
 function renderModule(id: ModuleId, userId: string) {
   switch (id) {
     case 'market-overview':
-      return tv('market-overview.js', MARKET_OVERVIEW_WIDGET_CONFIG, 500);
+      // Needs the original 600px — the tabs + chart + symbol list render blank
+      // when squeezed shorter.
+      return tv('market-overview.js', MARKET_OVERVIEW_WIDGET_CONFIG, 600);
     case 'stock-heatmap':
       return tv('stock-heatmap.js', HEATMAP_WIDGET_CONFIG, 500);
     case 'market-quotes':
