@@ -3,6 +3,7 @@ import Header from "@/components/Header";
 import { redirect } from "next/navigation";
 import HomeOnlyFooter from "@/components/HomeOnlyFooter";
 import SideNav from "@/components/SideNav";
+import AiCommentary from "@/components/ai/AiCommentary";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { searchStocks } from "@/lib/actions/finnhub.actions";
 import { accentHex } from "@/lib/accent";
@@ -72,6 +73,9 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
                     <SideNav initialStocks={initialStocks} />
                     <div className="min-w-0 flex-1">
                         <div className="mx-auto w-full max-w-[1400px] py-8 md:py-10">
+                            {/* Auto AI commentary at the top of each markets data
+                                page; self-hides on non-topic routes. */}
+                            <AiCommentary />
                             {children}
                         </div>
                     </div>
