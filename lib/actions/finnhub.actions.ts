@@ -172,11 +172,28 @@ export type WatchlistStockData = {
     peRatio: number | null;
 };
 
+// Run an async map with a bounded number of workers, so we never fire a big
+// simultaneous burst of Finnhub requests (which the free tier 429s even when the
+// per-minute total is fine).
+async function mapWithLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+    const results: R[] = new Array(items.length);
+    let next = 0;
+    async function worker() {
+        while (next < items.length) {
+            const idx = next++;
+            results[idx] = await fn(items[idx]);
+        }
+    }
+    await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+    return results;
+}
+
 export async function getWatchlistData(symbols: string[]): Promise<WatchlistStockData[]> {
     if (!symbols || symbols.length === 0) return [];
 
-    // Fetch quote, profile and fundamentals in parallel per symbol.
-    const promises = symbols.map(async (sym) => {
+    // Cap to 4 symbols in flight (≤12 Finnhub calls at once) so a larger
+    // watchlist can't burst past the free-tier rate limit and 429.
+    return mapWithLimit(symbols, 4, async (sym) => {
         const [quote, profile, peRatio] = await Promise.all([
             getQuote(sym),
             getCompanyProfile(sym),
@@ -195,8 +212,6 @@ export async function getWatchlistData(symbols: string[]): Promise<WatchlistStoc
             peRatio,
         };
     });
-
-    return await Promise.all(promises);
 }
 
 // Lightweight quote-only refresh for client polling — one Finnhub call per
