@@ -14,6 +14,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { hierarchy, treemap, treemapSquarify } from 'd3-hierarchy';
 
 export interface StockHeatMapDatum {
@@ -236,18 +237,16 @@ export default function StockHeatMap({
                     .filter((d) => d.sector === sec)
                     .sort((a, b) => b.marketCap - a.marketCap)
                     .map((d) => (
-                      <a
+                      <Link
                         key={d.ticker}
                         href={stockPageUrl(d.ticker)}
-                        target="_blank"
-                        rel="noopener noreferrer"
                         title={`Open ${d.ticker}`}
                         className="flex min-w-[72px] flex-1 flex-col items-center rounded-md px-2 py-1.5 no-underline active:brightness-110"
                         style={{ backgroundColor: tileColor(d.changePercent) }}
                       >
                         <span className="text-xs font-bold text-white">{d.ticker}</span>
                         <span className="text-[11px] tabular-nums text-white/90">{fmtPct(d.changePercent)}</span>
-                      </a>
+                      </Link>
                     ))}
                 </div>
               </div>
@@ -275,11 +274,9 @@ export default function StockHeatMap({
               const showPct = h >= 38;
               const showPrice = h >= 74 && w >= 70;
               return (
-                <a
+                <Link
                   key={d.ticker}
                   href={stockPageUrl(d.ticker)}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   title={`Open ${d.ticker}`}
                   onMouseEnter={() => setHover({ x: l.x0 + w / 2, y: l.y0, d })}
                   onMouseMove={() => setHover((prev) => (prev && prev.d.ticker === d.ticker ? prev : { x: l.x0 + w / 2, y: l.y0, d }))}
@@ -305,7 +302,7 @@ export default function StockHeatMap({
                       {fmtPct(d.changePercent)}
                     </span>
                   )}
-                </a>
+                </Link>
               );
             })}
 
