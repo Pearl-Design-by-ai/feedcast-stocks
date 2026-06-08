@@ -138,7 +138,7 @@
     /* Brand utilities resolve to the runtime --brand var so the member's
        chosen accent (from www.feedcast.news) themes the whole app. The "teal"
        name is kept only because it's used throughout the markup; up/down
-       price coloring uses green-*/red-*, never teal, so this is safe. */
+       price coloring uses green and red utilities, never teal, so it's safe. */
     --color-teal-400: var(--brand);
     --color-teal-500: var(--brand-hover);
     --color-teal-600: var(--brand-hover);
