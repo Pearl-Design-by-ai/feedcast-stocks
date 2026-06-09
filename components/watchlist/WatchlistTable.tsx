@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { ArrowUp, ArrowDown, Bell } from "lucide-react";
 import CreateAlertModal from "./CreateAlertModal";
 import WatchlistButton from "@/components/WatchlistButton";
@@ -96,7 +97,11 @@ export default function WatchlistTable({ data, userId, onRefresh }: WatchlistTab
                         return (
                             <tr key={stock.symbol} className="hover:bg-white/5 transition-colors group">
                                 <td className="px-6 py-4">
-                                    <div className="flex items-center space-x-4">
+                                    <Link
+                                        href={`/stocks/${stock.symbol}`}
+                                        className="flex items-center space-x-4 group/link"
+                                        title={`View ${stock.symbol} details`}
+                                    >
                                         {stock.logo ? (
                                             <div className="w-10 h-10 relative rounded-full overflow-hidden bg-white/10 shadow-sm border border-white/5">
                                                 <Image
@@ -112,14 +117,18 @@ export default function WatchlistTable({ data, userId, onRefresh }: WatchlistTab
                                             </div>
                                         )}
                                         <div className="flex flex-col">
-                                            <span className="font-semibold text-white text-base">{stock.name}</span>
+                                            <span className="font-semibold text-white text-base group-hover/link:text-teal-400 transition-colors">{stock.name}</span>
                                         </div>
-                                    </div>
+                                    </Link>
                                 </td>
                                 <td className="px-6 py-4 font-medium text-gray-300">
-                                    <span className="bg-white/5 px-2.5 py-1 rounded-md text-xs font-mono border border-white/10">
+                                    <Link
+                                        href={`/stocks/${stock.symbol}`}
+                                        className="bg-white/5 px-2.5 py-1 rounded-md text-xs font-mono border border-white/10 hover:border-teal-400/40 hover:text-teal-400 transition-colors"
+                                        title={`View ${stock.symbol} details`}
+                                    >
                                         {stock.symbol}
-                                    </span>
+                                    </Link>
                                 </td>
                                 <td className="px-6 py-4 text-white font-medium text-base tracking-tight">
                                     {formatCurrency(stock.price)}
