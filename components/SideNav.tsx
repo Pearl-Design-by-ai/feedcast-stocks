@@ -123,15 +123,16 @@ function openSearch() {
 export function SideNav({ initialStocks }: { initialStocks: StockWithWatchlistStatus[] }) {
   const pathname = usePathname();
 
-  // SSR + first client paint both render collapsed → no hydration mismatch.
-  // useEffect flips to open only for members who previously expanded it.
-  const [open, setOpen] = useState(false);
+  // Open by default — new members see the full menu on first visit. SSR and
+  // the first client paint both render open (no hydration mismatch); the
+  // effect collapses it only for members who previously chose to hide it.
+  const [open, setOpen] = useState(true);
 
   useEffect(() => {
     try {
-      if (localStorage.getItem(STORAGE_KEY) === 'true') setOpen(true);
+      if (localStorage.getItem(STORAGE_KEY) === 'false') setOpen(false);
     } catch {
-      /* localStorage blocked — stay collapsed */
+      /* localStorage blocked — stay open */
     }
   }, []);
 
