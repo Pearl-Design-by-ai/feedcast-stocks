@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ExternalLink } from 'lucide-react';
 import TradingViewWidget from '@/components/TradingViewWidget';
 import {
     ReportHeader,
@@ -208,25 +208,49 @@ export default function MacroCompassPage() {
                 <MacroData />
             </Suspense>
 
+            {/* Yield/curve index feeds (TVC:US10Y, FRED:T10Y2Y) are gated in the
+                free TradingView embed — chart embed-safe ETF proxies inline and
+                link out to the real series. */}
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <Section title="US 10-year yield" subtitle="The single most-watched macro number.">
-                    <TradingViewWidget
-                        scriptUrl={`${SCRIPT}advanced-chart.js`}
-                        config={ADVANCED_CHART_WIDGET_CONFIG('TVC:US10Y')}
-                        height={420}
-                        allowExpand
-                    />
-                </Section>
                 <Section
-                    title="Yield curve (10y − 2y)"
-                    subtitle="Below zero = inverted; re-steepening after inversion is the recession tell."
+                    title="Long-term rates — TLT (20y+ Treasury ETF)"
+                    subtitle="Price moves inversely to yields: TLT falling = long-term rates rising."
                 >
                     <TradingViewWidget
                         scriptUrl={`${SCRIPT}advanced-chart.js`}
-                        config={ADVANCED_CHART_WIDGET_CONFIG('FRED:T10Y2Y')}
+                        config={ADVANCED_CHART_WIDGET_CONFIG('NASDAQ:TLT')}
                         height={420}
                         allowExpand
                     />
+                    <a
+                        href="https://www.tradingview.com/chart/?symbol=TVC%3AUS10Y"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-amber-400 hover:underline"
+                    >
+                        Open the US 10-year yield on TradingView
+                        <ExternalLink size={13} />
+                    </a>
+                </Section>
+                <Section
+                    title="US Dollar — UUP (dollar index ETF)"
+                    subtitle="A strong dollar tightens global conditions; a weak one fuels commodities."
+                >
+                    <TradingViewWidget
+                        scriptUrl={`${SCRIPT}advanced-chart.js`}
+                        config={ADVANCED_CHART_WIDGET_CONFIG('AMEX:UUP')}
+                        height={420}
+                        allowExpand
+                    />
+                    <a
+                        href="https://www.tradingview.com/chart/?symbol=FRED%3AT10Y2Y"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-amber-400 hover:underline"
+                    >
+                        Open the 10y − 2y yield curve on TradingView
+                        <ExternalLink size={13} />
+                    </a>
                 </Section>
             </div>
 
