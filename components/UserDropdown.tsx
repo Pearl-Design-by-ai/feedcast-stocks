@@ -10,7 +10,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {Button} from "@/components/ui/button";
-import {LogOut} from "lucide-react";
+import {LogOut, Palette} from "lucide-react";
+import Link from "next/link";
 import {getSupabaseBrowserClient} from "@/lib/supabase/client";
 
 const UserDropdown = ({ user }: {user: User}) => {
@@ -56,6 +57,12 @@ const UserDropdown = ({ user }: {user: User}) => {
                     </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-gray-600"/>
+                <DropdownMenuItem asChild className="text-gray-100 text-md font-medium focus:bg-transparent focus:text-teal-500 transition-colors cursor-pointer">
+                    <Link href="/appearance">
+                        <Palette className="h-4 w-4 mr-2" />
+                        Appearance
+                    </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleSignOut} className="text-gray-100 text-md font-medium focus:bg-transparent focus:text-teal-500 transition-colors cursor-pointer">
                     <LogOut className="h-4 w-4 mr-2" />
                     Logout

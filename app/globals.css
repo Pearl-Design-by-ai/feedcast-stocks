@@ -85,6 +85,16 @@
        neutral `--accent` (used for menu/hover backgrounds). */
     --brand: #C8A44E;
     --brand-hover: #B8943E;
+
+    /* Background tone — drives the gray-900/800/700/600 surface utilities.
+       Defaults to "Obsidian" (the original palette). The (root) layout
+       overrides these per-member from the saved Appearance choice (see
+       lib/appearance.ts), so picking a tone retints every page, card and
+       border without touching the markup. */
+    --surface-900: #050505;
+    --surface-800: #141414;
+    --surface-700: #212328;
+    --surface-600: #30333A;
 }
 
 .dark {
@@ -123,11 +133,13 @@
 
 /* === CUSTOM COLOR THEME === */
 @theme {
-    /* Extended Gray Scale */
-    --color-gray-900: #050505;
-    --color-gray-800: #141414;
-    --color-gray-700: #212328;
-    --color-gray-600: #30333A;
+    /* Extended Gray Scale — surface levels resolve to the runtime --surface-*
+       vars so the member's chosen background tone themes the whole app
+       (mirrors how teal-* resolves to --brand below). */
+    --color-gray-900: var(--surface-900);
+    --color-gray-800: var(--surface-800);
+    --color-gray-700: var(--surface-700);
+    --color-gray-600: var(--surface-600);
     --color-gray-500: #9095A1;
     --color-gray-400: #CCDADC;
 

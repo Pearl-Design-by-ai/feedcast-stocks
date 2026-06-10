@@ -44,6 +44,7 @@ import {
   Radar,
   Waves,
   HeartPulse,
+  Palette,
   Info,
   LifeBuoy,
   Code,
@@ -106,6 +107,7 @@ const REPORTS_ITEMS: Item[] = REPORTS_NAV.items.map((i) => ({
 }));
 
 const MORE_ITEMS: Item[] = [
+  { href: '/appearance', label: 'Appearance', icon: Palette },
   { href: '/about', label: 'About', icon: Info },
   { href: '/help', label: 'Help', icon: LifeBuoy },
   { href: '/api-docs', label: 'API Docs', icon: Code },
