@@ -2,6 +2,7 @@
 
 import { getDateRange, validateArticle, formatArticle } from '@/lib/utils';
 import { POPULAR_STOCK_SYMBOLS } from '@/lib/constants';
+import { getMarketKV } from '@/lib/market-cache';
 import { cache } from 'react';
 
 const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
@@ -34,27 +35,8 @@ const FINNHUB_EXCHANGE_SUFFIXES = new Set([
     'TA', 'TO', 'TW', 'TWO', 'V', 'VI', 'WA',
 ]);
 
-// --- Cross-isolate cache (Cloudflare KV, MARKET_CACHE binding) ---
-// Module-level Maps and fetch revalidate hints are per-isolate on Workers
-// (the OpenNext incremental cache is intentionally disabled), so under load
-// every fresh isolate re-fetches the same symbols and burns the Finnhub
-// free-tier quota. KV shares cacheable responses across isolates. The
-// binding is absent in `next dev` / builds — behavior falls back unchanged.
-type KVLite = {
-    get(key: string, type: 'json'): Promise<unknown>;
-    put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
-};
-
-async function getMarketKV(): Promise<KVLite | null> {
-    try {
-        const { getCloudflareContext } = await import('@opennextjs/cloudflare');
-        const env = getCloudflareContext().env as { MARKET_CACHE?: KVLite };
-        return env.MARKET_CACHE ?? null;
-    } catch {
-        return null;
-    }
-}
-
+// Cross-isolate cache (Cloudflare KV) — see lib/market-cache.ts for why
+// per-isolate Maps and fetch revalidate hints aren't enough on Workers.
 // Cache keys must not embed the API token.
 function stripToken(url: string): string {
     return url.replace(/([?&])token=[^&]*&?/, '$1').replace(/[?&]$/, '');

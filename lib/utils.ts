@@ -231,3 +231,26 @@ export function formatSymbolForTradingView(symbol: string): string {
 
     return upperSymbol;
 }
+/**
+ * Ticker-shaped strings only — letters/digits with optional . - : separators
+ * (covers US tickers, classes like BRK.B and exchange-suffixed symbols).
+ * Used as a gate before forwarding client-supplied symbols to upstream
+ * services (engine, Adanos), so arbitrary text can't ride along.
+ */
+export function isTickerLike(symbol: string): boolean {
+    return /^[A-Za-z0-9][A-Za-z0-9.\-:]{0,14}$/.test(symbol);
+}
+
+/** Upper-case, dedupe and drop non-ticker entries; cap the list length. */
+export function sanitizeSymbols(symbols: string[], max = 50): string[] {
+    const out: string[] = [];
+    const seen = new Set<string>();
+    for (const raw of symbols ?? []) {
+        const sym = String(raw ?? '').trim().toUpperCase();
+        if (!sym || seen.has(sym) || !isTickerLike(sym)) continue;
+        seen.add(sym);
+        out.push(sym);
+        if (out.length >= max) break;
+    }
+    return out;
+}

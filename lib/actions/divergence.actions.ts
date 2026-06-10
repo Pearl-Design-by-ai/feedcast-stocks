@@ -7,6 +7,7 @@
  */
 
 import { enginePost } from '@/lib/engine-client';
+import { sanitizeSymbols } from '@/lib/utils';
 
 export interface DivergenceItem {
     symbol: string;
@@ -16,5 +17,8 @@ export interface DivergenceItem {
 }
 
 export async function getSentimentDivergence(symbols: string[]): Promise<DivergenceItem[] | null> {
-    return enginePost<DivergenceItem[] | null>('/v1/divergence', { symbols }, null);
+    // Cap and validate — an oversized or junk-filled list shouldn't reach the engine.
+    const clean = sanitizeSymbols(symbols);
+    if (clean.length === 0) return null;
+    return enginePost<DivergenceItem[] | null>('/v1/divergence', { symbols: clean }, null);
 }

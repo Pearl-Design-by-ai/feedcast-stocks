@@ -8,10 +8,48 @@
  * Every call degrades gracefully: if the engine is unconfigured, unreachable, or
  * errors, we return `fallback` so the AI/analysis features simply hide rather
  * than break the page.
+ *
+ * Responses for shareable endpoints are cached in Cloudflare KV (cross-isolate,
+ * see lib/market-cache.ts) — without it, every page view re-generates the same
+ * company brief / commentary and burns engine capacity. /v1/ask is deliberately
+ * uncached (conversational), and fallback or `{ ok: false }` results are never
+ * cached so errors don't stick for the TTL.
  */
+
+import { getMarketKV, fnv1a } from '@/lib/market-cache';
 
 const BASE = (process.env.MARKETS_ENGINE_URL ?? '').replace(/\/$/, '');
 const TOKEN = (process.env.MARKETS_ENGINE_TOKEN ?? '').trim();
+
+// Path-prefix → cache TTL (seconds). Anything not listed is uncached.
+const CACHE_TTLS: Array<[prefix: string, seconds: number]> = [
+  ['/v1/indicator/explain', 86_400], // educational, static
+  ['/v1/company/brief', 3_600],
+  ['/v1/company/bullbear', 1_800],
+  ['/v1/market/brief', 300],
+  ['/v1/market/regime', 300],
+  ['/v1/commentary', 300],
+  ['/v1/watchlist/digest', 300],
+  ['/v1/news/impact', 300],
+  ['/v1/portfolio/xray', 300],
+  ['/v1/divergence', 300],
+  ['/v1/heatmap', 60],
+];
+
+function cacheTtlFor(path: string): number {
+  const entry = CACHE_TTLS.find(([prefix]) => path.startsWith(prefix));
+  return entry ? entry[1] : 0;
+}
+
+/** True for in-band error payloads like `{ ok: false, error }` — never cached. */
+function isErrorShaped(value: unknown): boolean {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'ok' in value &&
+    (value as { ok?: unknown }).ok === false
+  );
+}
 
 async function call<T>(
   path: string,
@@ -19,6 +57,18 @@ async function call<T>(
 ): Promise<T> {
   const { fallback, timeoutMs = 28_000, ...rest } = init;
   if (!BASE || !TOKEN) return fallback;
+
+  const ttl = cacheTtlFor(path);
+  const kv = ttl > 0 ? await getMarketKV() : null;
+  const cacheKey = `eng:${path}:${typeof rest.body === 'string' ? fnv1a(rest.body) : ''}`;
+  if (kv) {
+    try {
+      const hit = await kv.get(cacheKey, 'json');
+      if (hit !== null) return hit as T;
+    } catch {
+      // KV read failure — fall through to the live call.
+    }
+  }
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -34,7 +84,19 @@ async function call<T>(
       cache: 'no-store',
     });
     if (!res.ok) return fallback;
-    return (await res.json()) as T;
+    const data = (await res.json()) as T;
+
+    if (kv && data !== null && data !== undefined && !isErrorShaped(data)) {
+      try {
+        await kv.put(cacheKey, JSON.stringify(data), {
+          // KV's minimum TTL is 60s.
+          expirationTtl: Math.max(60, ttl),
+        });
+      } catch {
+        // Cache write failure is non-fatal.
+      }
+    }
+    return data;
   } catch {
     return fallback;
   } finally {

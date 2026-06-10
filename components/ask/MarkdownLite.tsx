@@ -104,8 +104,12 @@ function parseBlocks(text: string): Block[] {
   return blocks;
 }
 
+// Hard cap on rendered markdown — a runaway/compromised upstream answer
+// shouldn't be able to hang the tab with megabytes of regex work.
+const MAX_CHARS = 50_000;
+
 export function MarkdownLite({ text }: { text: string }) {
-  const blocks = parseBlocks(text);
+  const blocks = parseBlocks(text.length > MAX_CHARS ? `${text.slice(0, MAX_CHARS)}…` : text);
   return (
     <div className="space-y-2.5">
       {blocks.map((b, i) => {
