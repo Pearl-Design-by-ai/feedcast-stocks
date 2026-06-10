@@ -39,13 +39,18 @@ import {
   CalendarDays,
   Filter,
   Scale,
+  FileText,
+  Compass,
+  Radar,
+  Waves,
+  HeartPulse,
   Info,
   LifeBuoy,
   Code,
   type LucideIcon,
 } from 'lucide-react';
 import SearchCommand from '@/components/SearchCommand';
-import { NAV_ITEMS, MARKETS_NAV } from '@/lib/constants';
+import { NAV_ITEMS, MARKETS_NAV, REPORTS_NAV } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 
 const STORAGE_KEY = 'fcm_sidenav_open';
@@ -76,6 +81,14 @@ const MARKETS_ICONS: Record<string, LucideIcon> = {
   '/compare': Scale,
 };
 
+const REPORTS_ICONS: Record<string, LucideIcon> = {
+  '/reports': FileText,
+  '/reports/macro-compass': Compass,
+  '/reports/index-pulse': Radar,
+  '/reports/vol-radar': Waves,
+  '/reports/holdings-health': HeartPulse,
+};
+
 const MAIN_ITEMS: Item[] = NAV_ITEMS.map((i) => ({
   ...i,
   icon: MAIN_ICONS[i.href] ?? LayoutDashboard,
@@ -85,6 +98,11 @@ const MAIN_ITEMS: Item[] = NAV_ITEMS.map((i) => ({
 const MARKETS_ITEMS: Item[] = MARKETS_NAV.items.map((i) => ({
   ...i,
   icon: MARKETS_ICONS[i.href] ?? Activity,
+}));
+
+const REPORTS_ITEMS: Item[] = REPORTS_NAV.items.map((i) => ({
+  ...i,
+  icon: REPORTS_ICONS[i.href] ?? FileText,
 }));
 
 const MORE_ITEMS: Item[] = [
@@ -129,8 +147,10 @@ export function SideNav({ initialStocks }: { initialStocks: StockWithWatchlistSt
 
   const compact = !open;
 
+  // '/reports' is a hub with child pages of its own — exact match only, so the
+  // hub row doesn't stay lit while reading an individual report.
   const isActive = (href: string) =>
-    href === '/' ? pathname === '/' : pathname.startsWith(href);
+    href === '/' || href === '/reports' ? pathname === href : pathname.startsWith(href);
 
   const rowClass = (active: boolean) =>
     cn(
@@ -246,6 +266,9 @@ export function SideNav({ initialStocks }: { initialStocks: StockWithWatchlistSt
           <div className="my-2 h-px bg-gray-700/70" />
 
           {MAIN_ITEMS.map(renderItem)}
+
+          {sectionLabel('Reports')}
+          {REPORTS_ITEMS.map(renderItem)}
 
           {sectionLabel('Markets')}
           {MARKETS_ITEMS.map(renderItem)}

@@ -25,6 +25,19 @@ export const MARKETS_NAV = {
     ],
 };
 
+// Live-generated daily briefings, grouped under a "Reports" dropdown / sidebar
+// section. Slugs must match lib/reports.ts.
+export const REPORTS_NAV = {
+    label: 'Reports',
+    items: [
+        { href: '/reports', label: 'All Reports' },
+        { href: '/reports/macro-compass', label: 'Macro Compass' },
+        { href: '/reports/index-pulse', label: 'Index Pulse' },
+        { href: '/reports/vol-radar', label: 'Vol Radar' },
+        { href: '/reports/holdings-health', label: 'Holdings Health' },
+    ],
+};
+
 // TradingView Charts
 export const MARKET_OVERVIEW_WIDGET_CONFIG = {
     colorTheme: 'dark', // dark mode

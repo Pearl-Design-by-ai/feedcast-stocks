@@ -10,7 +10,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { NAV_ITEMS, MARKETS_NAV } from "@/lib/constants";
+import { NAV_ITEMS, MARKETS_NAV, REPORTS_NAV } from "@/lib/constants";
 import SearchCommand from "@/components/SearchCommand";
 
 const FEEDCAST_HOME = "https://www.feedcast.news/";
@@ -24,8 +24,10 @@ const ROW = "flex items-center rounded-md px-3 py-2.5 text-[15px] text-gray-200 
 const MobileNav = ({ initialStocks }: { initialStocks: StockWithWatchlistStatus[] }) => {
     const pathname = usePathname();
     const onMarketPage = MARKETS_NAV.items.some((item) => pathname.startsWith(item.href));
-    // Expand the Markets sub-menu by default when already on a market page.
+    const onReportPage = pathname.startsWith('/reports');
+    // Expand the sub-menus by default when already on one of their pages.
     const [marketsOpen, setMarketsOpen] = useState(onMarketPage);
+    const [reportsOpen, setReportsOpen] = useState(onReportPage);
 
     return (
         <DropdownMenu>
@@ -67,6 +69,36 @@ const MobileNav = ({ initialStocks }: { initialStocks: StockWithWatchlistStatus[
                         </Link>
                     )
                 })}
+
+                {/* Reports — expandable sub-menu */}
+                <button
+                    type="button"
+                    onClick={() => setReportsOpen((open) => !open)}
+                    aria-expanded={reportsOpen}
+                    className={`${ROW} w-full justify-between`}
+                >
+                    <span>{REPORTS_NAV.label}</span>
+                    <ChevronDown
+                        className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${reportsOpen ? 'rotate-180' : ''}`}
+                    />
+                </button>
+
+                {reportsOpen && (
+                    <div className="flex flex-col animate-in fade-in-0 slide-in-from-top-1 duration-200">
+                        {REPORTS_NAV.items.map(({ href, label }) => {
+                            const active = href === '/reports' ? pathname === href : pathname.startsWith(href)
+                            return (
+                                <Link
+                                    key={href}
+                                    href={href}
+                                    className={`${ROW} py-2 pl-9 text-[14px] ${active ? 'text-teal-400' : 'text-gray-300'}`}
+                                >
+                                    {label}
+                                </Link>
+                            )
+                        })}
+                    </div>
+                )}
 
                 {/* Markets — expandable sub-menu */}
                 <button
