@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ExternalLink } from 'lucide-react';
 import TradingViewWidget from '@/components/TradingViewWidget';
 import {
     ReportHeader,
@@ -217,15 +217,24 @@ export default function VolRadarPage() {
             </Suspense>
 
             <Section
-                title="VIX — implied volatility index"
-                subtitle="The level matters less than the direction and the speed of change."
+                title="Volatility chart — VIXY (short-term VIX futures ETF)"
+                subtitle="The VIX index itself is gated in free embeds, so we chart its tradable proxy — the level matters less than the direction and the speed of change."
             >
                 <TradingViewWidget
                     scriptUrl={`${SCRIPT}advanced-chart.js`}
-                    config={ADVANCED_CHART_WIDGET_CONFIG('TVC:VIX')}
+                    config={ADVANCED_CHART_WIDGET_CONFIG('AMEX:VIXY')}
                     height={440}
                     allowExpand
                 />
+                <a
+                    href="https://www.tradingview.com/chart/?symbol=TVC%3AVIX"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-violet-400 hover:underline"
+                >
+                    Open the real VIX index on TradingView
+                    <ExternalLink size={13} />
+                </a>
             </Section>
 
             <Section
