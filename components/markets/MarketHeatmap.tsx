@@ -48,7 +48,7 @@ export default function MarketHeatmap() {
     ticker: s.ticker,
     name: s.name,
     sector: s.sector,
-    price: s.price ?? 0,
+    price: s.price ?? null,
     changePercent: s[period],
     marketCap: s.marketCap,
   }));

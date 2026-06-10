@@ -9,6 +9,8 @@ import {
     type SourceComparePayload,
     type StockSentimentInsights,
 } from './adanos.helpers';
+import { isTickerLike } from '@/lib/utils';
+import { kvCachedJSON } from '@/lib/market-cache';
 
 const DEFAULT_LOOKBACK_DAYS = 7;
 const FETCH_TIMEOUT_MS = 5000;
@@ -74,12 +76,17 @@ export async function getStockSentimentInsights(
     }
 
     const normalizedSymbol = symbol.trim().toUpperCase();
+    // Ticker-shaped only — this comes straight from the /stocks/[symbol] route.
+    if (!isTickerLike(normalizedSymbol)) return null;
     const lookbackDays = Math.max(1, Math.min(days, 30));
-    const sourceKeys = Object.keys(SOURCE_CONFIG) as SentimentSourceKey[];
 
-    const sources = await Promise.all(
-        sourceKeys.map((source) => fetchCompareSource(source, normalizedSymbol, lookbackDays)),
-    );
-
-    return buildStockSentimentInsights(normalizedSymbol, sources);
+    // One page view = 4 Adanos calls; KV-share the combined result so repeat
+    // views of the same symbol (any user, any isolate) don't re-burn quota.
+    return kvCachedJSON(`adanos:${normalizedSymbol}:${lookbackDays}`, 300, async () => {
+        const sourceKeys = Object.keys(SOURCE_CONFIG) as SentimentSourceKey[];
+        const sources = await Promise.all(
+            sourceKeys.map((source) => fetchCompareSource(source, normalizedSymbol, lookbackDays)),
+        );
+        return buildStockSentimentInsights(normalizedSymbol, sources);
+    });
 }

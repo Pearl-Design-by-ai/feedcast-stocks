@@ -21,7 +21,8 @@ export interface StockHeatMapDatum {
   ticker: string;
   name: string;
   sector: string;
-  price: number;
+  /** null = quote unavailable — render a dash, never $0.00. */
+  price: number | null;
   /** % change for the active period; null/undefined = unavailable (gray). */
   changePercent: number | null;
   marketCap: number; // any consistent unit (we use $B)
@@ -294,7 +295,7 @@ export default function StockHeatMap({
                   )}
                   {showPrice && (
                     <span className="text-[10px] tabular-nums leading-tight text-white/80">
-                      ${d.price.toFixed(2)}
+                      {d.price != null ? `$${d.price.toFixed(2)}` : '—'}
                     </span>
                   )}
                   {showPct && w >= 40 && (
@@ -324,7 +325,7 @@ export default function StockHeatMap({
                 <p className="mb-1 truncate text-gray-300">{hover.d.name}</p>
                 <dl className="space-y-0.5 text-gray-400">
                   <div className="flex justify-between"><dt>Sector</dt><dd className="text-gray-200">{hover.d.sector}</dd></div>
-                  <div className="flex justify-between"><dt>Price</dt><dd className="text-gray-200 tabular-nums">${hover.d.price.toFixed(2)}</dd></div>
+                  <div className="flex justify-between"><dt>Price</dt><dd className="text-gray-200 tabular-nums">{hover.d.price != null ? `$${hover.d.price.toFixed(2)}` : '—'}</dd></div>
                   <div className="flex justify-between"><dt>Market cap</dt><dd className="text-gray-200 tabular-nums">{fmtCap(hover.d.marketCap)}</dd></div>
                   <div className="flex justify-between"><dt>Volume</dt><dd className="text-gray-200 tabular-nums">{fmtVol(hover.d.volume)}</dd></div>
                 </dl>
