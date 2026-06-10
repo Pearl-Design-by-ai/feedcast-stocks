@@ -43,7 +43,8 @@ export default async function WatchlistPage() {
     ]);
 
     return (
-        <div className="min-h-screen bg-black text-gray-100 p-6 md:p-8">
+        // bg-gray-900 (not bg-black) so the member's chosen background tone applies.
+        <div className="min-h-screen bg-gray-900 text-gray-100 p-6 md:p-8">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
                 <div>
