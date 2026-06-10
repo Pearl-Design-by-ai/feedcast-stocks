@@ -149,7 +149,17 @@ async function HealthData({ userId }: { userId: string }) {
 
     const data = await getWatchlistData(items.map((i) => i.symbol));
     const rows = data
-        .map((d) => ({ ...d, ...triage(d.changePercent) }))
+        .map((d) => ({
+            ...d,
+            // No live quote → no grade; grading a missing price as "Calm" would mislead.
+            ...(d.price == null
+                ? {
+                      grade: 'No data',
+                      tone: 'neutral' as const,
+                      action: 'Live quote unavailable right now — reload the report to retry.',
+                  }
+                : triage(d.changePercent)),
+        }))
         .sort((a, b) => b.changePercent - a.changePercent);
 
     const advancers = rows.filter((r) => r.changePercent > 0).length;

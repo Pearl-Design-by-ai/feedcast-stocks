@@ -55,7 +55,8 @@ export default function Portfolio() {
             const quotes = await getWatchlistQuotes(symbols);
             const map: Record<string, number> = {};
             quotes.forEach((q) => {
-                map[q.symbol.toUpperCase()] = q.price;
+                // null = quote failed — leave the symbol out instead of pricing it $0.
+                if (q.price != null) map[q.symbol.toUpperCase()] = q.price;
             });
             setPrices(map);
         } catch {

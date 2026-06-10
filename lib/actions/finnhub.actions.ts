@@ -162,7 +162,8 @@ export async function getPeRatio(symbol: string): Promise<number | null> {
 
 export type WatchlistStockData = {
     symbol: string;
-    price: number;
+    /** null = quote unavailable right now — render "—", never $0.00. */
+    price: number | null;
     change: number;
     changePercent: number;
     currency: string;
@@ -202,9 +203,10 @@ export async function getWatchlistData(symbols: string[]): Promise<WatchlistStoc
 
         return {
             symbol: sym,
-            price: quote?.c || 0,
-            change: quote?.d || 0,
-            changePercent: quote?.dp || 0,
+            // A failed quote is null, not 0 — $0.00 would read as a real price.
+            price: quote?.c ?? null,
+            change: quote?.d ?? 0,
+            changePercent: quote?.dp ?? 0,
             currency: profile?.currency || 'USD',
             name: profile?.name || sym,
             logo: profile?.logo,
@@ -219,7 +221,7 @@ export async function getWatchlistData(symbols: string[]): Promise<WatchlistStoc
 // don't change intraday, so polling only needs fresh prices.
 export async function getWatchlistQuotes(
     symbols: string[]
-): Promise<{ symbol: string; price: number; change: number; changePercent: number }[]> {
+): Promise<{ symbol: string; price: number | null; change: number; changePercent: number }[]> {
     if (!symbols || symbols.length === 0) return [];
 
     return Promise.all(
@@ -227,9 +229,9 @@ export async function getWatchlistQuotes(
             const quote = await getQuote(sym);
             return {
                 symbol: sym,
-                price: quote?.c || 0,
-                change: quote?.d || 0,
-                changePercent: quote?.dp || 0,
+                price: quote?.c ?? null,
+                change: quote?.d ?? 0,
+                changePercent: quote?.dp ?? 0,
             };
         })
     );
