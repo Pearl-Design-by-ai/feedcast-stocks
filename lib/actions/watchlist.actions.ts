@@ -16,14 +16,21 @@ export type WatchlistRow = {
 
 // -- CRUD Operations --
 
-export async function addToWatchlist(userId: string, symbol: string, company: string) {
+// Writes resolve the owner from the session (defense in depth on top of RLS)
+// instead of trusting a client-supplied userId.
+export async function addToWatchlist(symbol: string, company: string) {
     try {
         const supabase = await getSupabaseServerClient();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) throw new Error('Not signed in');
+
         const { data, error } = await supabase
             .from(TABLE)
             .upsert(
                 {
-                    user_id: userId,
+                    user_id: user.id,
                     symbol: symbol.toUpperCase(),
                     company,
                     added_at: new Date().toISOString(),
@@ -43,19 +50,23 @@ export async function addToWatchlist(userId: string, symbol: string, company: st
     }
 }
 
-export async function removeFromWatchlist(userId: string, symbol: string) {
+export async function removeFromWatchlist(symbol: string) {
     try {
         const supabase = await getSupabaseServerClient();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) throw new Error('Not signed in');
+
         const { error } = await supabase
             .from(TABLE)
             .delete()
-            .eq('user_id', userId)
+            .eq('user_id', user.id)
             .eq('symbol', symbol.toUpperCase());
 
         if (error) throw error;
 
         revalidatePath('/watchlist');
-        revalidatePath('/'); // In case it's used elsewhere
         return { success: true };
     } catch (error) {
         console.error('Error removing from watchlist:', error);

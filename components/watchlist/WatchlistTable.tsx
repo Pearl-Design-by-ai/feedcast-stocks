@@ -12,7 +12,6 @@ import type { WatchlistStockData } from "@/lib/actions/finnhub.actions";
 
 interface WatchlistTableProps {
     data: WatchlistStockData[];
-    userId: string;
     onRefresh?: () => void;
 }
 
@@ -20,7 +19,7 @@ interface WatchlistTableProps {
 // and we make one call per symbol, so 30s keeps a sizeable watchlist safe.
 const POLL_INTERVAL_MS = 30_000;
 
-export default function WatchlistTable({ data, userId, onRefresh }: WatchlistTableProps) {
+export default function WatchlistTable({ data, onRefresh }: WatchlistTableProps) {
     const [stocks, setStocks] = useState<WatchlistStockData[]>(data);
     // Keep the latest symbols available to the interval without re-subscribing.
     const symbolsRef = useRef<string[]>(data.map((s) => s.symbol));
@@ -72,7 +71,7 @@ export default function WatchlistTable({ data, userId, onRefresh }: WatchlistTab
     }
 
     const handleRemove = async (symbol: string) => {
-        await removeFromWatchlist(userId, symbol);
+        await removeFromWatchlist(symbol);
         setStocks((curr) => curr.filter((s) => s.symbol !== symbol));
         onRefresh?.();
     };
@@ -148,7 +147,6 @@ export default function WatchlistTable({ data, userId, onRefresh }: WatchlistTab
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex items-center justify-end space-x-3 opacity-80 group-hover:opacity-100 transition-opacity">
                                         <CreateAlertModal
-                                            userId={userId}
                                             symbol={stock.symbol}
                                             currentPrice={stock.price}
                                             companyName={stock.name}
