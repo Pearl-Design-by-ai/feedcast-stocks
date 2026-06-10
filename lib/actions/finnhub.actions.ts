@@ -34,7 +34,44 @@ const FINNHUB_EXCHANGE_SUFFIXES = new Set([
     'TA', 'TO', 'TW', 'TWO', 'V', 'VI', 'WA',
 ]);
 
+// --- Cross-isolate cache (Cloudflare KV, MARKET_CACHE binding) ---
+// Module-level Maps and fetch revalidate hints are per-isolate on Workers
+// (the OpenNext incremental cache is intentionally disabled), so under load
+// every fresh isolate re-fetches the same symbols and burns the Finnhub
+// free-tier quota. KV shares cacheable responses across isolates. The
+// binding is absent in `next dev` / builds — behavior falls back unchanged.
+type KVLite = {
+    get(key: string, type: 'json'): Promise<unknown>;
+    put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+};
+
+async function getMarketKV(): Promise<KVLite | null> {
+    try {
+        const { getCloudflareContext } = await import('@opennextjs/cloudflare');
+        const env = getCloudflareContext().env as { MARKET_CACHE?: KVLite };
+        return env.MARKET_CACHE ?? null;
+    } catch {
+        return null;
+    }
+}
+
+// Cache keys must not embed the API token.
+function stripToken(url: string): string {
+    return url.replace(/([?&])token=[^&]*&?/, '$1').replace(/[?&]$/, '');
+}
+
 async function fetchJSON<T>(url: string, revalidateSeconds?: number): Promise<T> {
+    const kv = revalidateSeconds ? await getMarketKV() : null;
+    const kvKey = `fh:${stripToken(url)}`;
+    if (kv) {
+        try {
+            const hit = (await kv.get(kvKey, 'json')) as T | null;
+            if (hit !== null) return hit;
+        } catch {
+            // KV read failure — fall through to a live fetch.
+        }
+    }
+
     const options: RequestInit & { next?: { revalidate?: number } } = revalidateSeconds
         ? { cache: 'force-cache', next: { revalidate: revalidateSeconds } }
         : { cache: 'no-store' };
@@ -44,7 +81,19 @@ async function fetchJSON<T>(url: string, revalidateSeconds?: number): Promise<T>
         const text = await res.text().catch(() => '');
         throw new Error(`Fetch failed ${res.status}: ${text}`);
     }
-    return (await res.json()) as T;
+    const data = (await res.json()) as T;
+
+    if (kv && revalidateSeconds) {
+        try {
+            // KV's minimum TTL is 60s; shorter-lived data (quotes) has its own path.
+            await kv.put(kvKey, JSON.stringify(data), {
+                expirationTtl: Math.max(60, revalidateSeconds),
+            });
+        } catch {
+            // Cache write failure is non-fatal.
+        }
+    }
+    return data;
 }
 
 export { fetchJSON };
@@ -110,10 +159,41 @@ export async function getQuote(symbol: string): Promise<FinnhubQuote | null> {
 
     const fetchPromise = (async () => {
         try {
+            // Cross-isolate quote cache: KV can't expire under 60s, so the 30s
+            // freshness window is embedded in the value and checked here.
+            const kv = await getMarketKV();
+            if (kv) {
+                try {
+                    const hit = (await kv.get(`fhq:${key}`, 'json')) as {
+                        value: FinnhubQuote;
+                        expiresAt: number;
+                    } | null;
+                    if (hit && hit.expiresAt > Date.now() && hit.value?.c) {
+                        writeQuoteCache(key, hit.value);
+                        return hit.value;
+                    }
+                } catch {
+                    // KV read failure — fetch live.
+                }
+            }
+
             const token = FINNHUB_API_KEY;
             const url = `${FINNHUB_BASE_URL}/quote?symbol=${encodeURIComponent(symbol)}&token=${token}`;
             const quote = await fetchJSON<FinnhubQuote>(url, 0);
-            if (quote) writeQuoteCache(key, quote);
+            if (quote) {
+                writeQuoteCache(key, quote);
+                if (kv && quote.c) {
+                    try {
+                        await kv.put(
+                            `fhq:${key}`,
+                            JSON.stringify({ value: quote, expiresAt: Date.now() + QUOTE_CACHE_TTL_MS }),
+                            { expirationTtl: 120 }
+                        );
+                    } catch {
+                        // Cache write failure is non-fatal.
+                    }
+                }
+            }
             return quote;
         } catch (e) {
             console.error('Error fetching quote for', symbol, e);

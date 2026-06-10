@@ -58,6 +58,25 @@ function isAuthorized(request: NextRequest): boolean {
   return header === `Bearer ${secret}`;
 }
 
+// Bounded-concurrency map — Finnhub free tier 429s on large parallel bursts,
+// and auth.admin lookups shouldn't hammer Supabase either.
+async function mapWithLimit<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let next = 0;
+  async function worker() {
+    while (next < items.length) {
+      const idx = next++;
+      results[idx] = await fn(items[idx]);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+}
+
 async function fetchQuote(symbol: string, token: string): Promise<number | null> {
   try {
     const url = `${FINNHUB_BASE_URL}/quote?symbol=${encodeURIComponent(symbol)}&token=${token}`;
@@ -101,20 +120,32 @@ async function notifyTriggeredAlerts(
 
   // One quote per distinct symbol, reused across alerts on that symbol.
   const symbols = [...new Set(pending.map((a) => a.symbol.toUpperCase()))];
-  const quoteEntries = await Promise.all(
-    symbols.map(async (sym) => [sym, await fetchQuote(sym, token)] as const)
+  const quoteEntries = await mapWithLimit(
+    symbols,
+    4,
+    async (sym) => [sym, await fetchQuote(sym, token)] as const
   );
   const quotes = new Map<string, number | null>(quoteEntries);
 
+  // One auth lookup per distinct owner (not per alert) — a user with many
+  // triggered alerts previously cost one admin API call each.
+  const userIds = [...new Set(pending.map((a) => a.user_id))];
+  const emailEntries = await mapWithLimit(userIds, 4, async (userId) => {
+    try {
+      const { data: userData, error: userError } = await admin.auth.admin.getUserById(userId);
+      if (userError) throw userError;
+      return [userId, userData?.user?.email ?? null] as const;
+    } catch (err) {
+      console.error('check-alerts: could not resolve email for user', userId, err);
+      return [userId, null] as const;
+    }
+  });
+  const emails = new Map<string, string | null>(emailEntries);
+
   const notifiedIds: number[] = [];
   for (const alert of pending) {
-    const { data: userData, error: userError } =
-      await admin.auth.admin.getUserById(alert.user_id);
-    const email = userData?.user?.email;
-    if (userError || !email) {
-      console.error('check-alerts: could not resolve email for alert', alert.id, userError);
-      continue;
-    }
+    const email = emails.get(alert.user_id);
+    if (!email) continue;
 
     const symbolUpper = alert.symbol.toUpperCase();
     const price = quotes.get(symbolUpper);
@@ -162,28 +193,42 @@ async function handle(request: NextRequest) {
   const admin = getSupabaseAdmin();
   const nowIso = new Date().toISOString();
 
-  const { data: alerts, error } = await admin
-    .from('stock_alerts')
-    .select('id, symbol, target_price, condition')
-    .eq('active', true)
-    .eq('triggered', false)
-    .gt('expires_at', nowIso);
-
-  if (error) {
-    console.error('check-alerts: failed to load alerts', error);
-    return NextResponse.json({ error: 'Failed to load alerts' }, { status: 500 });
-  }
-
-  const rows = (alerts ?? []) as AlertRow[];
+  // Page through alerts (instead of one unbounded select) so a growing table
+  // can't blow the memory/CPU budget of a single cron run. Quotes are fetched
+  // once per distinct symbol with bounded concurrency and reused across pages.
+  const PAGE_SIZE = 500;
+  const quotes = new Map<string, number | null>();
   const triggeredIds: number[] = [];
+  let checked = 0;
 
-  if (rows.length > 0) {
-    // One quote per distinct symbol.
-    const symbols = [...new Set(rows.map((a) => a.symbol.toUpperCase()))];
-    const quoteEntries = await Promise.all(
-      symbols.map(async (sym) => [sym, await fetchQuote(sym, token)] as const)
+  for (let offset = 0; ; offset += PAGE_SIZE) {
+    const { data: alerts, error } = await admin
+      .from('stock_alerts')
+      .select('id, symbol, target_price, condition')
+      .eq('active', true)
+      .eq('triggered', false)
+      .gt('expires_at', nowIso)
+      .order('id', { ascending: true })
+      .range(offset, offset + PAGE_SIZE - 1);
+
+    if (error) {
+      console.error('check-alerts: failed to load alerts', error);
+      return NextResponse.json({ error: 'Failed to load alerts' }, { status: 500 });
+    }
+
+    const rows = (alerts ?? []) as AlertRow[];
+    if (rows.length === 0) break;
+    checked += rows.length;
+
+    const newSymbols = [...new Set(rows.map((a) => a.symbol.toUpperCase()))].filter(
+      (sym) => !quotes.has(sym)
     );
-    const quotes = new Map<string, number | null>(quoteEntries);
+    const quoteEntries = await mapWithLimit(
+      newSymbols,
+      4,
+      async (sym) => [sym, await fetchQuote(sym, token)] as const
+    );
+    for (const [sym, price] of quoteEntries) quotes.set(sym, price);
 
     for (const alert of rows) {
       const price = quotes.get(alert.symbol.toUpperCase());
@@ -197,11 +242,17 @@ async function handle(request: NextRequest) {
       if (met) triggeredIds.push(alert.id);
     }
 
-    if (triggeredIds.length > 0) {
+    if (rows.length < PAGE_SIZE) break;
+  }
+
+  if (triggeredIds.length > 0) {
+    // Chunk the IN() update so a big trigger wave stays within statement limits.
+    for (let i = 0; i < triggeredIds.length; i += PAGE_SIZE) {
+      const chunk = triggeredIds.slice(i, i + PAGE_SIZE);
       const { error: updateError } = await admin
         .from('stock_alerts')
         .update({ triggered: true, updated_at: new Date().toISOString() })
-        .in('id', triggeredIds);
+        .in('id', chunk);
 
       if (updateError) {
         console.error('check-alerts: failed to mark triggered', updateError);
@@ -217,7 +268,7 @@ async function handle(request: NextRequest) {
   const notified = await notifyTriggeredAlerts(admin, token);
 
   return NextResponse.json({
-    checked: rows.length,
+    checked,
     triggered: triggeredIds.length,
     notified,
   });

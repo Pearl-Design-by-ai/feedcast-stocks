@@ -11,6 +11,15 @@
   "observability": {
     "enabled": true
   },
+  // Cross-isolate cache for Finnhub responses (quotes 30s, profiles 24h, …).
+  // Module-level Maps don't survive Worker isolate churn, so without this the
+  // free-tier rate limit (60/min) burns on re-fetching the same symbols.
+  "kv_namespaces": [
+    {
+      "binding": "MARKET_CACHE",
+      "id": "231d7258c4d94abc9e3f492fb5105a07"
+    }
+  ],
   "limits": {
     "cpu_ms": 300000
   },
