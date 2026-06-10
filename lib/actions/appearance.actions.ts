@@ -1,6 +1,5 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { ACCENT_COLORS, type AccentColorId } from '@/lib/accent';
 import { BACKGROUND_TONES, type BackgroundToneId } from '@/lib/appearance';
@@ -40,25 +39,18 @@ export async function saveAppearance(
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: 'Not signed in' };
 
-  const { data } = await supabase
-    .from('user_preferences')
-    .select('reading_preferences')
-    .eq('id', user.id)
-    .maybeSingle();
-
   const prefs = {
-    ...((data?.reading_preferences as Record<string, unknown>) ?? {}),
     ...(choice.accentColor !== undefined && { accentColor: choice.accentColor }),
     ...(choice.background !== undefined && { marketsBackground: choice.background }),
   };
 
-  const { error } = await supabase
-    .from('user_preferences')
-    .upsert({ id: user.id, reading_preferences: prefs });
+  // Atomic server-side JSONB merge (see supabase/migrations/005) — a plain
+  // read-merge-write here can lose a concurrent writer's keys (rapid clicks,
+  // or the main app saving other reading_preferences at the same time).
+  // No revalidatePath needed: the picker applies vars instantly client-side
+  // and every page is dynamic, so the next SSR reads the fresh row anyway.
+  const { error } = await supabase.rpc('merge_reading_preferences', { prefs });
 
   if (error) return { ok: false, error: error.message };
-
-  // Server-rendered pages pick up the new vars on next navigation.
-  revalidatePath('/', 'layout');
   return { ok: true };
 }

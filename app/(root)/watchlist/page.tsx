@@ -64,7 +64,7 @@ export default async function WatchlistPage() {
                 {/* Main Content - Watchlist Table */}
                 <div className="lg:col-span-3 space-y-8">
                     <div className="space-y-6">
-                        <WatchlistManager initialItems={watchlistItems} initialData={stockData} userId={userId} />
+                        <WatchlistManager initialItems={watchlistItems} initialData={stockData} />
                     </div>
 
                     <Suspense fallback={null}>

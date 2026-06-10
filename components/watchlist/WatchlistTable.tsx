@@ -12,7 +12,6 @@ import type { WatchlistStockData } from "@/lib/actions/finnhub.actions";
 
 interface WatchlistTableProps {
     data: WatchlistStockData[];
-    userId: string;
     onRefresh?: () => void;
 }
 
@@ -20,7 +19,7 @@ interface WatchlistTableProps {
 // and we make one call per symbol, so 30s keeps a sizeable watchlist safe.
 const POLL_INTERVAL_MS = 30_000;
 
-export default function WatchlistTable({ data, userId, onRefresh }: WatchlistTableProps) {
+export default function WatchlistTable({ data, onRefresh }: WatchlistTableProps) {
     const [stocks, setStocks] = useState<WatchlistStockData[]>(data);
     // Keep the latest symbols available to the interval without re-subscribing.
     const symbolsRef = useRef<string[]>(data.map((s) => s.symbol));
@@ -34,8 +33,12 @@ export default function WatchlistTable({ data, userId, onRefresh }: WatchlistTab
         symbolsRef.current = stocks.map((s) => s.symbol);
     }, [stocks]);
 
+    // Keyed on membership (not just length) so swapping one symbol for another
+    // re-subscribes immediately instead of polling the removed symbol once more.
+    const symbolsKey = stocks.map((s) => s.symbol).join(",");
+
     useEffect(() => {
-        if (stocks.length === 0) return;
+        if (!symbolsKey) return;
 
         const interval = setInterval(async () => {
             const symbols = symbolsRef.current;
@@ -48,7 +51,9 @@ export default function WatchlistTable({ data, userId, onRefresh }: WatchlistTab
                 setStocks((current) =>
                     current.map((existing) => {
                         const q = map.get(existing.symbol);
-                        return q
+                        // A null price means the poll failed for this symbol —
+                        // keep the last known values rather than blanking the row.
+                        return q && q.price != null
                             ? { ...existing, price: q.price, change: q.change, changePercent: q.changePercent }
                             : existing;
                     })
@@ -59,8 +64,7 @@ export default function WatchlistTable({ data, userId, onRefresh }: WatchlistTab
         }, POLL_INTERVAL_MS);
 
         return () => clearInterval(interval);
-        // Re-subscribe only when the watchlist becomes empty/non-empty.
-    }, [stocks.length]);
+    }, [symbolsKey]);
 
     if (stocks.length === 0) {
         return (
@@ -72,7 +76,7 @@ export default function WatchlistTable({ data, userId, onRefresh }: WatchlistTab
     }
 
     const handleRemove = async (symbol: string) => {
-        await removeFromWatchlist(userId, symbol);
+        await removeFromWatchlist(symbol);
         setStocks((curr) => curr.filter((s) => s.symbol !== symbol));
         onRefresh?.();
     };
@@ -131,13 +135,17 @@ export default function WatchlistTable({ data, userId, onRefresh }: WatchlistTab
                                     </Link>
                                 </td>
                                 <td className="px-6 py-4 text-white font-medium text-base tracking-tight">
-                                    {formatCurrency(stock.price)}
+                                    {stock.price != null ? formatCurrency(stock.price) : "—"}
                                 </td>
                                 <td className="px-6 py-4 font-medium">
-                                    <div className={`flex items-center w-fit px-2 py-1 rounded-md ${isPositive ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"}`}>
-                                        {isPositive ? <ArrowUp className="w-3.5 h-3.5 mr-1.5" /> : <ArrowDown className="w-3.5 h-3.5 mr-1.5" />}
-                                        {Math.abs(stock.changePercent).toFixed(2)}%
-                                    </div>
+                                    {stock.price != null ? (
+                                        <div className={`flex items-center w-fit px-2 py-1 rounded-md ${isPositive ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"}`}>
+                                            {isPositive ? <ArrowUp className="w-3.5 h-3.5 mr-1.5" /> : <ArrowDown className="w-3.5 h-3.5 mr-1.5" />}
+                                            {Math.abs(stock.changePercent).toFixed(2)}%
+                                        </div>
+                                    ) : (
+                                        <span className="text-gray-500">—</span>
+                                    )}
                                 </td>
                                 <td className="px-6 py-4 text-gray-400 font-medium">
                                     {stock.marketCap ? formatNumber(stock.marketCap) : "—"}
@@ -148,9 +156,8 @@ export default function WatchlistTable({ data, userId, onRefresh }: WatchlistTab
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex items-center justify-end space-x-3 opacity-80 group-hover:opacity-100 transition-opacity">
                                         <CreateAlertModal
-                                            userId={userId}
                                             symbol={stock.symbol}
-                                            currentPrice={stock.price}
+                                            currentPrice={stock.price ?? 0}
                                             companyName={stock.name}
                                             onAlertCreated={onRefresh}
                                         >

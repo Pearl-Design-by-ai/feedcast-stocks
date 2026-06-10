@@ -19,7 +19,6 @@ interface WatchlistItem {
 interface WatchlistManagerProps {
     initialItems: WatchlistItem[];
     initialData: WatchlistStockData[];
-    userId: string;
 }
 
 function sortBySymbol<T extends { symbol: string }>(list: T[], order: 'asc' | 'desc' | null): T[] {
@@ -31,7 +30,7 @@ function sortBySymbol<T extends { symbol: string }>(list: T[], order: 'asc' | 'd
     );
 }
 
-export default function WatchlistManager({ initialItems, initialData, userId }: WatchlistManagerProps) {
+export default function WatchlistManager({ initialItems, initialData }: WatchlistManagerProps) {
     const router = useRouter();
     // Sort state: 'asc' (A-Z), 'desc' (Z-A), or null (added order/default)
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
@@ -95,7 +94,6 @@ export default function WatchlistManager({ initialItems, initialData, userId }: 
                             <WatchlistStockChip
                                 key={item.symbol}
                                 symbol={item.symbol}
-                                userId={userId}
                             />
                         ))}
                     </div>
@@ -104,7 +102,7 @@ export default function WatchlistManager({ initialItems, initialData, userId }: 
                 )}
             </div>
 
-            <WatchlistTable data={sortedData} userId={userId} onRefresh={() => router.refresh()} />
+            <WatchlistTable data={sortedData} onRefresh={() => router.refresh()} />
         </div>
     );
 }

@@ -40,21 +40,38 @@ function mapAlert(row: AlertRow) {
     };
 }
 
+// Resolve the session user — alert writes never trust client-supplied ids
+// (defense in depth on top of RLS).
+async function requireUser(supabase: Awaited<ReturnType<typeof getSupabaseServerClient>>) {
+    const {
+        data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not signed in');
+    return user;
+}
+
 // Create a new alert
 export async function createAlert(params: {
-    userId: string;
     symbol: string;
     targetPrice: number;
     condition: 'ABOVE' | 'BELOW';
     name?: string;
 }) {
     try {
+        if (!params.symbol?.trim()) throw new Error('Symbol is required');
+        if (!Number.isFinite(params.targetPrice) || params.targetPrice <= 0)
+            throw new Error('Target price must be a positive number');
+        if (params.condition !== 'ABOVE' && params.condition !== 'BELOW')
+            throw new Error('Invalid condition');
+
         const supabase = await getSupabaseServerClient();
-        const trimmedName = params.name?.trim();
+        const user = await requireUser(supabase);
+        // Mirror the client-side maxLength so a crafted request can't bypass it.
+        const trimmedName = params.name?.trim().slice(0, 80);
         const { data, error } = await supabase
             .from(TABLE)
             .insert({
-                user_id: params.userId,
+                user_id: user.id,
                 symbol: params.symbol.toUpperCase(),
                 name: trimmedName ? trimmedName : null,
                 target_price: params.targetPrice,
@@ -98,9 +115,18 @@ export async function getUserAlerts(userId: string) {
 export async function deleteAlert(alertId: string | number) {
     try {
         const supabase = await getSupabaseServerClient();
-        const { error } = await supabase.from(TABLE).delete().eq('id', alertId);
+        const user = await requireUser(supabase);
+        const { data, error } = await supabase
+            .from(TABLE)
+            .delete()
+            .eq('id', alertId)
+            .eq('user_id', user.id)
+            .select('id');
 
         if (error) throw error;
+        // RLS rejections surface as 0 affected rows, not an error — without
+        // this check the UI would report success on a no-op.
+        if (!data || data.length === 0) throw new Error('Alert not found');
 
         revalidatePath('/watchlist');
         return { success: true };
@@ -114,12 +140,16 @@ export async function deleteAlert(alertId: string | number) {
 export async function toggleAlert(alertId: string | number, active: boolean) {
     try {
         const supabase = await getSupabaseServerClient();
-        const { error } = await supabase
+        const user = await requireUser(supabase);
+        const { data, error } = await supabase
             .from(TABLE)
             .update({ active, updated_at: new Date().toISOString() })
-            .eq('id', alertId);
+            .eq('id', alertId)
+            .eq('user_id', user.id)
+            .select('id');
 
         if (error) throw error;
+        if (!data || data.length === 0) throw new Error('Alert not found');
 
         revalidatePath('/watchlist');
         return { success: true };
@@ -134,6 +164,7 @@ export async function toggleAlert(alertId: string | number, active: boolean) {
 export async function reactivateAlert(alertId: string | number) {
     try {
         const supabase = await getSupabaseServerClient();
+        const user = await requireUser(supabase);
         const { data, error } = await supabase
             .from(TABLE)
             .update({
@@ -144,6 +175,7 @@ export async function reactivateAlert(alertId: string | number) {
                 updated_at: new Date().toISOString(),
             })
             .eq('id', alertId)
+            .eq('user_id', user.id)
             .select()
             .single();
 
