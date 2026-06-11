@@ -21,7 +21,6 @@ export type ModuleId =
   | 'ask-shortcut'
   // Personal
   | 'watchlist'
-  | 'portfolio'
   // Markets
   | 'market-regime'
   | 'world-indices';
@@ -63,7 +62,6 @@ export const CATALOG: ModuleMeta[] = [
   { id: 'ask-shortcut', title: 'Ask the Markets', description: 'Quick link into the grounded AI chat.', category: 'AI', defaultSpan: 'half' },
   // Personal
   { id: 'watchlist', title: 'Watchlist', description: 'Your saved tickers at a glance.', category: 'Personal', defaultSpan: 'half' },
-  { id: 'portfolio', title: 'Portfolio', description: 'Your holdings and P/L.', category: 'Personal', defaultSpan: 'full' },
   // Markets
   { id: 'market-regime', title: 'Market Regime', description: 'Risk-on/off score and signals.', category: 'Markets', defaultSpan: 'half' },
   { id: 'world-indices', title: 'World Indices', description: 'Global equity ETFs by region.', category: 'Markets', defaultSpan: 'full' },

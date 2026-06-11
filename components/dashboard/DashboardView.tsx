@@ -4,7 +4,6 @@ import MarketBrief from '@/components/MarketBrief';
 import AiCommentary from '@/components/ai/AiCommentary';
 import MarketRegimeView from '@/components/markets/MarketRegimeView';
 import WorldEtfs from '@/components/world/WorldEtfs';
-import Portfolio from '@/components/portfolio/Portfolio';
 import AskShortcut from '@/components/dashboard/AskShortcut';
 import WatchlistTile from '@/components/dashboard/WatchlistTile';
 import MarketHeatmap from '@/components/markets/MarketHeatmap';
@@ -59,8 +58,6 @@ function renderModule(id: ModuleId, userId: string) {
       return <AskShortcut />;
     case 'watchlist':
       return <WatchlistTile userId={userId} />;
-    case 'portfolio':
-      return <Portfolio />;
     case 'market-regime':
       return (
         <Suspense fallback={<div className="text-sm text-gray-500">Computing regime…</div>}>

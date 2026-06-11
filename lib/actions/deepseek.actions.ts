@@ -36,10 +36,6 @@ export interface BullBear {
     bear: string[];
 }
 
-export interface XrayHolding {
-    symbol: string;
-    weight: number;
-}
 
 export interface NewsImpactItem {
     headline: string;
@@ -80,13 +76,6 @@ export async function getBullBear(symbol: string, name: string): Promise<BullBea
     return engineGet<BullBear | null>('/v1/company/bullbear', { symbol, name }, null);
 }
 
-export async function getPortfolioXray(holdings: XrayHolding[]): Promise<MarketBrief | null> {
-    const clean = (holdings ?? [])
-        .filter((h) => isTickerLike(h.symbol) && Number.isFinite(h.weight))
-        .slice(0, 100);
-    if (clean.length === 0) return null;
-    return enginePost<MarketBrief | null>('/v1/portfolio/xray', { holdings: clean }, null);
-}
 
 export async function getNewsImpact(symbols: string[]): Promise<NewsImpactItem[] | null> {
     const clean = sanitizeSymbols(symbols);

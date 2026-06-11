@@ -31,7 +31,6 @@ const CACHE_TTLS: Array<[prefix: string, seconds: number]> = [
   ['/v1/commentary', 300],
   ['/v1/watchlist/digest', 300],
   ['/v1/news/impact', 300],
-  ['/v1/portfolio/xray', 300],
   ['/v1/divergence', 300],
   ['/v1/heatmap', 60],
 ];

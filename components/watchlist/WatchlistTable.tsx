@@ -19,6 +19,18 @@ interface WatchlistTableProps {
 // and we make one call per symbol, so 30s keeps a sizeable watchlist safe.
 const POLL_INTERVAL_MS = 30_000;
 
+/** Compact signed-% cell — green/red/neutral, dash when unknown. */
+function PctCell({ value }: { value: number | null | undefined }) {
+    if (value == null) return <span className="text-gray-600">—</span>;
+    const cls = value > 0 ? "text-green-400" : value < 0 ? "text-red-400" : "text-gray-400";
+    return (
+        <span className={`tabular-nums ${cls}`}>
+            {value > 0 ? "+" : ""}
+            {value.toFixed(1)}%
+        </span>
+    );
+}
+
 export default function WatchlistTable({ data, onRefresh }: WatchlistTableProps) {
     const [stocks, setStocks] = useState<WatchlistStockData[]>(data);
     // Keep the latest symbols available to the interval without re-subscribing.
@@ -83,16 +95,19 @@ export default function WatchlistTable({ data, onRefresh }: WatchlistTableProps)
 
     return (
         <div className="overflow-x-auto rounded-xl border border-white/10 bg-black/40 backdrop-blur-md shadow-xl">
-            <table className="w-full text-left text-sm border-collapse">
+            <table className="w-full min-w-[1080px] text-left text-sm border-collapse">
                 <thead className="bg-white/5 text-gray-400 font-medium border-b border-white/10">
                     <tr>
-                        <th className="px-6 py-4 font-semibold tracking-wide">Company</th>
-                        <th className="px-6 py-4 font-semibold tracking-wide">Symbol</th>
-                        <th className="px-6 py-4 font-semibold tracking-wide">Price</th>
-                        <th className="px-6 py-4 font-semibold tracking-wide">Change</th>
-                        <th className="px-6 py-4 font-semibold tracking-wide">Market Cap</th>
-                        <th className="px-6 py-4 font-semibold tracking-wide">P/E</th>
-                        <th className="px-6 py-4 text-right font-semibold tracking-wide">Actions</th>
+                        <th className="px-5 py-4 font-semibold tracking-wide">Company</th>
+                        <th className="px-4 py-4 font-semibold tracking-wide">Symbol</th>
+                        <th className="px-4 py-4 font-semibold tracking-wide">Price</th>
+                        <th className="px-4 py-4 font-semibold tracking-wide">Today</th>
+                        <th className="px-4 py-4 font-semibold tracking-wide">1W</th>
+                        <th className="px-4 py-4 font-semibold tracking-wide">1M</th>
+                        <th className="px-4 py-4 font-semibold tracking-wide">YTD</th>
+                        <th className="px-4 py-4 font-semibold tracking-wide">52W / Trend</th>
+                        <th className="px-4 py-4 font-semibold tracking-wide">Cap · P/E</th>
+                        <th className="px-4 py-4 text-right font-semibold tracking-wide">Actions</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-white/10">
@@ -100,7 +115,7 @@ export default function WatchlistTable({ data, onRefresh }: WatchlistTableProps)
                         const isPositive = stock.change >= 0;
                         return (
                             <tr key={stock.symbol} className="hover:bg-white/5 transition-colors group">
-                                <td className="px-6 py-4">
+                                <td className="px-5 py-4">
                                     <Link
                                         href={`/stocks/${stock.symbol}`}
                                         className="flex items-center space-x-4 group/link"
@@ -122,10 +137,13 @@ export default function WatchlistTable({ data, onRefresh }: WatchlistTableProps)
                                         )}
                                         <div className="flex flex-col">
                                             <span className="font-semibold text-white text-base group-hover/link:text-teal-400 transition-colors">{stock.name}</span>
+                                            {stock.industry && (
+                                                <span className="text-xs text-gray-500">{stock.industry}</span>
+                                            )}
                                         </div>
                                     </Link>
                                 </td>
-                                <td className="px-6 py-4 font-medium text-gray-300">
+                                <td className="px-4 py-4 font-medium text-gray-300">
                                     <Link
                                         href={`/stocks/${stock.symbol}`}
                                         className="bg-white/5 px-2.5 py-1 rounded-md text-xs font-mono border border-white/10 hover:border-teal-400/40 hover:text-teal-400 transition-colors"
@@ -134,10 +152,17 @@ export default function WatchlistTable({ data, onRefresh }: WatchlistTableProps)
                                         {stock.symbol}
                                     </Link>
                                 </td>
-                                <td className="px-6 py-4 text-white font-medium text-base tracking-tight">
-                                    {stock.price != null ? formatCurrency(stock.price) : "—"}
+                                <td className="px-4 py-4">
+                                    <div className="text-white font-medium text-base tracking-tight tabular-nums">
+                                        {stock.price != null ? formatCurrency(stock.price) : "—"}
+                                    </div>
+                                    {stock.dayLow != null && stock.dayHigh != null && (
+                                        <div className="mt-0.5 text-[11px] text-gray-500 tabular-nums">
+                                            Day {formatCurrency(stock.dayLow)} – {formatCurrency(stock.dayHigh)}
+                                        </div>
+                                    )}
                                 </td>
-                                <td className="px-6 py-4 font-medium">
+                                <td className="px-4 py-4 font-medium">
                                     {stock.price != null ? (
                                         <div className={`flex items-center w-fit px-2 py-1 rounded-md ${isPositive ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"}`}>
                                             {isPositive ? <ArrowUp className="w-3.5 h-3.5 mr-1.5" /> : <ArrowDown className="w-3.5 h-3.5 mr-1.5" />}
@@ -147,13 +172,35 @@ export default function WatchlistTable({ data, onRefresh }: WatchlistTableProps)
                                         <span className="text-gray-500">—</span>
                                     )}
                                 </td>
-                                <td className="px-6 py-4 text-gray-400 font-medium">
-                                    {stock.marketCap ? formatNumber(stock.marketCap) : "—"}
+                                <td className="px-4 py-4 text-sm font-medium"><PctCell value={stock.w1} /></td>
+                                <td className="px-4 py-4 text-sm font-medium"><PctCell value={stock.m1} /></td>
+                                <td className="px-4 py-4 text-sm font-medium"><PctCell value={stock.ytd} /></td>
+                                <td className="px-4 py-4">
+                                    <div className="text-sm tabular-nums text-gray-300">
+                                        {stock.offHigh52 != null ? (
+                                            <span className={stock.offHigh52 > -3 ? "text-green-400" : stock.offHigh52 < -20 ? "text-red-400" : "text-gray-300"}>
+                                                {stock.offHigh52.toFixed(1)}% vs high
+                                            </span>
+                                        ) : (
+                                            <span className="text-gray-600">—</span>
+                                        )}
+                                    </div>
+                                    {stock.above200 != null && (
+                                        <span
+                                            className={`mt-1 inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold ${stock.above200 ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"}`}
+                                            title="Last close vs the 200-day average"
+                                        >
+                                            {stock.above200 ? "▲ above 200d" : "▼ below 200d"}
+                                        </span>
+                                    )}
                                 </td>
-                                <td className="px-6 py-4 text-gray-400 font-medium">
-                                    {stock.peRatio != null ? stock.peRatio.toFixed(2) : "—"}
+                                <td className="px-4 py-4 text-gray-400 font-medium">
+                                    <div>{stock.marketCap ? formatNumber(stock.marketCap) : "—"}</div>
+                                    <div className="mt-0.5 text-[11px] text-gray-500 tabular-nums">
+                                        P/E {stock.peRatio != null ? stock.peRatio.toFixed(1) : "—"}
+                                    </div>
                                 </td>
-                                <td className="px-6 py-4 text-right">
+                                <td className="px-4 py-4 text-right">
                                     <div className="flex items-center justify-end space-x-3 opacity-80 group-hover:opacity-100 transition-opacity">
                                         <CreateAlertModal
                                             symbol={stock.symbol}

@@ -3,6 +3,7 @@
 import { getDateRange, validateArticle, formatArticle } from '@/lib/utils';
 import { POPULAR_STOCK_SYMBOLS } from '@/lib/constants';
 import { getMarketKV } from '@/lib/market-cache';
+import { fetchDailyCloses } from '@/lib/actions/returns.actions';
 import { cache } from 'react';
 
 const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
@@ -13,11 +14,16 @@ type FinnhubQuote = {
     c?: number;
     d?: number;
     dp?: number;
+    h?: number; // day high
+    l?: number; // day low
+    o?: number; // day open
+    pc?: number; // previous close
 };
 
 type FinnhubCompanyProfile = {
     currency?: string;
     exchange?: string;
+    finnhubIndustry?: string;
     logo?: string;
     marketCapitalization?: number;
     name?: string;
@@ -228,12 +234,64 @@ export type WatchlistStockData = {
     price: number | null;
     change: number;
     changePercent: number;
+    dayLow: number | null;
+    dayHigh: number | null;
+    prevClose: number | null;
     currency: string;
     name: string;
+    industry: string | null;
     logo?: string;
     marketCap?: number;
     peRatio: number | null;
+    /** EOD enrichment from 2y of daily closes (Yahoo, cached 6h). */
+    w1: number | null;
+    m1: number | null;
+    ytd: number | null;
+    /** % below the 52-week closing high (≤ 0). */
+    offHigh52: number | null;
+    /** Price above the 200-day average? null when history is short. */
+    above200: boolean | null;
 };
+
+// EOD enrichment computed from the same daily-closes series the returns
+// table uses — one extra (6h-cached) Yahoo call per symbol inside the
+// existing 4-worker pool.
+function computeEnrichment(closes: Array<{ date: string; close: number }>) {
+    const empty = { w1: null, m1: null, ytd: null, offHigh52: null, above200: null } as {
+        w1: number | null;
+        m1: number | null;
+        ytd: number | null;
+        offHigh52: number | null;
+        above200: boolean | null;
+    };
+    const n = closes.length;
+    if (n < 2) return empty;
+    const last = closes[n - 1].close;
+    const at = (back: number) => (n - 1 - back >= 0 ? closes[n - 1 - back].close : undefined);
+    const pctFrom = (past: number | undefined) =>
+        past && past > 0 ? (last / past - 1) * 100 : null;
+
+    const year = new Date().getFullYear();
+    const firstOfYear = closes.find((c) => c.date.startsWith(`${year}-`))?.close;
+
+    const window52 = closes.slice(-252);
+    const high52 = Math.max(...window52.map((c) => c.close));
+
+    let above200: boolean | null = null;
+    if (n >= 200) {
+        let sum = 0;
+        for (let i = n - 200; i < n; i++) sum += closes[i].close;
+        above200 = last > sum / 200;
+    }
+
+    return {
+        w1: pctFrom(at(5)),
+        m1: pctFrom(at(21)),
+        ytd: pctFrom(firstOfYear),
+        offHigh52: high52 > 0 ? (last / high52 - 1) * 100 : null,
+        above200,
+    };
+}
 
 // Run an async map with a bounded number of workers, so we never fire a big
 // simultaneous burst of Finnhub requests (which the free tier 429s even when the
@@ -257,10 +315,11 @@ export async function getWatchlistData(symbols: string[]): Promise<WatchlistStoc
     // Cap to 4 symbols in flight (≤12 Finnhub calls at once) so a larger
     // watchlist can't burst past the free-tier rate limit and 429.
     return mapWithLimit(symbols, 4, async (sym) => {
-        const [quote, profile, peRatio] = await Promise.all([
+        const [quote, profile, peRatio, closes] = await Promise.all([
             getQuote(sym),
             getCompanyProfile(sym),
             getPeRatio(sym),
+            fetchDailyCloses(sym).catch(() => []),
         ]);
 
         return {
@@ -269,11 +328,16 @@ export async function getWatchlistData(symbols: string[]): Promise<WatchlistStoc
             price: quote?.c ?? null,
             change: quote?.d ?? 0,
             changePercent: quote?.dp ?? 0,
+            dayLow: quote?.l ?? null,
+            dayHigh: quote?.h ?? null,
+            prevClose: quote?.pc ?? null,
             currency: profile?.currency || 'USD',
             name: profile?.name || sym,
+            industry: profile?.finnhubIndustry || null,
             logo: profile?.logo,
             marketCap: profile?.marketCapitalization,
             peRatio,
+            ...computeEnrichment(closes),
         };
     });
 }
