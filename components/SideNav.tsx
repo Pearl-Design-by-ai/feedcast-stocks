@@ -25,7 +25,6 @@ import {
   LayoutDashboard,
   Search,
   Star,
-  Briefcase,
   Sparkles,
   Activity,
   Gauge,
@@ -58,7 +57,6 @@ const MAIN_ICONS: Record<string, LucideIcon> = {
   '/': LayoutDashboard,
   '/search': Search,
   '/watchlist': Star,
-  '/portfolio': Briefcase,
 };
 
 const MARKETS_ICONS: Record<string, LucideIcon> = {
