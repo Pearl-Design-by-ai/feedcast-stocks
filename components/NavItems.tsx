@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import {NAV_ITEMS, MARKETS_NAV, REPORTS_NAV} from "@/lib/constants";
+import {NAV_ITEMS, MARKETS_NAV} from "@/lib/constants";
 import Link from "next/link";
 import {usePathname} from "next/navigation";
 import {ChevronDown} from "lucide-react";
@@ -23,7 +23,6 @@ const NavItems = ({initialStocks}: { initialStocks: StockWithWatchlistStatus[]})
     }
 
     const marketsActive = MARKETS_NAV.items.some((item) => pathname.startsWith(item.href))
-    const reportsActive = pathname.startsWith('/reports')
 
     return (
         <ul className="flex flex-col sm:flex-row p-2 gap-3 sm:gap-10 font-medium">
@@ -43,30 +42,6 @@ const NavItems = ({initialStocks}: { initialStocks: StockWithWatchlistStatus[]})
                     </Link>
                 </li>
             })}
-
-            <li key="reports">
-                <DropdownMenu>
-                    <DropdownMenuTrigger
-                        className={`flex items-center gap-1 outline-none hover:text-teal-500 transition-colors ${reportsActive ? 'text-gray-100' : ''}`}
-                    >
-                        {REPORTS_NAV.label}
-                        <ChevronDown className="h-4 w-4" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="text-gray-400 bg-gray-800">
-                        {REPORTS_NAV.items.map(({href, label}) => (
-                            <DropdownMenuItem
-                                key={href}
-                                asChild
-                                className="cursor-pointer focus:bg-gray-700 focus:text-teal-500"
-                            >
-                                <Link href={href} className={isActive(href) ? 'text-gray-100' : ''}>
-                                    {label}
-                                </Link>
-                            </DropdownMenuItem>
-                        ))}
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </li>
 
             <li key="markets">
                 <DropdownMenu>

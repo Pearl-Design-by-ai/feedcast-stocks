@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Star, ArrowRight } from 'lucide-react';
 import { getUserWatchlist } from '@/lib/actions/watchlist.actions';
-import { getReportQuotes } from '@/lib/reports-data';
+import { getQuoteMap } from '@/lib/quotes';
 import { cn } from '@/lib/utils';
 
 type Row = { symbol: string; company: string };
@@ -32,7 +32,7 @@ export default async function WatchlistTile({ userId }: { userId: string }) {
   const shown = rows.slice(0, MAX_ROWS);
   let quotes = new Map<string, { price: number; changePercent: number }>();
   try {
-    quotes = await getReportQuotes(shown.map((r) => r.symbol));
+    quotes = await getQuoteMap(shown.map((r) => r.symbol));
   } catch {
     // Quotes are decoration here — the symbol list still renders without them.
   }
