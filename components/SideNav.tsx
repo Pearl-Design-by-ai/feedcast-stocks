@@ -23,7 +23,6 @@ import {
   PanelLeftClose,
   ArrowLeft,
   LayoutDashboard,
-  FlaskConical,
   Search,
   Star,
   Briefcase,
@@ -60,7 +59,6 @@ const MAIN_ICONS: Record<string, LucideIcon> = {
   '/search': Search,
   '/watchlist': Star,
   '/portfolio': Briefcase,
-  '/analysis': FlaskConical,
 };
 
 const MARKETS_ICONS: Record<string, LucideIcon> = {
