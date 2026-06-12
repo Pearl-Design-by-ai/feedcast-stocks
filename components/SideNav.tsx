@@ -6,8 +6,8 @@
  * hamburger toggle that collapses the 260px panel into a 52px icon rail).
  * Open state persists to localStorage so it survives reloads.
  *
- * Below md the rail doesn't render — the Header's MobileNav drawer handles
- * narrow viewports, exactly like the main site.
+ * Below md the rail doesn't render — the Header's MobileDrawer (logo-
+ * triggered slide-in panel) handles narrow viewports, like the main site.
  *
  * Brand color: rows use `text-teal-400`, which globals.css maps to the runtime
  * `--brand` var. The (root) layout sets `--brand` per-member from their saved
