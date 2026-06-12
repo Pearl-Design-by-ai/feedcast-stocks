@@ -31,6 +31,116 @@ function PctCell({ value }: { value: number | null | undefined }) {
     );
 }
 
+
+/** One stock as a phone-width card — same data and actions as the table row. */
+function MobileCard({
+    stock,
+    onRefresh,
+    onRemove,
+}: {
+    stock: WatchlistStockData;
+    onRefresh?: () => void;
+    onRemove: (symbol: string) => Promise<void>;
+}) {
+    const isPositive = stock.change >= 0;
+    return (
+        <div className="rounded-xl border border-white/10 bg-black/40 p-4">
+            {/* Identity + price */}
+            <div className="flex items-start justify-between gap-3">
+                <Link href={`/stocks/${stock.symbol}`} className="flex min-w-0 items-center gap-3">
+                    {stock.logo ? (
+                        <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full border border-white/5 bg-white/10">
+                            <Image src={stock.logo} alt={stock.symbol} fill className="object-contain p-1" />
+                        </div>
+                    ) : (
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-gray-700 to-gray-800 text-xs font-bold text-white">
+                            {stock.symbol[0]}
+                        </div>
+                    )}
+                    <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-white">{stock.name}</p>
+                        <p className="truncate text-[11px] text-gray-500">
+                            <span className="font-mono text-gray-400">{stock.symbol}</span>
+                            {stock.industry && <> · {stock.industry}</>}
+                        </p>
+                    </div>
+                </Link>
+                <div className="shrink-0 text-right">
+                    <p className="text-base font-semibold tabular-nums text-white">
+                        {stock.price != null ? formatCurrency(stock.price) : "—"}
+                    </p>
+                    {stock.price != null && (
+                        <span
+                            className={`mt-0.5 inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium ${isPositive ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"}`}
+                        >
+                            {isPositive ? <ArrowUp className="mr-1 h-3 w-3" /> : <ArrowDown className="mr-1 h-3 w-3" />}
+                            {Math.abs(stock.changePercent).toFixed(2)}%
+                        </span>
+                    )}
+                </div>
+            </div>
+
+            {/* Period returns */}
+            <div className="mt-3 grid grid-cols-3 gap-2">
+                {([["1W", stock.w1], ["1M", stock.m1], ["YTD", stock.ytd]] as const).map(([label, v]) => (
+                    <div key={label} className="rounded-lg bg-white/5 px-2 py-1.5 text-center">
+                        <p className="text-[10px] uppercase tracking-wide text-gray-500">{label}</p>
+                        <p className="text-xs font-semibold"><PctCell value={v} /></p>
+                    </div>
+                ))}
+            </div>
+
+            {/* Context line */}
+            <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-500 tabular-nums">
+                {stock.offHigh52 != null && (
+                    <span className={stock.offHigh52 > -3 ? "text-green-400" : stock.offHigh52 < -20 ? "text-red-400" : undefined}>
+                        {stock.offHigh52.toFixed(1)}% vs 52W high
+                    </span>
+                )}
+                {stock.above200 != null && (
+                    <span className={stock.above200 ? "text-green-400" : "text-red-400"}>
+                        {stock.above200 ? "▲ above 200d" : "▼ below 200d"}
+                    </span>
+                )}
+                {stock.dayLow != null && stock.dayHigh != null && (
+                    <span>Day {formatCurrency(stock.dayLow)}–{formatCurrency(stock.dayHigh)}</span>
+                )}
+                <span>
+                    {stock.marketCap ? formatNumber(stock.marketCap) : "—"} · P/E{" "}
+                    {stock.peRatio != null ? stock.peRatio.toFixed(1) : "—"}
+                </span>
+            </div>
+
+            {/* Actions */}
+            <div className="mt-3 flex items-center justify-end gap-2 border-t border-white/5 pt-2.5">
+                <CreateAlertModal
+                    symbol={stock.symbol}
+                    currentPrice={stock.price ?? 0}
+                    companyName={stock.name}
+                    onAlertCreated={onRefresh}
+                >
+                    <button
+                        className="flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-xs text-gray-300 transition-colors hover:text-white"
+                        title="Add Alert"
+                    >
+                        <Bell className="h-3.5 w-3.5" /> Alert
+                    </button>
+                </CreateAlertModal>
+                <WatchlistButton
+                    symbol={stock.symbol}
+                    company={stock.name}
+                    isInWatchlist={true}
+                    type="icon"
+                    showTrashIcon={false}
+                    onWatchlistChange={async (sym, added) => {
+                        if (!added) await onRemove(sym);
+                    }}
+                />
+            </div>
+        </div>
+    );
+}
+
 export default function WatchlistTable({ data, onRefresh }: WatchlistTableProps) {
     const [stocks, setStocks] = useState<WatchlistStockData[]>(data);
     // Keep the latest symbols available to the interval without re-subscribing.
@@ -94,7 +204,16 @@ export default function WatchlistTable({ data, onRefresh }: WatchlistTableProps)
     };
 
     return (
-        <div className="overflow-x-auto rounded-xl border border-white/10 bg-black/40 backdrop-blur-md shadow-xl">
+        <>
+        {/* Mobile: stacked cards — the 10-column table can't work on a phone. */}
+        <div className="flex flex-col gap-3 md:hidden">
+            {stocks.map((stock) => (
+                <MobileCard key={stock.symbol} stock={stock} onRefresh={onRefresh} onRemove={handleRemove} />
+            ))}
+        </div>
+
+        {/* Desktop: full data table. */}
+        <div className="hidden overflow-x-auto rounded-xl border border-white/10 bg-black/40 backdrop-blur-md shadow-xl md:block">
             <table className="w-full min-w-[1080px] text-left text-sm border-collapse">
                 <thead className="bg-white/5 text-gray-400 font-medium border-b border-white/10">
                     <tr>
@@ -233,5 +352,6 @@ export default function WatchlistTable({ data, onRefresh }: WatchlistTableProps)
                 </tbody>
             </table>
         </div>
+        </>
     );
 }
