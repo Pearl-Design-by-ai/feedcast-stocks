@@ -7,7 +7,6 @@
 
 export type ModuleId =
   // TradingView
-  | 'market-overview'
   | 'market-quotes'
   | 'top-stories'
   | 'screener'
@@ -47,7 +46,6 @@ export interface ModuleMeta {
 
 export const CATALOG: ModuleMeta[] = [
   // TradingView
-  { id: 'market-overview', title: 'Market Overview', description: 'Index & sector overview with mini charts.', category: 'TradingView', defaultSpan: 'half' },
   { id: 'market-quotes', title: 'Market Quotes', description: 'Live quote table across key stocks.', category: 'TradingView', defaultSpan: 'full' },
   { id: 'top-stories', title: 'Top Stories', description: 'Latest market news headlines.', category: 'TradingView', defaultSpan: 'half' },
   { id: 'screener', title: 'Stock Screener', description: 'Most-capitalized stock screener.', category: 'TradingView', defaultSpan: 'full' },
@@ -79,7 +77,7 @@ const VALID_IDS = new Set(CATALOG.map((m) => m.id));
 export const DEFAULT_LAYOUT: DashboardLayout = {
   tiles: [
     { id: 'market-brief', span: 'full' },
-    { id: 'market-overview', span: 'half' },
+    { id: 'watchlist', span: 'half' },
     { id: 'market-regime', span: 'half' },
     { id: 'market-quotes', span: 'full' },
     { id: 'top-stories', span: 'full' },
