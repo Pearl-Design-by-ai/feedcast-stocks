@@ -14,6 +14,39 @@ import SearchCommand from '@/components/SearchCommand';
 import DataDisclaimer from '@/components/DataDisclaimer';
 import { Loader2 } from 'lucide-react';
 
+/**
+ * Streamed in its own Suspense boundary: the enriched per-symbol fetch
+ * (quote + profile + P/E + 2y closes) is the slowest part of the page, so it
+ * must not block first paint.
+ */
+async function TableSection({
+    watchlistItems,
+}: {
+    watchlistItems: Awaited<ReturnType<typeof getUserWatchlist>>;
+}) {
+    const stockData = await getWatchlistData(watchlistItems.map((i) => i.symbol));
+    return <WatchlistManager initialItems={watchlistItems} initialData={stockData} />;
+}
+
+async function NewsSection({ symbols }: { symbols: string[] }) {
+    const news = await getNews(symbols.length > 0 ? symbols : undefined).catch(() => []);
+    return <NewsGrid news={news || []} />;
+}
+
+async function AlertsSection({ userId }: { userId: string }) {
+    const alerts = await getUserAlerts(userId);
+    return <AlertsPanel alerts={alerts} />;
+}
+
+function TableSkeleton() {
+    return (
+        <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/40 p-10 text-sm text-gray-500">
+            <Loader2 className="h-4 w-4 animate-spin text-teal-400" />
+            Loading live data for your watchlist…
+        </div>
+    );
+}
+
 export default async function WatchlistPage() {
     const supabase = await getSupabaseServerClient();
     const {
@@ -26,21 +59,10 @@ export default async function WatchlistPage() {
 
     const userId = user.id;
 
-    // Parallel data fetching
-    const [watchlistItems, alerts, news] = await Promise.all([
-        getUserWatchlist(userId),
-        getUserAlerts(userId),
-        getNews() // Initial news fetch
-    ]);
-
+    // Only the (fast) watchlist rows block the page shell — every slow data
+    // source below streams into its own Suspense boundary.
+    const watchlistItems = await getUserWatchlist(userId);
     const watchlistSymbols = watchlistItems.map((item) => item.symbol);
-
-    // Live market data for the table + (when there are symbols) more relevant
-    // news, fetched together.
-    const [stockData, relevantNews] = await Promise.all([
-        getWatchlistData(watchlistSymbols),
-        watchlistSymbols.length > 0 ? getNews(watchlistSymbols) : Promise.resolve(news),
-    ]);
 
     return (
         // bg-gray-900 (not bg-black) so the member's chosen background tone applies.
@@ -64,7 +86,9 @@ export default async function WatchlistPage() {
                 {/* Main Content - Watchlist Table */}
                 <div className="lg:col-span-3 space-y-8">
                     <div className="space-y-6">
-                        <WatchlistManager initialItems={watchlistItems} initialData={stockData} />
+                        <Suspense fallback={<TableSkeleton />}>
+                            <TableSection watchlistItems={watchlistItems} />
+                        </Suspense>
                     </div>
 
                     <Suspense fallback={null}>
@@ -81,13 +105,15 @@ export default async function WatchlistPage() {
 
                     {/* News Section */}
                     <Suspense fallback={<div className="flex justify-center p-12"><Loader2 className="animate-spin text-gray-500" /></div>}>
-                        <NewsGrid news={relevantNews || []} />
+                        <NewsSection symbols={watchlistSymbols} />
                     </Suspense>
                 </div>
 
                 {/* Sidebar - Alerts */}
                 <div className="lg:col-span-1">
-                    <AlertsPanel alerts={alerts} />
+                    <Suspense fallback={null}>
+                        <AlertsSection userId={userId} />
+                    </Suspense>
                 </div>
             </div>
         </div>
