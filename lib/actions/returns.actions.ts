@@ -1,5 +1,7 @@
 'use server';
 
+import { kvCachedJSON } from '@/lib/market-cache';
+
 /**
  * Multi-period total-return approximations from Yahoo Finance's free chart API.
  * (We used to read Stooq's CSV, but stooq.com now serves a JS proof-of-work
@@ -25,6 +27,24 @@ export async function fetchDailyCloses(
     symbol: string
 ): Promise<Array<{ date: string; close: number }>> {
     const t = tickerOf(symbol);
+    // Cross-isolate KV cache — fetch revalidate hints are per-isolate no-ops on
+    // Workers, so without this every fresh isolate re-downloads 2y of history
+    // per symbol (the main cost of the enriched watchlist). Empty results are
+    // returned as null inside the cache helper so a Yahoo blip isn't cached.
+    const cached = await kvCachedJSON<Array<{ date: string; close: number }> | null>(
+        `yh:${t}`,
+        21600,
+        async () => {
+            const out = await fetchDailyClosesUncached(t);
+            return out.length > 0 ? out : null;
+        }
+    );
+    return cached ?? [];
+}
+
+async function fetchDailyClosesUncached(
+    t: string
+): Promise<Array<{ date: string; close: number }>> {
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(t)}?range=2y&interval=1d`;
     try {
         const res = await fetch(url, {
