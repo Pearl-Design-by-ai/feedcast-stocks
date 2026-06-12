@@ -7,7 +7,6 @@ import WorldEtfs from '@/components/world/WorldEtfs';
 import AskShortcut from '@/components/dashboard/AskShortcut';
 import WatchlistTile from '@/components/dashboard/WatchlistTile';
 import {
-  MARKET_OVERVIEW_WIDGET_CONFIG,
   MARKET_DATA_WIDGET_CONFIG,
   TOP_STORIES_WIDGET_CONFIG,
   SCREENER_WIDGET_CONFIG,
@@ -25,10 +24,6 @@ function tv(name: string, config: Record<string, unknown>, height: number) {
 
 function renderModule(id: ModuleId, userId: string) {
   switch (id) {
-    case 'market-overview':
-      // Needs the original 600px — the tabs + chart + symbol list render blank
-      // when squeezed shorter.
-      return tv('market-overview.js', MARKET_OVERVIEW_WIDGET_CONFIG, 600);
     case 'market-quotes':
       return tv('market-quotes.js', MARKET_DATA_WIDGET_CONFIG, 520);
     case 'top-stories':
