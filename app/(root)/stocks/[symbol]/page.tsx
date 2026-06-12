@@ -20,6 +20,14 @@ import { isStockInWatchlist } from '@/lib/actions/watchlist.actions';
 import { getStockSentimentInsights } from '@/lib/actions/adanos.actions';
 import { getCompanyProfile } from '@/lib/actions/finnhub.actions';
 import { getRecommendationTrends } from '@/lib/actions/stock-insights.actions';
+import {
+    KeyStats,
+    EarningsPanel,
+    Peers,
+    InsiderActivity,
+    StockNews,
+    TechSnapshot,
+} from '@/components/stocks/InsightPanels';
 import { formatSymbolForTradingView } from '@/lib/utils';
 
 export default async function StockDetails({ params }: StockDetailsPageProps) {
@@ -67,6 +75,14 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
                         height={600}
                         allowExpand={true}
                     />
+
+                    <Suspense fallback={null}>
+                        <TechSnapshot symbol={symbol.toUpperCase()} />
+                    </Suspense>
+
+                    <Suspense fallback={null}>
+                        <StockNews symbol={symbol.toUpperCase()} />
+                    </Suspense>
                 </div>
 
                 {/* Right column */}
@@ -84,9 +100,25 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
                         <CompanyBrief symbol={symbol.toUpperCase()} name={companyName} />
                     </Suspense>
 
+                    <Suspense fallback={null}>
+                        <KeyStats symbol={symbol.toUpperCase()} />
+                    </Suspense>
+
                     <AnalystRatings trends={recommendationTrends} />
 
                     <BullBear symbol={symbol.toUpperCase()} name={companyName} />
+
+                    <Suspense fallback={null}>
+                        <EarningsPanel symbol={symbol.toUpperCase()} />
+                    </Suspense>
+
+                    <Suspense fallback={null}>
+                        <InsiderActivity symbol={symbol.toUpperCase()} />
+                    </Suspense>
+
+                    <Suspense fallback={null}>
+                        <Peers symbol={symbol.toUpperCase()} />
+                    </Suspense>
 
                     <StockSentimentCard insight={sentimentInsights} />
 
