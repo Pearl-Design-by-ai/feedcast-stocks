@@ -20,6 +20,7 @@ import {
   Search,
   Star,
   Radar,
+  GraduationCap,
   Activity,
   Palette,
   Info,
@@ -148,6 +149,7 @@ export default function MobileDrawer({
               </button>
               {item('/watchlist', 'Watchlist', Star)}
               {item('/bubble-detector', 'Bubble Detector', Radar)}
+              {item('/learn', 'Learn', GraduationCap)}
 
               <div className="my-3 h-px bg-gray-700/70" />
 

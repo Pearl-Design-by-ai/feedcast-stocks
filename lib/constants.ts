@@ -3,6 +3,7 @@ export const NAV_ITEMS = [
     { href: '/search', label: 'Search' },
     { href: '/watchlist', label: 'Watchlist' },
     { href: '/bubble-detector', label: 'Bubble Detector' },
+    { href: '/learn', label: 'Learn' },
 ];
 
 // Market-analysis pages, grouped under a single "Markets" dropdown in the nav.
