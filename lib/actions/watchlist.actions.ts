@@ -5,6 +5,7 @@ import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 const TABLE = 'stock_watchlist';
+const GROUPS = 'stock_watchlist_groups';
 
 export type WatchlistRow = {
     id: number;
@@ -14,10 +15,35 @@ export type WatchlistRow = {
     added_at: string;
 };
 
+/** The user's default (first) group id, creating one if they have none. */
+async function defaultGroupId(
+    supabase: Awaited<ReturnType<typeof getSupabaseServerClient>>,
+    userId: string
+): Promise<number> {
+    const { data } = await supabase
+        .from(GROUPS)
+        .select('id')
+        .eq('user_id', userId)
+        .order('position', { ascending: true })
+        .order('id', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+    if (data) return (data as { id: number }).id;
+    const { data: created, error } = await supabase
+        .from(GROUPS)
+        .insert({ user_id: userId, name: 'My Watchlist', position: 0 })
+        .select('id')
+        .single();
+    if (error) throw error;
+    return (created as { id: number }).id;
+}
+
 // -- CRUD Operations --
 
 // Writes resolve the owner from the session (defense in depth on top of RLS)
-// instead of trusting a client-supplied userId.
+// instead of trusting a client-supplied userId. Stars from stock pages land in
+// the member's default (first) watchlist group; the watchlist page manages the
+// other groups directly.
 export async function addToWatchlist(symbol: string, company: string) {
     try {
         const supabase = await getSupabaseServerClient();
@@ -26,16 +52,19 @@ export async function addToWatchlist(symbol: string, company: string) {
         } = await supabase.auth.getUser();
         if (!user) throw new Error('Not signed in');
 
+        const groupId = await defaultGroupId(supabase, user.id);
+
         const { data, error } = await supabase
             .from(TABLE)
             .upsert(
                 {
                     user_id: user.id,
+                    group_id: groupId,
                     symbol: symbol.toUpperCase(),
                     company,
                     added_at: new Date().toISOString(),
                 },
-                { onConflict: 'user_id,symbol' }
+                { onConflict: 'group_id,symbol' }
             )
             .select()
             .single();
@@ -150,6 +179,37 @@ export async function getWatchlistSymbolsByEmail(email: string): Promise<string[
         return (items ?? []).map((i: { symbol: string }) => String(i.symbol));
     } catch (err) {
         console.error('getWatchlistSymbolsByEmail error:', err);
+        return [];
+    }
+}
+
+/**
+ * Items in one watchlist group (RLS scopes to the owner). Used by the
+ * per-group view on the watchlist page.
+ */
+export async function getGroupItems(groupId: number) {
+    try {
+        const supabase = await getSupabaseServerClient();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return [];
+        const { data, error } = await supabase
+            .from(TABLE)
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('group_id', groupId)
+            .order('added_at', { ascending: false });
+        if (error) throw error;
+        return (data ?? []).map((row: WatchlistRow & { group_id?: number }) => ({
+            id: row.id,
+            userId: row.user_id,
+            symbol: row.symbol,
+            company: row.company,
+            addedAt: row.added_at,
+        }));
+    } catch (error) {
+        console.error('getGroupItems error:', error);
         return [];
     }
 }
