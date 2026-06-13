@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -22,6 +22,7 @@ import {
     deleteAlert,
     toggleAlert,
     reactivateAlert,
+    getSymbolPrice,
 } from '@/lib/actions/alert.actions';
 
 export interface AlertItem {
@@ -90,6 +91,33 @@ export default function AlertsManager({ alerts, prices, suggestions }: AlertsMan
     const [condition, setCondition] = useState<'ABOVE' | 'BELOW'>('ABOVE');
     const [price, setPrice] = useState('');
     const [name, setName] = useState('');
+    const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+    const [quoting, setQuoting] = useState(false);
+
+    // When the ticker settles, pull its live price and pre-fill the target so
+    // the threshold can be set relative to where it trades now. Debounced, and
+    // cancelled on each keystroke so partial tickers don't fire stale fetches.
+    useEffect(() => {
+        const sym = symbol.trim().toUpperCase();
+        if (!sym) {
+            setCurrentPrice(null);
+            setQuoting(false);
+            return;
+        }
+        let cancelled = false;
+        setQuoting(true);
+        const t = setTimeout(async () => {
+            const p = await getSymbolPrice(sym);
+            if (cancelled) return;
+            setCurrentPrice(p);
+            setQuoting(false);
+            if (p != null) setPrice(p.toFixed(2));
+        }, 450);
+        return () => {
+            cancelled = true;
+            clearTimeout(t);
+        };
+    }, [symbol]);
 
     const { triggered, active, paused } = useMemo(() => {
         return {
@@ -287,7 +315,7 @@ export default function AlertsManager({ alerts, prices, suggestions }: AlertsMan
                                 value={price}
                                 onChange={(e) => setPrice(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && submitCreate()}
-                                placeholder="140.00"
+                                placeholder={currentPrice != null ? currentPrice.toFixed(2) : '140.00'}
                                 className="w-32 rounded-lg border border-gray-700 bg-gray-800 py-2 pl-7 pr-3 text-sm text-gray-100 placeholder:text-gray-600 focus:border-yellow-500/60 focus:outline-none"
                             />
                         </div>
@@ -314,6 +342,24 @@ export default function AlertsManager({ alerts, prices, suggestions }: AlertsMan
                         {pending ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />} Add alert
                     </button>
                 </div>
+
+                {symbol.trim() && (
+                    <p className="mt-2.5 text-[11px] text-gray-500">
+                        {quoting ? (
+                            <span className="inline-flex items-center gap-1.5">
+                                <Loader2 size={11} className="animate-spin" /> Fetching {symbol.trim().toUpperCase()} price…
+                            </span>
+                        ) : currentPrice != null ? (
+                            <>
+                                {symbol.trim().toUpperCase()} is trading around{' '}
+                                <span className="font-semibold text-gray-300">{formatCurrency(currentPrice)}</span> now —
+                                target pre-filled, adjust as you like.
+                            </>
+                        ) : (
+                            <>Couldn&apos;t fetch a live price for {symbol.trim().toUpperCase()} — enter a target manually.</>
+                        )}
+                    </p>
+                )}
             </section>
 
             {/* Existing alerts */}
