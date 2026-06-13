@@ -28,6 +28,8 @@ export default function WatchlistGroupBar({
 }) {
     const router = useRouter();
     const [pending, start] = useTransition();
+    const [navPending, startNav] = useTransition();
+    const [targetId, setTargetId] = useState<number | null>(null);
     const [creating, setCreating] = useState(false);
     const [newName, setNewName] = useState('');
     const [renaming, setRenaming] = useState(false);
@@ -37,9 +39,19 @@ export default function WatchlistGroupBar({
     const active = groups.find((g) => g.id === activeId) ?? groups[0];
     const atMax = groups.length >= MAX_GROUPS;
 
+    // Optimistic selection: reflect the clicked tab the instant it's pressed,
+    // while the server round-trip for that list is still in flight. Without
+    // this the switch looks stuck — the new tab only gets a focus ring while
+    // the old one keeps the active styling until the page re-renders.
+    const shownId = navPending && targetId != null ? targetId : active.id;
+    const shown = groups.find((g) => g.id === shownId) ?? active;
+
     const go = (id: number) => {
-        if (id === active.id) return;
-        router.push(`/watchlist?list=${id}`);
+        if (id === shownId) return;
+        setTargetId(id);
+        startNav(() => {
+            router.push(`/watchlist?list=${id}`);
+        });
     };
 
     const doCreate = () =>
@@ -55,7 +67,7 @@ export default function WatchlistGroupBar({
 
     const doRename = () =>
         start(async () => {
-            const res = await renameGroup(active.id, editName);
+            const res = await renameGroup(shown.id, editName);
             if (!res.ok) { toast.error(res.error ?? 'Could not rename'); return; }
             setRenaming(false);
             toast.success('Renamed');
@@ -64,10 +76,10 @@ export default function WatchlistGroupBar({
 
     const doDelete = () =>
         start(async () => {
-            const res = await deleteGroup(active.id);
+            const res = await deleteGroup(shown.id);
             if (!res.ok) { toast.error(res.error ?? 'Could not delete'); return; }
             toast.success('Watchlist deleted');
-            const next = groups.find((g) => g.id !== active.id);
+            const next = groups.find((g) => g.id !== shown.id);
             if (next) router.push(`/watchlist?list=${next.id}`);
             else router.refresh();
         });
@@ -75,12 +87,12 @@ export default function WatchlistGroupBar({
     const doAdd = () =>
         start(async () => {
             if (!symbol.trim()) return;
-            const res = await addSymbolsToGroup(active.id, symbol);
+            const res = await addSymbolsToGroup(shown.id, symbol);
             if (!res.ok) { toast.error(res.error ?? 'Could not add'); return; }
             setSymbol('');
             const skip = res.skipped > 0 ? ` · ${res.skipped} skipped` : '';
             toast.success(
-                `${res.added} ${res.added === 1 ? 'ticker' : 'tickers'} added to ${active.name}${skip}`
+                `${res.added} ${res.added === 1 ? 'ticker' : 'tickers'} added to ${shown.name}${skip}`
             );
             router.refresh();
         });
@@ -90,23 +102,27 @@ export default function WatchlistGroupBar({
             {/* Row 1 — list tabs */}
             <div className="flex flex-wrap items-center gap-1 p-1">
                 <List size={15} className="mx-1.5 shrink-0 text-gray-600" />
-                {groups.map((g) => (
-                    <button
-                        key={g.id}
-                        type="button"
-                        onClick={() => go(g.id)}
-                        disabled={pending}
-                        aria-current={g.id === active.id ? 'true' : undefined}
-                        className={cn(
-                            'rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed',
-                            g.id === active.id
-                                ? 'bg-teal-500/15 text-teal-300 ring-1 ring-inset ring-teal-400/40'
-                                : 'text-gray-400 hover:bg-gray-800/70 hover:text-gray-100'
-                        )}
-                    >
-                        {g.name}
-                    </button>
-                ))}
+                {groups.map((g) => {
+                    const isActive = g.id === shownId;
+                    const isLoading = navPending && targetId === g.id;
+                    return (
+                        <button
+                            key={g.id}
+                            type="button"
+                            onClick={() => go(g.id)}
+                            aria-current={isActive ? 'true' : undefined}
+                            className={cn(
+                                'inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors',
+                                isActive
+                                    ? 'bg-teal-500/15 text-teal-300 ring-1 ring-inset ring-teal-400/40'
+                                    : 'text-gray-400 hover:bg-gray-800/70 hover:text-gray-100'
+                            )}
+                        >
+                            {g.name}
+                            {isLoading && <Loader2 size={13} className="animate-spin" />}
+                        </button>
+                    );
+                })}
 
                 {creating ? (
                     <span className="flex items-center gap-1 pl-1">
@@ -169,11 +185,11 @@ export default function WatchlistGroupBar({
                     ) : (
                         <>
                             <span className="hidden px-1 text-xs font-semibold uppercase tracking-wider text-gray-600 sm:inline">
-                                {active.name}
+                                {shown.name}
                             </span>
                             <button
                                 type="button"
-                                onClick={() => { setEditName(active.name); setRenaming(true); }}
+                                onClick={() => { setEditName(shown.name); setRenaming(true); }}
                                 className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-400 transition-colors hover:bg-gray-800 hover:text-gray-100"
                             >
                                 <Pencil size={13} /> Rename
