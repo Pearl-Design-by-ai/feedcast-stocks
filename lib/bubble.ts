@@ -256,6 +256,100 @@ export const ALL_BUBBLE_SYMBOLS: string[] = Array.from(
     new Set(BUBBLE_THEMES.flatMap((t) => t.symbols))
 );
 
+// --- Historical bubbles (educational context) ------------------------------
+// Well-documented past manias. Drawdowns are peak-to-trough, rounded. These
+// are the patterns the live detector is built to catch: parabolic price far
+// above trend, euphoric momentum, then the roll-over.
+
+export interface HistoricalBubble {
+    name: string;
+    era: string;
+    /** Peak-to-trough decline, as a display string. */
+    drawdown: string;
+    /** Numeric drawdown magnitude (for the bar), 0–100. */
+    drawdownPct: number;
+    window: string;
+    /** The tell at the top — what marked it as a bubble. */
+    tell: string;
+    /** What it teaches about today. */
+    lesson: string;
+}
+
+export const HISTORICAL_BUBBLES: HistoricalBubble[] = [
+    {
+        name: 'Tulip Mania',
+        era: '1637 · Netherlands',
+        drawdown: '~−90%',
+        drawdownPct: 90,
+        window: 'Months',
+        tell: 'A single rare bulb traded for ~10× a craftsman’s annual wage.',
+        lesson: 'The first recorded bubble — price detached entirely from any use value, then buyers simply vanished.',
+    },
+    {
+        name: 'Wall Street Crash',
+        era: '1929 · USA',
+        drawdown: '−89%',
+        drawdownPct: 89,
+        window: 'Sep 1929 – Jul 1932',
+        tell: 'Stocks bought on 90% margin; everyone was "in the market."',
+        lesson: 'Leverage turns a correction into a wipeout — and recovery took 25 years.',
+    },
+    {
+        name: 'Japan / Nikkei',
+        era: '1989 · Japan',
+        drawdown: '−82%',
+        drawdownPct: 82,
+        window: '1989 – 2009',
+        tell: 'Tokyo land was "worth more than all of California"; P/E near 60×.',
+        lesson: 'Even great economies can stay deflated for decades after a valuation bubble.',
+    },
+    {
+        name: 'Dot-Com / Nasdaq',
+        era: '2000 · USA',
+        drawdown: '−78%',
+        drawdownPct: 78,
+        window: 'Mar 2000 – Oct 2002',
+        tell: 'Profitless "eyeballs" stories; price-to-sales in the hundreds.',
+        lesson: 'A real, transformative technology can still be wildly overpriced — the echo today is AI.',
+    },
+    {
+        name: 'Housing & Financials',
+        era: '2008 · Global',
+        drawdown: '−57% S&P',
+        drawdownPct: 57,
+        window: 'Oct 2007 – Mar 2009',
+        tell: 'Subprime leverage layered through the whole banking system.',
+        lesson: 'Credit stress is the real detonator — watch where the borrowing is hiding.',
+    },
+    {
+        name: 'Silver (Hunt Bros.)',
+        era: '1980 · USA',
+        drawdown: '−90%',
+        drawdownPct: 90,
+        window: '1980 (≈2 months)',
+        tell: 'Two brothers cornered silver on margin; price ran to ~$50/oz.',
+        lesson: 'A margin call on "Silver Thursday" ended it overnight — the relevant rhyme for today’s metals.',
+    },
+    {
+        name: 'Bitcoin (2017)',
+        era: '2017 · Crypto',
+        drawdown: '−84%',
+        drawdownPct: 84,
+        window: 'Dec 2017 – Dec 2018',
+        tell: 'ICO mania; ~$20k peak on pure retail FOMO.',
+        lesson: 'Crypto bubbles deflate ~80%+ — and have done it repeatedly.',
+    },
+    {
+        name: 'ARKK / Spec. Growth',
+        era: '2021 · USA',
+        drawdown: '−81%',
+        drawdownPct: 81,
+        window: 'Feb 2021 – Dec 2022',
+        tell: 'Profitless hyper-growth at 20–40× sales as rates sat at zero.',
+        lesson: 'When the cost of money rises, the longest-duration bets fall hardest.',
+    },
+];
+
 export interface BubbleSource {
     label: string;
     url: string;
