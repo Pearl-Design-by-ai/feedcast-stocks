@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft, Clock, Lightbulb, ArrowRight, Compass } from 'lucide-react';
 import DataDisclaimer from '@/components/DataDisclaimer';
 import ArticleCard from '@/components/learn/ArticleCard';
+import LearnArt from '@/components/learn/LearnArt';
 import { ARTICLES, getArticle, getCategory, articlesByCategory, type Block } from '@/lib/learn';
 import { cn } from '@/lib/utils';
 
@@ -52,7 +53,6 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
     if (!article) notFound();
 
     const cat = getCategory(article.category);
-    const Icon = cat.icon;
     const related = articlesByCategory(article.category).filter((a) => a.slug !== article.slug).slice(0, 3);
 
     return (
@@ -62,9 +62,15 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
                     <ArrowLeft size={13} /> {cat.label}
                 </Link>
 
-                {/* Header */}
-                <div className={cn('mt-3 flex items-center justify-center rounded-2xl bg-gradient-to-br', cat.grad, 'h-40')}>
-                    <Icon className={cn('h-14 w-14', cat.text)} strokeWidth={1.5} />
+                {/* Header — topic-specific hand-drawn scene over the category gradient */}
+                <div className={cn('relative mt-3 overflow-hidden rounded-2xl bg-gradient-to-br', cat.grad, 'h-44')}>
+                    <div
+                        className="absolute inset-0 opacity-[0.25]"
+                        style={{ backgroundImage: 'radial-gradient(currentColor 1px, transparent 1px)', backgroundSize: '18px 18px', color: 'rgba(255,255,255,0.12)' }}
+                    />
+                    <div className={cn('absolute inset-0 px-6 py-5', cat.text)}>
+                        <LearnArt slug={article.slug} category={article.category} />
+                    </div>
                 </div>
 
                 <div className="mt-5 flex items-center gap-2">
