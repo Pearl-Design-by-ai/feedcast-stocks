@@ -1,19 +1,32 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Sparkles, Loader2, AArrowDown, AArrowUp, Dices, RotateCcw } from 'lucide-react';
+import {
+  Sparkles,
+  Loader2,
+  AArrowDown,
+  AArrowUp,
+  Dices,
+  RotateCcw,
+  ArrowUp,
+  ArrowRight,
+  BookOpen,
+  Activity,
+  Newspaper,
+  Coins,
+  GraduationCap,
+  type LucideIcon,
+} from 'lucide-react';
 import { askMarkets, type ChatMessage } from '@/lib/actions/ask.actions';
 import { MarkdownLite } from '@/components/ask/MarkdownLite';
+import { cn } from '@/lib/utils';
 
 /**
- * Preset-only chat with a text-first question directory: every question is
- * visible at once (no cards, no chips, no reveal steps), grouped under plain
- * headings in two reading columns — like a well-set index page. Questions
- * are link-styled text, so clickability reads the way links always have.
- *
- * No free-text box by design: every question maps to a data point the engine
- * actually injects (market regime + per-signal readings, the key-markets
- * snapshot, and today's headlines), so answers stay grounded.
+ * ChatGPT-style grounded markets chat. Free-text composer (the engine answers
+ * any question against live regime + headlines context), plus a practical
+ * prompt library so members can start from a ready-made question and keep
+ * going. Empty state welcomes with featured starters; the composer is always
+ * pinned at the bottom.
  */
 const QUESTION_GROUPS: { label: string; questions: string[] }[] = [
   {
@@ -102,7 +115,14 @@ const QUESTION_GROUPS: { label: string; questions: string[] }[] = [
 
 const ALL_QUESTIONS = QUESTION_GROUPS.flatMap((g) => g.questions);
 
-// A touch of personality while the engine works.
+// Hand-picked starters for the welcome screen — one strong question per theme.
+const FEATURED: { icon: LucideIcon; q: string }[] = [
+  { icon: Activity, q: "What's the market regime right now and why?" },
+  { icon: Newspaper, q: 'What should I watch this week?' },
+  { icon: Coins, q: "What's happening with oil and gold?" },
+  { icon: GraduationCap, q: 'Explain the yield curve simply.' },
+];
+
 const THINKING_LINES = [
   'Reading the tape…',
   'Checking the regime…',
@@ -121,7 +141,11 @@ export default function AskMarkets() {
   const [error, setError] = useState('');
   const [fontIdx, setFontIdx] = useState(DEFAULT_FONT_IDX);
   const [thinkingLine, setThinkingLine] = useState(THINKING_LINES[0]);
+  const [input, setInput] = useState('');
+  const [activeTopic, setActiveTopic] = useState<string | null>(null);
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const endRef = useRef<HTMLDivElement | null>(null);
+  const taRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     try {
@@ -135,8 +159,6 @@ export default function AskMarkets() {
     }
   }, []);
 
-  // Bring the latest exchange into view whenever a message is added or the
-  // thinking indicator toggles, so tapping a question scrolls to the answer.
   useEffect(() => {
     if (messages.length === 0) return;
     endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -152,10 +174,20 @@ export default function AskMarkets() {
     }
   };
 
+  const autoGrow = () => {
+    const el = taRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+  };
+
   async function send(text: string) {
     const question = text.trim();
     if (!question || loading) return;
     setError('');
+    setInput('');
+    setLibraryOpen(false);
+    requestAnimationFrame(autoGrow);
     setThinkingLine(THINKING_LINES[Math.floor(Math.random() * THINKING_LINES.length)]);
     setMessages((prev) => [...prev, { role: 'user', content: question }]);
     setLoading(true);
@@ -171,21 +203,75 @@ export default function AskMarkets() {
     }
   }
 
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    send(input);
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      send(input);
+    }
+  };
+
   const surpriseMe = () => send(ALL_QUESTIONS[Math.floor(Math.random() * ALL_QUESTIONS.length)]);
   const reset = () => {
     setMessages([]);
     setError('');
+    setActiveTopic(null);
+    setLibraryOpen(false);
   };
 
   const hasChat = messages.length > 0;
   const fontClass = FONT_SIZES[fontIdx];
+  const activeGroup = QUESTION_GROUPS.find((g) => g.label === activeTopic);
+
+  // Topic pills + the selected topic's questions — the "pick a ready-made one"
+  // surface, reused on the welcome screen and in the in-chat prompt drawer.
+  const promptBrowser = (
+    <div>
+      <div className="flex flex-wrap gap-1.5">
+        {QUESTION_GROUPS.map((g) => (
+          <button
+            key={g.label}
+            type="button"
+            onClick={() => setActiveTopic((t) => (t === g.label ? null : g.label))}
+            className={cn(
+              'rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+              activeTopic === g.label
+                ? 'border-teal-400/50 bg-teal-500/15 text-teal-300'
+                : 'border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-200'
+            )}
+          >
+            {g.label}
+          </button>
+        ))}
+      </div>
+      {activeGroup && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {activeGroup.questions.map((q) => (
+            <button
+              key={q}
+              type="button"
+              onClick={() => send(q)}
+              disabled={loading}
+              className="rounded-lg border border-gray-800 bg-gray-900/60 px-3 py-2 text-left text-[13px] text-gray-300 transition-colors hover:border-teal-400/40 hover:text-teal-200 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {q}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-gray-800/70 bg-gray-900/30">
-      {/* Header: identity + actions */}
+    <div className="flex h-[calc(100dvh-11rem)] min-h-[540px] flex-col overflow-hidden rounded-2xl border border-gray-800/70 bg-gray-900/30">
+      {/* Header */}
       <div className="flex items-center justify-between gap-3 border-b border-gray-800/60 px-4 py-3">
-        <span className="flex items-center gap-1.5 text-xs font-medium text-gray-400">
-          <Sparkles className="h-3.5 w-3.5 text-teal-400" /> Markets chat
+        <span className="flex items-center gap-1.5 text-sm font-semibold text-gray-200">
+          <Sparkles className="h-4 w-4 text-teal-400" /> Ask the Markets
         </span>
         <div className="flex items-center gap-1">
           {hasChat && (
@@ -198,9 +284,6 @@ export default function AskMarkets() {
               <RotateCcw size={12} /> New chat
             </button>
           )}
-          <span className="mr-1 hidden text-[11px] uppercase tracking-wide text-gray-500 sm:inline">
-            Text size
-          </span>
           <button
             type="button"
             onClick={() => setFont(fontIdx - 1)}
@@ -222,91 +305,141 @@ export default function AskMarkets() {
         </div>
       </div>
 
-      {/* Conversation thread — soft bubbles */}
-      {hasChat && (
-        <div className="flex flex-col gap-3 px-4 py-4">
-          {messages.map((m, i) => (
-            <div key={i} className={m.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
-              <div
-                className={
-                  m.role === 'user'
-                    ? `max-w-[88%] rounded-2xl rounded-br-md bg-teal-500/10 px-4 py-2.5 ${fontClass} text-gray-100`
-                    : `max-w-[88%] rounded-2xl rounded-bl-md bg-gray-800/50 px-4 py-2.5 ${fontClass} leading-relaxed text-gray-200`
-                }
-              >
-                {m.role === 'assistant' && (
-                  <span className="mb-1 flex items-center gap-1.5 text-xs text-gray-500">
-                    <Sparkles className="h-3.5 w-3.5 text-teal-400" /> AI
-                  </span>
-                )}
-                {m.role === 'assistant' ? <MarkdownLite text={m.content} /> : m.content}
+      {/* Scrollable area: welcome screen or the conversation thread */}
+      <div className="flex-1 overflow-y-auto">
+        {!hasChat ? (
+          <div className="mx-auto max-w-2xl px-5 py-8">
+            <div className="text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-400/25 to-teal-500/5 ring-1 ring-teal-400/30">
+                <Sparkles className="h-7 w-7 text-teal-400" />
               </div>
-            </div>
-          ))}
-          {loading && (
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <Loader2 className="h-4 w-4 animate-spin text-teal-400" />
-              {thinkingLine}
-            </div>
-          )}
-          {error && <p className="text-sm text-yellow-200/80">{error}</p>}
-          <div ref={endRef} />
-        </div>
-      )}
-
-      {/* Question directory — all of it, text-first, two reading columns. */}
-      <div className={hasChat ? 'border-t border-gray-800/60 px-5 py-5' : 'px-5 py-5'}>
-        <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-          <p className="text-sm text-gray-300">
-            {hasChat ? 'Ask another question' : 'Tap any question — answers come from live data'}
-          </p>
-          <button
-            type="button"
-            onClick={surpriseMe}
-            disabled={loading}
-            className="group flex items-center gap-1.5 text-sm text-teal-400 transition-colors hover:text-teal-300 hover:underline disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <Dices size={15} className="transition-transform group-hover:rotate-12" />
-            Surprise me
-          </button>
-        </div>
-
-        <div className="columns-1 gap-10 md:columns-2 [&>*]:break-inside-avoid">
-          {QUESTION_GROUPS.map((group) => (
-            <div key={group.label} className="mb-6">
-              <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-gray-500">
-                {group.label}
+              <h2 className="bg-gradient-to-r from-white to-gray-400 bg-clip-text text-2xl font-bold text-transparent">
+                What do you want to know?
+              </h2>
+              <p className="mx-auto mt-2 max-w-md text-sm text-gray-400">
+                Ask anything about the markets in your own words — answers are grounded in today&apos;s
+                regime and headlines, not stale model memory. Or start with one of these.
               </p>
-              <ul>
-                {group.questions.map((q) => (
-                  <li key={q}>
-                    <button
-                      type="button"
-                      onClick={() => send(q)}
-                      disabled={loading}
-                      className="group flex w-full items-start gap-2 py-[5px] text-left text-[15px] leading-snug text-gray-300 transition-colors hover:text-teal-300 disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      <span
-                        aria-hidden
-                        className="mt-px text-gray-600 transition-colors group-hover:text-teal-400"
-                      >
-                        ›
-                      </span>
-                      <span className="decoration-teal-400/40 underline-offset-4 group-hover:underline">
-                        {q}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
             </div>
-          ))}
-        </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              {FEATURED.map(({ icon: Icon, q }) => (
+                <button
+                  key={q}
+                  type="button"
+                  onClick={() => send(q)}
+                  disabled={loading}
+                  className="group flex items-center gap-3 rounded-xl border border-gray-800 bg-gray-900/50 p-4 text-left transition-all hover:border-teal-400/40 hover:bg-gray-900/80 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <span className="shrink-0 rounded-lg bg-teal-500/10 p-2 text-teal-400">
+                    <Icon size={18} />
+                  </span>
+                  <span className="text-sm text-gray-200 group-hover:text-white">{q}</span>
+                  <ArrowRight className="ml-auto h-4 w-4 shrink-0 text-gray-600 opacity-0 transition-opacity group-hover:opacity-100" />
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-7">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                  Browse by topic
+                </p>
+                <button
+                  type="button"
+                  onClick={surpriseMe}
+                  disabled={loading}
+                  className="group flex items-center gap-1.5 text-xs text-teal-400 transition-colors hover:text-teal-300 hover:underline disabled:opacity-40"
+                >
+                  <Dices size={14} className="transition-transform group-hover:rotate-12" /> Surprise me
+                </button>
+              </div>
+              {promptBrowser}
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3 px-4 py-4">
+            {messages.map((m, i) => (
+              <div key={i} className={m.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
+                <div
+                  className={
+                    m.role === 'user'
+                      ? `max-w-[88%] rounded-2xl rounded-br-md bg-teal-500/15 px-4 py-2.5 ${fontClass} text-gray-100`
+                      : `max-w-[88%] rounded-2xl rounded-bl-md border border-gray-800/60 bg-gray-800/40 px-4 py-2.5 ${fontClass} leading-relaxed text-gray-200`
+                  }
+                >
+                  {m.role === 'assistant' && (
+                    <span className="mb-1 flex items-center gap-1.5 text-xs text-gray-500">
+                      <Sparkles className="h-3.5 w-3.5 text-teal-400" /> AI
+                    </span>
+                  )}
+                  {m.role === 'assistant' ? <MarkdownLite text={m.content} /> : m.content}
+                </div>
+              </div>
+            ))}
+            {loading && (
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <Loader2 className="h-4 w-4 animate-spin text-teal-400" />
+                {thinkingLine}
+              </div>
+            )}
+            {error && <p className="text-sm text-yellow-200/80">{error}</p>}
+            <div ref={endRef} />
+          </div>
+        )}
       </div>
 
-      <p className="border-t border-gray-800/40 px-5 py-2.5 text-[11px] text-gray-500">
-        Answers use live market context &amp; headlines — informational only, not advice.
-      </p>
+      {/* Composer — always pinned at the bottom */}
+      <form onSubmit={onSubmit} className="border-t border-gray-800/60 bg-gray-900/50 px-3 pb-3 pt-2.5">
+        {hasChat && (
+          <div className="mb-2 flex items-center gap-4 px-1">
+            <button
+              type="button"
+              onClick={() => setLibraryOpen((v) => !v)}
+              className="flex items-center gap-1.5 text-[11px] text-gray-400 transition-colors hover:text-teal-300"
+            >
+              <BookOpen size={13} /> {libraryOpen ? 'Hide prompts' : 'Browse prompts'}
+            </button>
+            <button
+              type="button"
+              onClick={surpriseMe}
+              disabled={loading}
+              className="group flex items-center gap-1.5 text-[11px] text-gray-400 transition-colors hover:text-teal-300 disabled:opacity-40"
+            >
+              <Dices size={13} className="transition-transform group-hover:rotate-12" /> Surprise me
+            </button>
+          </div>
+        )}
+        {hasChat && libraryOpen && (
+          <div className="mb-3 rounded-xl border border-gray-800 bg-gray-950/40 p-3">{promptBrowser}</div>
+        )}
+
+        <div className="flex items-end gap-2 rounded-xl border border-gray-700 bg-gray-800/60 p-1.5 transition-colors focus-within:border-teal-400/50">
+          <textarea
+            ref={taRef}
+            value={input}
+            onChange={(e) => {
+              setInput(e.target.value);
+              autoGrow();
+            }}
+            onKeyDown={onKeyDown}
+            rows={1}
+            placeholder="Ask anything about the markets…"
+            className="max-h-40 flex-1 resize-none bg-transparent px-2.5 py-1.5 text-sm text-gray-100 placeholder:text-gray-500 focus:outline-none"
+          />
+          <button
+            type="submit"
+            disabled={loading || !input.trim()}
+            aria-label="Send"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-500 text-black transition-colors hover:bg-teal-400 disabled:cursor-not-allowed disabled:bg-gray-700 disabled:text-gray-500"
+          >
+            {loading ? <Loader2 size={16} className="animate-spin" /> : <ArrowUp size={16} />}
+          </button>
+        </div>
+        <p className="mt-1.5 px-1 text-[11px] text-gray-500">
+          Live market context &amp; headlines — informational only, not advice. Enter to send, Shift+Enter for a new line.
+        </p>
+      </form>
     </div>
   );
 }
