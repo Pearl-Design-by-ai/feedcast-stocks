@@ -6,7 +6,7 @@ import DataDisclaimer from '@/components/DataDisclaimer';
 import TradingViewWidget from '@/components/TradingViewWidget';
 import { FrothGauge, ScoreBar, PhaseChip, AssetTable } from '@/components/bubble/BubbleUi';
 import { runBubbleScan } from '@/lib/bubble-scan';
-import { bubbleBand, BUBBLE_SOURCES } from '@/lib/bubble';
+import { bubbleBand, BUBBLE_SOURCES, HISTORICAL_BUBBLES } from '@/lib/bubble';
 import { ADVANCED_CHART_WIDGET_CONFIG } from '@/lib/constants';
 import { formatSymbolForTradingView } from '@/lib/utils';
 import { cn } from '@/lib/utils';
@@ -150,6 +150,38 @@ export default function BubbleDetectorPage() {
                 <Scan />
             </Suspense>
 
+            {/* Lessons from past bubbles */}
+            <section className="rounded-xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
+                <h2 className="text-base font-semibold text-gray-100">Lessons from past bubbles</h2>
+                <p className="mb-4 mt-0.5 text-xs text-gray-500">
+                    Every mania below shared the shape this page measures — parabolic price far above
+                    trend, euphoric momentum, then the roll-over. Peak-to-trough declines:
+                </p>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    {HISTORICAL_BUBBLES.map((h) => (
+                        <div key={h.name} className="flex flex-col rounded-lg border border-gray-800 bg-gray-900/60 p-3.5">
+                            <div className="flex items-baseline justify-between gap-2">
+                                <span className="text-sm font-semibold text-gray-100">{h.name}</span>
+                                <span className="text-lg font-bold tabular-nums text-red-400">{h.drawdown}</span>
+                            </div>
+                            <span className="text-[11px] text-gray-500">{h.era}</span>
+                            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-800">
+                                <div className="h-full rounded-full bg-red-400/70" style={{ width: `${h.drawdownPct}%` }} />
+                            </div>
+                            <p className="mt-2 text-[11px] font-medium text-gray-400">{h.window}</p>
+                            <p className="mt-2 text-xs leading-relaxed text-gray-400">
+                                <span className="text-gray-300">The tell:</span> {h.tell}
+                            </p>
+                            <p className="mt-1.5 text-xs leading-relaxed text-gray-500">{h.lesson}</p>
+                        </div>
+                    ))}
+                </div>
+                <p className="mt-3 text-[11px] leading-relaxed text-gray-500">
+                    Pattern recognition, not prophecy — every bubble is different, and overbought can
+                    stay overbought far longer than seems possible.
+                </p>
+            </section>
+
             {/* Methodology + sources */}
             <section className="rounded-xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
                 <h2 className="mb-3 text-base font-semibold text-gray-100">How the scores work</h2>
@@ -172,7 +204,14 @@ export default function BubbleDetectorPage() {
                         </p>
                     </div>
                 </div>
-                <p className="mt-4 text-[11px] leading-relaxed text-gray-500">
+                <p className="mt-4 text-xs leading-relaxed text-gray-400">
+                    <span className="font-semibold text-gray-300">How often it updates:</span> scores
+                    recompute every time you open the page, from end-of-day closing prices cached up
+                    to 6 hours. Because the inputs are daily closes, the numbers move meaningfully
+                    about <span className="text-gray-200">once per trading day</span> (after the US
+                    close) — intraday wiggles don’t change them.
+                </p>
+                <p className="mt-2 text-[11px] leading-relaxed text-gray-500">
                     Heuristic and informational only — not investment advice. Bubbles can inflate far
                     longer than scores suggest, and a high reading is not a forecast of an imminent
                     crash. <span className="text-gray-600">* = under ~1 year of price history.</span>
