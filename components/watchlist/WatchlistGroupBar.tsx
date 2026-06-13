@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Pencil, Trash2, Check, X, Loader2, List } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check, X, Loader2, List, MoreHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
 import {
     createGroup,
@@ -32,6 +32,7 @@ export default function WatchlistGroupBar({
     const [targetId, setTargetId] = useState<number | null>(null);
     const [creating, setCreating] = useState(false);
     const [newName, setNewName] = useState('');
+    const [editing, setEditing] = useState(false);
     const [renaming, setRenaming] = useState(false);
     const [editName, setEditName] = useState('');
     const [symbol, setSymbol] = useState('');
@@ -70,6 +71,7 @@ export default function WatchlistGroupBar({
             const res = await renameGroup(shown.id, editName);
             if (!res.ok) { toast.error(res.error ?? 'Could not rename'); return; }
             setRenaming(false);
+            setEditing(false);
             toast.success('Renamed');
             router.refresh();
         });
@@ -78,6 +80,7 @@ export default function WatchlistGroupBar({
         start(async () => {
             const res = await deleteGroup(shown.id);
             if (!res.ok) { toast.error(res.error ?? 'Could not delete'); return; }
+            setEditing(false);
             toast.success('Watchlist deleted');
             const next = groups.find((g) => g.id !== shown.id);
             if (next) router.push(`/watchlist?list=${next.id}`);
@@ -182,15 +185,12 @@ export default function WatchlistGroupBar({
                                 <X size={16} />
                             </button>
                         </span>
-                    ) : (
+                    ) : editing ? (
                         <>
-                            <span className="hidden px-1 text-xs font-semibold uppercase tracking-wider text-gray-600 sm:inline">
-                                {shown.name}
-                            </span>
                             <button
                                 type="button"
                                 onClick={() => { setEditName(shown.name); setRenaming(true); }}
-                                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-400 transition-colors hover:bg-gray-800 hover:text-gray-100"
+                                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-300 transition-colors hover:bg-gray-800 hover:text-gray-100"
                             >
                                 <Pencil size={13} /> Rename
                             </button>
@@ -199,12 +199,28 @@ export default function WatchlistGroupBar({
                                     type="button"
                                     onClick={doDelete}
                                     disabled={pending}
-                                    className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-400 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:opacity-40"
+                                    className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-300 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:opacity-40"
                                 >
                                     <Trash2 size={13} /> Delete
                                 </button>
                             )}
+                            <button
+                                type="button"
+                                onClick={() => setEditing(false)}
+                                className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-800 hover:text-gray-300"
+                                aria-label="Done editing"
+                            >
+                                <X size={15} />
+                            </button>
                         </>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={() => setEditing(true)}
+                            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-800 hover:text-gray-200"
+                        >
+                            <MoreHorizontal size={14} /> Edit
+                        </button>
                     )}
                 </div>
 
