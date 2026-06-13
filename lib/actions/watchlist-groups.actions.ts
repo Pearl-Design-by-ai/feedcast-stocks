@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { getCompanyProfile } from '@/lib/actions/finnhub.actions';
-import { isTickerLike } from '@/lib/utils';
+import { isTickerLike, sanitizeSymbols } from '@/lib/utils';
 import { MAX_GROUPS, type WatchlistGroup } from '@/lib/watchlist-groups';
 
 const GROUPS = 'stock_watchlist_groups';
@@ -148,6 +148,55 @@ export async function addSymbolToGroup(groupId: number, symbol: string): Promise
     } catch (error) {
         console.error('addSymbolToGroup error:', error);
         return { ok: false, error: 'Could not add' };
+    }
+}
+
+/**
+ * Batch-add comma/space/newline-separated tickers to a group in one go.
+ * Sanitizes + dedupes + caps at 25, resolves company names with a bounded
+ * pool, and upserts them all. Returns how many were added vs. skipped.
+ */
+export async function addSymbolsToGroup(
+    groupId: number,
+    raw: string
+): Promise<{ ok: boolean; added: number; skipped: number; error?: string }> {
+    try {
+        const requested = (raw ?? '').split(/[\s,;]+/).filter((t) => t.trim());
+        const syms = sanitizeSymbols(requested, 25);
+        if (syms.length === 0) return { ok: false, added: 0, skipped: 0, error: 'Enter one or more tickers' };
+
+        const { supabase, user } = await sessionUser();
+        const { data: grp } = await supabase.from(GROUPS).select('id').eq('id', groupId).eq('user_id', user.id).maybeSingle();
+        if (!grp) return { ok: false, added: 0, skipped: 0, error: 'Watchlist not found' };
+
+        // Resolve company names, 4 in flight (free-tier safe).
+        const names = new Map<string, string>();
+        let next = 0;
+        const worker = async () => {
+            while (next < syms.length) {
+                const s = syms[next++];
+                const profile = await getCompanyProfile(s).catch(() => null);
+                names.set(s, profile?.name || s);
+            }
+        };
+        await Promise.all(Array.from({ length: Math.min(4, syms.length) }, worker));
+
+        const now = new Date().toISOString();
+        const rows = syms.map((s) => ({
+            user_id: user.id,
+            group_id: groupId,
+            symbol: s,
+            company: names.get(s) || s,
+            added_at: now,
+        }));
+        const { error } = await supabase.from(ITEMS).upsert(rows, { onConflict: 'group_id,symbol' });
+        if (error) throw error;
+
+        revalidatePath('/watchlist');
+        return { ok: true, added: syms.length, skipped: Math.max(0, requested.length - syms.length) };
+    } catch (error) {
+        console.error('addSymbolsToGroup error:', error);
+        return { ok: false, added: 0, skipped: 0, error: 'Could not add' };
     }
 }
 

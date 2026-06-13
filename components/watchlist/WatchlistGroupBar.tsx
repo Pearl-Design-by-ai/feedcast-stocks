@@ -8,7 +8,7 @@ import {
     createGroup,
     renameGroup,
     deleteGroup,
-    addSymbolToGroup,
+    addSymbolsToGroup,
 } from '@/lib/actions/watchlist-groups.actions';
 import { MAX_GROUPS, type WatchlistGroup } from '@/lib/watchlist-groups';
 import { cn } from '@/lib/utils';
@@ -69,12 +69,14 @@ export default function WatchlistGroupBar({
 
     const doAdd = () =>
         start(async () => {
-            const s = symbol.trim().toUpperCase();
-            if (!s) return;
-            const res = await addSymbolToGroup(active.id, s);
+            if (!symbol.trim()) return;
+            const res = await addSymbolsToGroup(active.id, symbol);
             if (!res.ok) { toast.error(res.error ?? 'Could not add'); return; }
             setSymbol('');
-            toast.success(`${s} added to ${active.name}`);
+            const skip = res.skipped > 0 ? ` · ${res.skipped} skipped` : '';
+            toast.success(
+                `${res.added} ${res.added === 1 ? 'ticker' : 'tickers'} added to ${active.name}${skip}`
+            );
             router.refresh();
         });
 
@@ -178,9 +180,9 @@ export default function WatchlistGroupBar({
                         value={symbol}
                         onChange={(e) => setSymbol(e.target.value.toUpperCase())}
                         onKeyDown={(e) => e.key === 'Enter' && doAdd()}
-                        placeholder="Add ticker — e.g. NVDA"
-                        maxLength={12}
-                        className="w-44 rounded-lg border border-gray-700 bg-gray-800/60 px-3 py-1.5 text-sm text-gray-100 placeholder:text-gray-500 focus:border-teal-400/60 focus:outline-none"
+                        placeholder="Add tickers — e.g. NVDA, AAPL, MSFT"
+                        maxLength={160}
+                        className="w-56 rounded-lg border border-gray-700 bg-gray-800/60 px-3 py-1.5 text-sm text-gray-100 placeholder:text-gray-500 focus:border-teal-400/60 focus:outline-none sm:w-72"
                     />
                     <button
                         type="button"
