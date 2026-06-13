@@ -256,6 +256,101 @@ export const ALL_BUBBLE_SYMBOLS: string[] = Array.from(
     new Set(BUBBLE_THEMES.flatMap((t) => t.symbols))
 );
 
+// --- Next-bubble candidates ------------------------------------------------
+// Not (yet) manias — emerging speculative areas with the *shape* of an early
+// bubble: a real, exciting story attracting fast money, where valuations are
+// starting to detach from fundamentals. Each lists the tradeable instruments
+// to track and the signal that would tip it from "story" into "bubble."
+
+export interface BubbleCandidate {
+    id: string;
+    label: string;
+    /** One-line framing. */
+    tagline: string;
+    /** Why it's a candidate to become the next bubble (editorial, mid-2026). */
+    thesis: string;
+    /** The signal that would confirm it's inflating into a full bubble. */
+    watch: string;
+    /** Tradeable instruments to track the theme. */
+    symbols: string[];
+    text: string;
+    chip: string;
+    bar: string;
+}
+
+export const BUBBLE_CANDIDATES: BubbleCandidate[] = [
+    {
+        id: 'ai-power',
+        label: 'AI Power & Grid',
+        tagline: 'Electricity is the pick-and-shovel trade for AI.',
+        thesis: 'Data-center demand has turned sleepy utilities and independent power producers into momentum stocks — Vistra, Constellation and GE Vernova have re-rated like tech names on the promise of insatiable AI electricity demand and nuclear restarts.',
+        watch: 'Utility P/E multiples expanding toward tech levels and price detaching from actual power-purchase contracts signed.',
+        symbols: ['VST', 'CEG', 'GEV', 'NRG'],
+        text: 'text-cyan-400',
+        chip: 'bg-cyan-400/10 text-cyan-400',
+        bar: 'bg-cyan-400',
+    },
+    {
+        id: 'robotics',
+        label: 'Humanoid Robotics',
+        tagline: '“Physical AI” — the next chapter the bulls are pricing in.',
+        thesis: 'With language models maturing, capital is rotating into humanoid and embodied robots as the next frontier. Pure-play exposure is thin, so money crowds into a handful of small names and thematic ETFs — the classic setup for a narrow, violent run.',
+        watch: 'A small-cap robotics name going parabolic on demos rather than revenue, dragging the ETFs with it.',
+        symbols: ['BOTZ', 'ROBO', 'SERV'],
+        text: 'text-lime-400',
+        chip: 'bg-lime-400/10 text-lime-400',
+        bar: 'bg-lime-400',
+    },
+    {
+        id: 'space',
+        label: 'Space Economy',
+        tagline: 'Launch, satellites and direct-to-cell — a real industry at lottery prices.',
+        thesis: 'Rocket Lab, AST SpaceMobile and Intuitive Machines have delivered huge runs on launch cadence and direct-to-phone satellite hype. The engineering is real; the valuations increasingly price flawless, decade-out execution.',
+        watch: 'Pre-revenue or single-contract names trading on total-addressable-market dreams, with RSI pinned above 70.',
+        symbols: ['RKLB', 'ASTS', 'LUNR', 'ARKX'],
+        text: 'text-indigo-400',
+        chip: 'bg-indigo-400/10 text-indigo-400',
+        bar: 'bg-indigo-400',
+    },
+    {
+        id: 'glp1',
+        label: 'Anti-Obesity / GLP-1',
+        tagline: 'A genuine blockbuster — with second-wave hopefuls running hot.',
+        thesis: 'Eli Lilly and Novo Nordisk built a real, enormous market, but the froth risk sits in the second wave: clinical-stage challengers and telehealth distributors that re-rate violently on every trial headline.',
+        watch: 'Pre-approval challengers pricing in peak-sales success, or telehealth names valued like the drugmakers themselves.',
+        symbols: ['LLY', 'NVO', 'VKTX', 'HIMS'],
+        text: 'text-pink-400',
+        chip: 'bg-pink-400/10 text-pink-400',
+        bar: 'bg-pink-400',
+    },
+    {
+        id: 'stablecoins',
+        label: 'Stablecoins & Tokenization',
+        tagline: 'Crypto’s “boring” corner — now a hot IPO theme.',
+        thesis: 'Stablecoin and tokenization plays like Circle and the brokerages riding crypto rails have drawn frothy IPO and re-rating money on the promise that real-world assets move on-chain. The regulatory tailwind is real; the multiples assume it happens fast.',
+        watch: 'Newly-listed names trading at extreme price-to-sales on adoption that is still mostly projected.',
+        symbols: ['CRCL', 'HOOD', 'COIN'],
+        text: 'text-teal-400',
+        chip: 'bg-teal-400/10 text-teal-400',
+        bar: 'bg-teal-400',
+    },
+    {
+        id: 'defense-tech',
+        label: 'Defense Tech & Drones',
+        tagline: 'Rising budgets meet a software-and-drones re-rating.',
+        thesis: 'Higher global defense spending plus autonomous drones and AI targeting have lifted next-gen defense names. The order books are real, but the newer, asset-light players are increasingly valued like software rather than hardware contractors.',
+        watch: 'Drone and defense-software names expanding multiples faster than backlog, on geopolitics headlines.',
+        symbols: ['KTOS', 'AVAV', 'DRS'],
+        text: 'text-amber-300',
+        chip: 'bg-amber-300/10 text-amber-300',
+        bar: 'bg-amber-300',
+    },
+];
+
+export const ALL_CANDIDATE_SYMBOLS: string[] = Array.from(
+    new Set(BUBBLE_CANDIDATES.flatMap((c) => c.symbols))
+);
+
 // --- Historical bubbles (educational context) ------------------------------
 // Well-documented past manias. Drawdowns are peak-to-trough, rounded. These
 // are the patterns the live detector is built to catch: parabolic price far

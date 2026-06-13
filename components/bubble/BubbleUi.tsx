@@ -4,7 +4,7 @@
 
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { bubbleBand, PHASE_LABEL, PHASE_TONE, type AssetBubble } from '@/lib/bubble';
+import { bubbleBand, PHASE_LABEL, PHASE_TONE, type AssetBubble, type Phase } from '@/lib/bubble';
 
 type Tone = 'pos' | 'warn' | 'neg' | 'neutral';
 
@@ -26,9 +26,39 @@ function pct(v: number | null, digits = 1) {
     return `${v > 0 ? '+' : ''}${v.toFixed(digits)}%`;
 }
 
-/** Big 0–100 froth gauge — red (calm) → amber → red again at the top. */
-export function FrothGauge({ value, asOf }: { value: number; asOf: string }) {
+/**
+ * Plain-language read of the headline number, made honest by coverage: a low
+ * score with few names scored means "feed is thin," not "all calm."
+ */
+function frothVerdict(value: number, scored: number, universe: number): string {
+    if (universe > 0 && scored / universe < 0.5) {
+        return `Only ${scored} of ${universe} tracked names returned live data, so this reading is incomplete — treat it as a partial snapshot, not the full picture.`;
+    }
+    if (value >= 75) return 'Speculative assets are deep in bubble territory — stretched far above trend on euphoric momentum across the board.';
+    if (value >= 55) return 'Clearly frothy: prices are running well ahead of trend in several themes. Not a crash call, but the risk-of-pop is elevated.';
+    if (value >= 30) return 'Elevated but not manic — pockets of froth rather than a market-wide bubble. Watch the themes scoring highest below.';
+    return 'No active bubble right now. Prices across the speculative themes are near or below trend — note that names which already deflated read calm here, even if they were a mania last year.';
+}
+
+/** Big 0–100 froth gauge — green (calm) → amber → red (bubble). */
+export function FrothGauge({
+    value,
+    asOf,
+    scored,
+    universe,
+    phaseCounts,
+}: {
+    value: number;
+    asOf: string;
+    scored: number;
+    universe: number;
+    phaseCounts: Record<Phase, number>;
+}) {
     const band = bubbleBand(value);
+    const inflating = phaseCounts.inflating;
+    const cracking = phaseCounts.cracking;
+    const popping = phaseCounts.popping;
+    const calm = phaseCounts.calm;
     return (
         <div className="rounded-2xl border border-gray-800 bg-gray-900/40 p-5 md:p-6">
             <div className="flex items-end justify-between gap-3">
@@ -64,10 +94,28 @@ export function FrothGauge({ value, asOf }: { value: number; asOf: string }) {
                 <span>Frothy</span>
                 <span>Bubble</span>
             </div>
-            <p className="mt-3 text-xs leading-relaxed text-gray-400">
+
+            {/* What the number means right now */}
+            <p className="mt-3 text-sm leading-relaxed text-gray-300">
+                {frothVerdict(value, scored, universe)}
+            </p>
+
+            {/* Why — phase mix + coverage */}
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-gray-500">
+                <span>
+                    <span className="font-semibold text-gray-300">{scored}</span>/{universe} names scored
+                </span>
+                {inflating > 0 && <span className="text-red-400">{inflating} inflating</span>}
+                {cracking > 0 && <span className="text-amber-400">{cracking} cracking</span>}
+                {popping > 0 && <span className="text-amber-400">{popping} deflating</span>}
+                {calm > 0 && <span className="text-emerald-400">{calm} calm</span>}
+            </div>
+
+            <p className="mt-3 text-xs leading-relaxed text-gray-500">
                 A blend of trend extension, run-up, RSI and proximity to 52-week highs across the
-                speculative themes below (excluding the broad-market baseline). Higher = more
-                inflated. Heuristic, not advice.
+                speculative themes below (excluding the broad-market baseline). It measures how
+                inflated assets are <span className="text-gray-400">today</span> — not whether they
+                were ever a bubble. Heuristic, not advice.
             </p>
         </div>
     );
