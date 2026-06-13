@@ -24,6 +24,7 @@ import {
   ArrowLeft,
   LayoutDashboard,
   Radar,
+  GraduationCap,
   Search,
   Star,
   Sparkles,
@@ -59,6 +60,7 @@ const MAIN_ICONS: Record<string, LucideIcon> = {
   '/search': Search,
   '/watchlist': Star,
   '/bubble-detector': Radar,
+  '/learn': GraduationCap,
 };
 
 const MARKETS_ICONS: Record<string, LucideIcon> = {
