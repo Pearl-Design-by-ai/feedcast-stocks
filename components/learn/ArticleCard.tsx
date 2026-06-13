@@ -1,19 +1,26 @@
 import Link from 'next/link';
 import { Clock, ArrowRight } from 'lucide-react';
 import { getCategory, type Article } from '@/lib/learn';
+import LearnArt from '@/components/learn/LearnArt';
 import { cn } from '@/lib/utils';
 
-/** Article card — gradient icon header (no stock photos), category chip, excerpt. */
+/** Article card — a topic-specific hand-drawn SVG scene over the category gradient. */
 export default function ArticleCard({ article, featured = false }: { article: Article; featured?: boolean }) {
     const cat = getCategory(article.category);
-    const Icon = cat.icon;
     return (
         <Link
             href={`/learn/${article.slug}`}
             className="group flex flex-col overflow-hidden rounded-xl border border-gray-800 bg-gray-900/40 transition-colors hover:border-gray-700 hover:bg-gray-900/70"
         >
-            <div className={cn('relative flex items-center justify-center bg-gradient-to-br', cat.grad, featured ? 'h-44' : 'h-28')}>
-                <Icon className={cn(cat.text, featured ? 'h-12 w-12' : 'h-9 w-9')} strokeWidth={1.5} />
+            <div className={cn('relative overflow-hidden bg-gradient-to-br', cat.grad, featured ? 'h-48' : 'h-32')}>
+                {/* Subtle dotted texture for depth */}
+                <div
+                    className="absolute inset-0 opacity-[0.25]"
+                    style={{ backgroundImage: 'radial-gradient(currentColor 1px, transparent 1px)', backgroundSize: '16px 16px', color: 'rgba(255,255,255,0.12)' }}
+                />
+                <div className={cn('absolute inset-0 p-3 transition-transform duration-300 group-hover:scale-[1.04]', cat.text)}>
+                    <LearnArt slug={article.slug} category={article.category} />
+                </div>
                 <span className={cn('absolute left-3 top-3 rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider', cat.chip)}>
                     {cat.label}
                 </span>
