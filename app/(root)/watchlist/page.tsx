@@ -1,19 +1,18 @@
 import React, { Suspense } from 'react';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { getGroupItems } from '@/lib/actions/watchlist.actions';
 import { listGroups } from '@/lib/actions/watchlist-groups.actions';
-import { getUserAlerts } from '@/lib/actions/alert.actions';
 import { getNews, getWatchlistData } from '@/lib/actions/finnhub.actions';
 import WatchlistManager from '@/components/watchlist/WatchlistManager';
 import WatchlistGroupBar from '@/components/watchlist/WatchlistGroupBar';
 import WatchlistDigest from '@/components/watchlist/WatchlistDigest';
 import NewsImpact from '@/components/watchlist/NewsImpact';
 import DivergenceRadar from '@/components/watchlist/DivergenceRadar';
-import AlertsPanel from '@/components/watchlist/AlertsPanel';
 import NewsGrid from '@/components/watchlist/NewsGrid';
 import DataDisclaimer from '@/components/DataDisclaimer';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Bell } from 'lucide-react';
 
 type GroupItems = Awaited<ReturnType<typeof getGroupItems>>;
 
@@ -25,11 +24,6 @@ async function TableSection({ items, groupId }: { items: GroupItems; groupId: nu
 async function NewsSection({ symbols }: { symbols: string[] }) {
     const news = await getNews(symbols.length > 0 ? symbols : undefined).catch(() => []);
     return <NewsGrid news={news || []} />;
-}
-
-async function AlertsSection({ userId }: { userId: string }) {
-    const alerts = await getUserAlerts(userId);
-    return <AlertsPanel alerts={alerts} />;
 }
 
 function TableSkeleton() {
@@ -61,7 +55,6 @@ export default async function WatchlistPage({
     } = await supabase.auth.getUser();
     if (!user) redirect('https://www.feedcast.news/?signin=stocks');
 
-    const userId = user.id;
     const { list } = await searchParams;
 
     const groups = await listGroups();
@@ -72,53 +65,53 @@ export default async function WatchlistPage({
 
     return (
         <div className="min-h-screen bg-gray-900 text-gray-100 p-6 md:p-8">
-            <div className="mb-6">
-                <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-500">
-                    Watchlists
-                </h1>
-                <p className="mt-1 text-gray-500">
-                    Track up to five separate lists — by theme, conviction, or whatever fits how you invest.
-                </p>
+            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-500">
+                        Watchlists
+                    </h1>
+                    <p className="mt-1 text-gray-500">
+                        Track up to five separate lists — by theme, conviction, or whatever fits how you invest.
+                    </p>
+                </div>
+                <Link
+                    href="/alerts"
+                    className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-gray-700 bg-gray-800/60 px-3.5 py-2 text-sm font-medium text-gray-200 transition-colors hover:border-yellow-500/40 hover:text-yellow-400"
+                >
+                    <Bell size={15} className="text-yellow-500" /> Price alerts
+                </Link>
             </div>
 
             <DataDisclaimer className="mb-6 max-w-2xl" />
 
             {active && <WatchlistGroupBar groups={groups} activeId={active.id} />}
 
-            <div className="mt-6 grid grid-cols-1 lg:grid-cols-4 gap-8">
-                <div className="lg:col-span-3 space-y-8">
-                    {items.length === 0 ? (
-                        <EmptyGroup />
-                    ) : (
-                        <Suspense key={active?.id} fallback={<TableSkeleton />}>
-                            <TableSection items={items} groupId={active!.id} />
+            <div className="mt-6 space-y-8">
+                {items.length === 0 ? (
+                    <EmptyGroup />
+                ) : (
+                    <Suspense key={active?.id} fallback={<TableSkeleton />}>
+                        <TableSection items={items} groupId={active!.id} />
+                    </Suspense>
+                )}
+
+                {symbols.length > 0 && (
+                    <>
+                        <Suspense fallback={null}>
+                            <WatchlistDigest symbols={symbols} />
                         </Suspense>
-                    )}
+                        <Suspense fallback={null}>
+                            <NewsImpact symbols={symbols} />
+                        </Suspense>
+                        <Suspense fallback={null}>
+                            <DivergenceRadar symbols={symbols} />
+                        </Suspense>
+                    </>
+                )}
 
-                    {symbols.length > 0 && (
-                        <>
-                            <Suspense fallback={null}>
-                                <WatchlistDigest symbols={symbols} />
-                            </Suspense>
-                            <Suspense fallback={null}>
-                                <NewsImpact symbols={symbols} />
-                            </Suspense>
-                            <Suspense fallback={null}>
-                                <DivergenceRadar symbols={symbols} />
-                            </Suspense>
-                        </>
-                    )}
-
-                    <Suspense fallback={<div className="flex justify-center p-12"><Loader2 className="animate-spin text-gray-500" /></div>}>
-                        <NewsSection symbols={symbols} />
-                    </Suspense>
-                </div>
-
-                <div className="lg:col-span-1">
-                    <Suspense fallback={null}>
-                        <AlertsSection userId={userId} />
-                    </Suspense>
-                </div>
+                <Suspense fallback={<div className="flex justify-center p-12"><Loader2 className="animate-spin text-gray-500" /></div>}>
+                    <NewsSection symbols={symbols} />
+                </Suspense>
             </div>
         </div>
     );

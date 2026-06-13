@@ -19,6 +19,7 @@ import {
   LayoutDashboard,
   Search,
   Star,
+  Bell,
   Radar,
   GraduationCap,
   Activity,
@@ -148,6 +149,7 @@ export default function MobileDrawer({
                 Search
               </button>
               {item('/watchlist', 'Watchlist', Star)}
+              {item('/alerts', 'Alerts', Bell)}
               {item('/bubble-detector', 'Bubble Detector', Radar)}
               {item('/learn', 'Learn', GraduationCap)}
 
