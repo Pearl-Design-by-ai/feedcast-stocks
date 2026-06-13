@@ -27,6 +27,7 @@ import {
   GraduationCap,
   Search,
   Star,
+  Bell,
   Sparkles,
   Activity,
   Gauge,
@@ -59,6 +60,7 @@ const MAIN_ICONS: Record<string, LucideIcon> = {
   '/': LayoutDashboard,
   '/search': Search,
   '/watchlist': Star,
+  '/alerts': Bell,
   '/bubble-detector': Radar,
   '/learn': GraduationCap,
 };
