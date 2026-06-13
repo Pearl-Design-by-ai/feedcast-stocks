@@ -83,11 +83,20 @@ export function FrothGauge({
                     <p className="mt-1 text-[11px] text-gray-500">as of {asOf}</p>
                 </div>
             </div>
-            <div className="relative mt-4 h-2.5 w-full overflow-hidden rounded-full bg-gradient-to-r from-emerald-500 via-amber-400 to-red-500">
+            <div className="relative mb-1 mt-8">
+                {/* gradient track (clipped) */}
+                <div className="h-2.5 w-full overflow-hidden rounded-full bg-gradient-to-r from-emerald-500 via-amber-400 to-red-500" />
+                {/* marker sits OUTSIDE the clipped track so it's fully visible:
+                    a value bubble above a white knob with a dark ring. */}
                 <div
-                    className="absolute top-1/2 h-4 w-1 -translate-y-1/2 rounded-full bg-white shadow"
-                    style={{ left: `calc(${Math.min(100, Math.max(0, value))}% - 2px)` }}
-                />
+                    className="pointer-events-none absolute top-1/2 -translate-x-1/2 -translate-y-1/2"
+                    style={{ left: `${Math.min(96, Math.max(4, value))}%` }}
+                >
+                    <span className={cn('absolute -top-7 left-1/2 -translate-x-1/2 rounded-md px-1.5 py-0.5 text-[11px] font-bold tabular-nums text-gray-950 shadow', band.tone === 'neg' ? 'bg-red-400' : band.tone === 'warn' ? 'bg-amber-400' : 'bg-emerald-400')}>
+                        {value}
+                    </span>
+                    <span className="block h-5 w-5 rounded-full border-[3px] border-gray-950 bg-white shadow-lg" />
+                </div>
             </div>
             <div className="mt-1 flex justify-between text-[10px] uppercase tracking-wider text-gray-600">
                 <span>Calm</span>
