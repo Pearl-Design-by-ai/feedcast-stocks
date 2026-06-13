@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Pencil, Trash2, Check, X, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check, X, Loader2, List } from 'lucide-react';
 import { toast } from 'sonner';
 import {
     createGroup,
@@ -14,8 +14,10 @@ import { MAX_GROUPS, type WatchlistGroup } from '@/lib/watchlist-groups';
 import { cn } from '@/lib/utils';
 
 /**
- * Tab bar for the up-to-5 watchlist groups: switch between lists, create /
- * rename / delete, and add a symbol straight into the active list.
+ * Toolbar for the up-to-5 watchlist groups: switch between lists with pill
+ * tabs, create / rename / delete the active list, and batch-add tickers
+ * straight into it. Laid out as two stacked rows so nothing overflows on
+ * narrow viewports — tabs on top, the active-list action bar below.
  */
 export default function WatchlistGroupBar({
     groups,
@@ -35,7 +37,10 @@ export default function WatchlistGroupBar({
     const active = groups.find((g) => g.id === activeId) ?? groups[0];
     const atMax = groups.length >= MAX_GROUPS;
 
-    const go = (id: number) => router.push(`/watchlist?list=${id}`);
+    const go = (id: number) => {
+        if (id === active.id) return;
+        router.push(`/watchlist?list=${id}`);
+    };
 
     const doCreate = () =>
         start(async () => {
@@ -81,19 +86,22 @@ export default function WatchlistGroupBar({
         });
 
     return (
-        <div className="flex flex-col gap-3">
-            {/* Tabs */}
-            <div className="flex flex-wrap items-center gap-1.5 border-b border-gray-800 pb-px">
+        <div className="rounded-2xl border border-gray-800 bg-gray-900/40 p-1.5 shadow-sm">
+            {/* Row 1 — list tabs */}
+            <div className="flex flex-wrap items-center gap-1 p-1">
+                <List size={15} className="mx-1.5 shrink-0 text-gray-600" />
                 {groups.map((g) => (
                     <button
                         key={g.id}
                         type="button"
                         onClick={() => go(g.id)}
+                        disabled={pending}
+                        aria-current={g.id === active.id ? 'true' : undefined}
                         className={cn(
-                            'rounded-t-lg border-b-2 px-3.5 py-2 text-sm font-medium transition-colors',
+                            'rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed',
                             g.id === active.id
-                                ? 'border-teal-400 text-teal-400'
-                                : 'border-transparent text-gray-400 hover:text-gray-200'
+                                ? 'bg-teal-500/15 text-teal-300 ring-1 ring-inset ring-teal-400/40'
+                                : 'text-gray-400 hover:bg-gray-800/70 hover:text-gray-100'
                         )}
                     >
                         {g.name}
@@ -101,21 +109,24 @@ export default function WatchlistGroupBar({
                 ))}
 
                 {creating ? (
-                    <span className="flex items-center gap-1 py-1">
+                    <span className="flex items-center gap-1 pl-1">
                         <input
                             autoFocus
                             value={newName}
                             onChange={(e) => setNewName(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && doCreate()}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') doCreate();
+                                if (e.key === 'Escape') { setCreating(false); setNewName(''); }
+                            }}
                             placeholder="List name"
                             maxLength={40}
-                            className="w-32 rounded-md border border-gray-700 bg-gray-800 px-2 py-1 text-sm text-gray-100 focus:border-teal-400/60 focus:outline-none"
+                            className="w-36 rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm text-gray-100 focus:border-teal-400/60 focus:outline-none"
                         />
-                        <button type="button" onClick={doCreate} disabled={pending} className="rounded p-1 text-teal-400 hover:bg-gray-800" aria-label="Create">
-                            {pending ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
+                        <button type="button" onClick={doCreate} disabled={pending} className="rounded-lg p-1.5 text-teal-400 hover:bg-gray-800" aria-label="Create list">
+                            {pending ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
                         </button>
-                        <button type="button" onClick={() => { setCreating(false); setNewName(''); }} className="rounded p-1 text-gray-500 hover:bg-gray-800" aria-label="Cancel">
-                            <X size={15} />
+                        <button type="button" onClick={() => { setCreating(false); setNewName(''); }} className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-800" aria-label="Cancel">
+                            <X size={16} />
                         </button>
                     </span>
                 ) : (
@@ -123,7 +134,7 @@ export default function WatchlistGroupBar({
                         <button
                             type="button"
                             onClick={() => setCreating(true)}
-                            className="flex items-center gap-1 rounded-lg px-2.5 py-2 text-sm text-gray-400 transition-colors hover:bg-gray-800/60 hover:text-teal-300"
+                            className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-800/70 hover:text-teal-300"
                         >
                             <Plus size={15} /> New list
                         </button>
@@ -131,68 +142,75 @@ export default function WatchlistGroupBar({
                 )}
             </div>
 
-            {/* Active-group controls */}
-            <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
+            {/* Row 2 — active-list action bar */}
+            <div className="mt-1 flex flex-col gap-2 rounded-xl border border-gray-800/80 bg-gray-950/40 p-2 sm:flex-row sm:items-center sm:justify-between">
+                {/* Rename / delete the active list */}
+                <div className="flex items-center gap-1.5">
                     {renaming ? (
                         <span className="flex items-center gap-1">
                             <input
                                 autoFocus
                                 value={editName}
                                 onChange={(e) => setEditName(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && doRename()}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') doRename();
+                                    if (e.key === 'Escape') setRenaming(false);
+                                }}
                                 maxLength={40}
-                                className="w-40 rounded-md border border-gray-700 bg-gray-800 px-2 py-1 text-sm text-gray-100 focus:border-teal-400/60 focus:outline-none"
+                                className="w-44 rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm text-gray-100 focus:border-teal-400/60 focus:outline-none"
                             />
-                            <button type="button" onClick={doRename} disabled={pending} className="rounded p-1 text-teal-400 hover:bg-gray-800" aria-label="Save name">
-                                {pending ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
+                            <button type="button" onClick={doRename} disabled={pending} className="rounded-lg p-1.5 text-teal-400 hover:bg-gray-800" aria-label="Save name">
+                                {pending ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
                             </button>
-                            <button type="button" onClick={() => setRenaming(false)} className="rounded p-1 text-gray-500 hover:bg-gray-800" aria-label="Cancel">
-                                <X size={15} />
+                            <button type="button" onClick={() => setRenaming(false)} className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-800" aria-label="Cancel">
+                                <X size={16} />
                             </button>
                         </span>
                     ) : (
                         <>
+                            <span className="hidden px-1 text-xs font-semibold uppercase tracking-wider text-gray-600 sm:inline">
+                                {active.name}
+                            </span>
                             <button
                                 type="button"
                                 onClick={() => { setEditName(active.name); setRenaming(true); }}
-                                className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-gray-400 transition-colors hover:bg-gray-800/60 hover:text-gray-200"
+                                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-400 transition-colors hover:bg-gray-800 hover:text-gray-100"
                             >
-                                <Pencil size={12} /> Rename
+                                <Pencil size={13} /> Rename
                             </button>
                             {groups.length > 1 && (
                                 <button
                                     type="button"
                                     onClick={doDelete}
                                     disabled={pending}
-                                    className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-gray-400 transition-colors hover:bg-gray-800/60 hover:text-red-400"
+                                    className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-400 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:opacity-40"
                                 >
-                                    <Trash2 size={12} /> Delete
+                                    <Trash2 size={13} /> Delete
                                 </button>
                             )}
                         </>
                     )}
                 </div>
 
-                {/* Add a symbol to this list */}
-                <span className="flex items-center gap-1.5">
+                {/* Batch-add tickers to the active list */}
+                <div className="flex items-center gap-1.5">
                     <input
                         value={symbol}
                         onChange={(e) => setSymbol(e.target.value.toUpperCase())}
                         onKeyDown={(e) => e.key === 'Enter' && doAdd()}
                         placeholder="Add tickers — e.g. NVDA, AAPL, MSFT"
                         maxLength={160}
-                        className="w-56 rounded-lg border border-gray-700 bg-gray-800/60 px-3 py-1.5 text-sm text-gray-100 placeholder:text-gray-500 focus:border-teal-400/60 focus:outline-none sm:w-72"
+                        className="min-w-0 flex-1 rounded-lg border border-gray-700 bg-gray-800/60 px-3 py-1.5 text-sm text-gray-100 placeholder:text-gray-500 focus:border-teal-400/60 focus:outline-none sm:w-72 sm:flex-none"
                     />
                     <button
                         type="button"
                         onClick={doAdd}
                         disabled={pending || !symbol.trim()}
-                        className="flex items-center gap-1 rounded-lg bg-gray-800 px-3 py-1.5 text-sm font-semibold text-teal-400 transition-colors hover:bg-gray-700 disabled:opacity-40"
+                        className="flex shrink-0 items-center gap-1 rounded-lg bg-teal-500/15 px-3.5 py-1.5 text-sm font-semibold text-teal-300 ring-1 ring-inset ring-teal-400/30 transition-colors hover:bg-teal-500/25 disabled:opacity-40"
                     >
-                        {pending ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Add
+                        {pending ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />} Add
                     </button>
-                </span>
+                </div>
             </div>
         </div>
     );
