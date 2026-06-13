@@ -8,11 +8,14 @@ import CreateAlertModal from "./CreateAlertModal";
 import WatchlistButton from "@/components/WatchlistButton";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 import { removeFromWatchlist } from "@/lib/actions/watchlist.actions";
+import { removeSymbolFromGroup } from "@/lib/actions/watchlist-groups.actions";
 import type { WatchlistStockData } from "@/lib/actions/finnhub.actions";
 
 interface WatchlistTableProps {
     data: WatchlistStockData[];
     onRefresh?: () => void;
+    /** When set, removal targets just this group; otherwise removes everywhere. */
+    groupId?: number;
 }
 
 // How often to refresh live prices. Finnhub's free tier allows 60 calls/min,
@@ -141,7 +144,7 @@ function MobileCard({
     );
 }
 
-export default function WatchlistTable({ data, onRefresh }: WatchlistTableProps) {
+export default function WatchlistTable({ data, onRefresh, groupId }: WatchlistTableProps) {
     const [stocks, setStocks] = useState<WatchlistStockData[]>(data);
     // Keep the latest symbols available to the interval without re-subscribing.
     const symbolsRef = useRef<string[]>(data.map((s) => s.symbol));
@@ -198,7 +201,8 @@ export default function WatchlistTable({ data, onRefresh }: WatchlistTableProps)
     }
 
     const handleRemove = async (symbol: string) => {
-        await removeFromWatchlist(symbol);
+        if (groupId != null) await removeSymbolFromGroup(groupId, symbol);
+        else await removeFromWatchlist(symbol);
         setStocks((curr) => curr.filter((s) => s.symbol !== symbol));
         onRefresh?.();
     };

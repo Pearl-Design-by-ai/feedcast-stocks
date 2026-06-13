@@ -18,6 +18,7 @@ interface WatchlistItem {
 interface WatchlistManagerProps {
     initialItems: WatchlistItem[];
     initialData: WatchlistStockData[];
+    groupId?: number;
 }
 
 function sortBySymbol<T extends { symbol: string }>(list: T[], order: 'asc' | 'desc' | null): T[] {
@@ -34,7 +35,7 @@ function sortBySymbol<T extends { symbol: string }>(list: T[], order: 'asc' | 'd
  * mobile card, so there's no separate chips wall — just a slim toolbar
  * (count + sort) above the table.
  */
-export default function WatchlistManager({ initialItems, initialData }: WatchlistManagerProps) {
+export default function WatchlistManager({ initialItems, initialData, groupId }: WatchlistManagerProps) {
     const router = useRouter();
     // Sort state: 'asc' (A-Z), 'desc' (Z-A), or null (added order/default)
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
@@ -81,7 +82,7 @@ export default function WatchlistManager({ initialItems, initialData }: Watchlis
                 </Button>
             </div>
 
-            <WatchlistTable data={sortedData} onRefresh={() => router.refresh()} />
+            <WatchlistTable data={sortedData} groupId={groupId} onRefresh={() => router.refresh()} />
         </div>
     );
 }
