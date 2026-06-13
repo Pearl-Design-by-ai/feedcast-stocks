@@ -14,6 +14,7 @@ import {
     Loader2,
     ArrowUp,
     ArrowDown,
+    ChevronDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn, formatCurrency } from '@/lib/utils';
@@ -93,6 +94,13 @@ export default function AlertsManager({ alerts, prices, suggestions }: AlertsMan
     const [name, setName] = useState('');
     const [currentPrice, setCurrentPrice] = useState<number | null>(null);
     const [quoting, setQuoting] = useState(false);
+    const [tickerOpen, setTickerOpen] = useState(false);
+
+    // Watchlist symbols matching what's typed — the clickable suggestion list.
+    const tickerMatches = useMemo(() => {
+        const q = symbol.trim().toUpperCase();
+        return suggestions.filter((s) => (q === '' ? true : s.includes(q))).slice(0, 8);
+    }, [suggestions, symbol]);
 
     // When the ticker settles, pull its live price and pre-fill the target so
     // the threshold can be set relative to where it trades now. Debounced, and
@@ -268,21 +276,53 @@ export default function AlertsManager({ alerts, prices, suggestions }: AlertsMan
             <section className="rounded-2xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
                 <h2 className="mb-3 text-base font-semibold text-gray-100">New alert</h2>
                 <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
-                    <div className="flex flex-col gap-1">
+                    <div className="relative flex flex-col gap-1">
                         <label className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Ticker</label>
-                        <input
-                            value={symbol}
-                            onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-                            list="alert-symbol-suggestions"
-                            placeholder="e.g. NVDA"
-                            maxLength={12}
-                            className="w-28 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 placeholder:text-gray-600 focus:border-yellow-500/60 focus:outline-none"
-                        />
-                        <datalist id="alert-symbol-suggestions">
-                            {suggestions.map((s) => (
-                                <option key={s} value={s} />
-                            ))}
-                        </datalist>
+                        <div className="relative">
+                            <input
+                                value={symbol}
+                                onChange={(e) => {
+                                    setSymbol(e.target.value.toUpperCase());
+                                    setTickerOpen(true);
+                                }}
+                                onFocus={() => setTickerOpen(true)}
+                                onBlur={() => setTimeout(() => setTickerOpen(false), 120)}
+                                onKeyDown={(e) => e.key === 'Escape' && setTickerOpen(false)}
+                                placeholder="e.g. NVDA"
+                                maxLength={12}
+                                autoComplete="off"
+                                className="w-36 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 pr-8 text-sm text-gray-100 placeholder:text-gray-600 focus:border-yellow-500/60 focus:outline-none"
+                            />
+                            {suggestions.length > 0 && (
+                                <ChevronDown
+                                    size={15}
+                                    className={cn(
+                                        'pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 transition-transform',
+                                        tickerOpen && 'rotate-180'
+                                    )}
+                                />
+                            )}
+                            {tickerOpen && tickerMatches.length > 0 && (
+                                <ul className="absolute left-0 top-full z-30 mt-1 max-h-60 w-44 overflow-auto rounded-lg border border-gray-700 bg-gray-900 py-1 shadow-xl">
+                                    {tickerMatches.map((s) => (
+                                        <li key={s}>
+                                            <button
+                                                type="button"
+                                                // mousedown fires before the input's blur, so the pick lands reliably.
+                                                onMouseDown={(e) => {
+                                                    e.preventDefault();
+                                                    setSymbol(s);
+                                                    setTickerOpen(false);
+                                                }}
+                                                className="flex w-full items-center px-3 py-2 text-left text-sm font-medium text-gray-200 transition-colors hover:bg-gray-800 hover:text-teal-300"
+                                            >
+                                                {s}
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
                     </div>
 
                     <div className="flex flex-col gap-1">
