@@ -2,8 +2,25 @@
 
 import { revalidatePath } from 'next/cache';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { getQuote } from '@/lib/actions/finnhub.actions';
 
 const TABLE = 'stock_alerts';
+
+/**
+ * Current price for a symbol, for pre-filling the alert target field so a
+ * member can set their threshold relative to where the stock trades now.
+ * Returns null when the quote is unavailable. (getQuote is KV-cached.)
+ */
+export async function getSymbolPrice(symbol: string): Promise<number | null> {
+    const sym = symbol.trim().toUpperCase();
+    if (!sym) return null;
+    try {
+        const quote = await getQuote(sym);
+        return quote?.c ?? null;
+    } catch {
+        return null;
+    }
+}
 
 export type AlertRow = {
     id: number;
