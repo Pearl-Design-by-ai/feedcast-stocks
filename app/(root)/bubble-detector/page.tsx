@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { Loader2, Radar, TriangleAlert, ExternalLink } from 'lucide-react';
+import { Loader2, Radar, TriangleAlert, ExternalLink, Telescope, Eye } from 'lucide-react';
 import DataDisclaimer from '@/components/DataDisclaimer';
 import TradingViewWidget from '@/components/TradingViewWidget';
 import { FrothGauge, ScoreBar, PhaseChip, AssetTable } from '@/components/bubble/BubbleUi';
@@ -24,7 +24,13 @@ async function Scan() {
 
     return (
         <>
-            <FrothGauge value={scan.frothIndex} asOf={scan.asOf} />
+            <FrothGauge
+                value={scan.frothIndex}
+                asOf={scan.asOf}
+                scored={scan.scored}
+                universe={scan.universe}
+                phaseCounts={scan.phaseCounts}
+            />
 
             {/* Highest pop risk right now */}
             {scan.topPop.length > 0 && (
@@ -92,6 +98,78 @@ async function Scan() {
                     );
                 })}
             </div>
+
+            {/* Next bubble candidates — emerging themes that could inflate from here */}
+            <section className="rounded-xl border border-teal-400/20 bg-teal-400/[0.03] p-4 md:p-5">
+                <h2 className="mb-1 flex items-center gap-2 text-base font-semibold text-gray-100">
+                    <Telescope size={16} className="text-teal-400" />
+                    Next bubble candidates
+                </h2>
+                <p className="mb-4 text-xs leading-relaxed text-gray-500">
+                    Not manias yet — emerging themes with the <em>shape</em> of an early bubble: a real,
+                    exciting story pulling in fast money. For each we track the tradeable instruments
+                    and flag the signal that would tip it from “story” into “bubble.” Live scores below
+                    show how inflated each one already is.
+                </p>
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    {scan.candidates.map(({ candidate, assets, avgBubble, avgPop }) => (
+                        <div key={candidate.id} className="flex flex-col rounded-lg border border-gray-800 bg-gray-900/60 p-4">
+                            <div className="flex items-center gap-2">
+                                <span className={cn('rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider', candidate.chip)}>
+                                    {candidate.label}
+                                </span>
+                                <span className={cn('text-xs font-semibold', bubbleBand(avgBubble).tone === 'neg' ? 'text-red-400' : bubbleBand(avgBubble).tone === 'warn' ? 'text-amber-400' : 'text-emerald-400')}>
+                                    {bubbleBand(avgBubble).label}
+                                </span>
+                            </div>
+                            <p className="mt-2 text-sm font-medium text-gray-200">{candidate.tagline}</p>
+                            <p className="mt-1 text-xs leading-relaxed text-gray-400">{candidate.thesis}</p>
+
+                            <div className="mt-3 grid grid-cols-2 gap-3">
+                                <div>
+                                    <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-gray-500">Avg bubble</p>
+                                    <ScoreBar value={avgBubble} barClass={candidate.bar} />
+                                </div>
+                                <div>
+                                    <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-gray-500">Avg pop risk</p>
+                                    <ScoreBar value={avgPop} />
+                                </div>
+                            </div>
+
+                            <div className="mt-3 flex items-start gap-1.5 rounded-md border border-gray-800 bg-gray-950/40 p-2.5">
+                                <Eye size={13} className="mt-0.5 shrink-0 text-teal-400" />
+                                <p className="text-[11px] leading-relaxed text-gray-400">
+                                    <span className="font-semibold text-gray-300">Watch for:</span> {candidate.watch}
+                                </p>
+                            </div>
+
+                            <div className="mt-3 flex flex-wrap gap-1.5">
+                                {candidate.symbols.map((sym) => {
+                                    const scored = assets.find((a) => a.symbol === sym);
+                                    return (
+                                        <Link
+                                            key={sym}
+                                            href={`/stocks/${sym}`}
+                                            className="rounded-md border border-gray-800 bg-gray-900/60 px-2 py-1 text-xs font-medium text-gray-300 transition-colors hover:border-teal-400/40 hover:text-teal-300"
+                                        >
+                                            {sym}
+                                            {scored && (
+                                                <span className={cn('ml-1.5 tabular-nums', scored.bubbleScore >= 55 ? 'text-amber-400' : 'text-gray-500')}>
+                                                    {scored.bubbleScore}
+                                                </span>
+                                            )}
+                                        </Link>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <p className="mt-3 text-[11px] leading-relaxed text-gray-500">
+                    Each chip links to the stock page; the number is its live bubble score (0–100).
+                    Candidate themes are editorial, mid-2026 — informational, not advice.
+                </p>
+            </section>
 
             {/* Charts for the two highest-pop-risk names */}
             {scan.topPop.length > 0 && (
