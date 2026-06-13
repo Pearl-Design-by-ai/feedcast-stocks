@@ -5,6 +5,7 @@ import { ExternalLink } from 'lucide-react';
 import DataDisclaimer from '@/components/DataDisclaimer';
 import TradingViewWidget from '@/components/TradingViewWidget';
 import FixedIncomeEtfs from '@/components/fixed-income/FixedIncomeEtfs';
+import FixedIncomeTabs from '@/components/fixed-income/FixedIncomeTabs';
 import ReturnsTable from '@/components/markets/ReturnsTable';
 import { BOND_GROUPS, TREASURY_YIELDS, FIXED_INCOME_EDU } from '@/lib/fixed-income';
 
@@ -56,6 +57,9 @@ export default function FixedIncomePage() {
                 </div>
                 <DataDisclaimer className="w-fit" />
             </header>
+
+            <FixedIncomeTabs active="/fixed-income" />
+
             <AiCommentary />
 
             {/* Treasury yields — link out (raw yield feeds are gated in the embed) */}
