@@ -23,6 +23,7 @@ import {
   PanelLeftClose,
   ArrowLeft,
   LayoutDashboard,
+  Radar,
   Search,
   Star,
   Sparkles,
@@ -57,6 +58,7 @@ const MAIN_ICONS: Record<string, LucideIcon> = {
   '/': LayoutDashboard,
   '/search': Search,
   '/watchlist': Star,
+  '/bubble-detector': Radar,
 };
 
 const MARKETS_ICONS: Record<string, LucideIcon> = {

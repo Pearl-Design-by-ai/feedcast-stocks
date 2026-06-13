@@ -19,6 +19,7 @@ import {
   LayoutDashboard,
   Search,
   Star,
+  Radar,
   Activity,
   Palette,
   Info,
@@ -146,6 +147,7 @@ export default function MobileDrawer({
                 Search
               </button>
               {item('/watchlist', 'Watchlist', Star)}
+              {item('/bubble-detector', 'Bubble Detector', Radar)}
 
               <div className="my-3 h-px bg-gray-700/70" />
 
