@@ -185,8 +185,19 @@ export default function PortfolioLab() {
                         </select>
                     </Field>
                     <Field label="Capital">
-                        <input type="number" min={1000} value={inp.capital} onChange={(e) => set('capital', Math.max(0, Number(e.target.value)))}
-                            className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 focus:border-teal-400/60 focus:outline-none" />
+                        <div className="relative">
+                            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">{inp.currency}</span>
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                value={inp.capital ? inp.capital.toLocaleString('en-US') : ''}
+                                onChange={(e) => {
+                                    const digits = e.target.value.replace(/[^\d]/g, '').slice(0, 12);
+                                    set('capital', digits ? Number(digits) : 0);
+                                }}
+                                placeholder="50,000"
+                                className="w-full rounded-lg border border-gray-700 bg-gray-800 py-2 pl-12 pr-3 text-sm tabular-nums text-gray-100 placeholder:text-gray-600 focus:border-teal-400/60 focus:outline-none" />
+                        </div>
                     </Field>
                     <Field label={`Single-name max (${inp.singleNameMax}%)`}>
                         <input type="range" min={3} max={25} value={inp.singleNameMax} onChange={(e) => set('singleNameMax', Number(e.target.value))} className="accent-teal-400" />
