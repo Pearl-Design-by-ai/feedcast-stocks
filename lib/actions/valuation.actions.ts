@@ -7,19 +7,20 @@ import {
     VAL_METRICS_KEY,
     VAL_SCREEN_KEY,
     VAL_LOCK_KEY,
+    currentSession,
     type ValuationEntry,
     type ValuationScreen,
 } from '@/lib/valuation';
 
 const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
-const STALE_MS = 24 * 60 * 60 * 1000;
 const SEVEN_DAYS = 7 * 24 * 60 * 60;
 /** Max Finnhub calls per scan run — keeps one paced run inside the rate-limit
- *  budget; multiple traffic-triggered runs fill the universe over a few mins. */
+ *  budget; the cron advances the scan a chunk at a time after each close. */
 const MAX_FETCH_PER_RUN = 50;
 
 type Metric = { pe: number | null; ps: number | null; dy: number | null };
-type MetricRecord = Metric & { t: number };
+/** `s` = the trading session this metric was fetched for. */
+type MetricRecord = Metric & { s: string };
 type MetricsMap = Record<string, MetricRecord>;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -45,7 +46,7 @@ async function fetchMetricLive(symbol: string): Promise<Metric | null> {
     }
 }
 
-function buildScreen(map: MetricsMap): ValuationScreen {
+function buildScreen(map: MetricsMap, session: string): ValuationScreen {
     const recorded = VALUATION_UNIVERSE.map((symbol) =>
         map[symbol] ? { symbol, ...map[symbol] } : null
     ).filter((e): e is { symbol: string } & MetricRecord => e !== null);
@@ -57,8 +58,14 @@ function buildScreen(map: MetricsMap): ValuationScreen {
     const cheapest = [...valued].sort((a, b) => a.pe - b.pe).slice(0, VALUATION_TOP_N);
     const priciest = [...valued].sort((a, b) => b.pe - a.pe).slice(0, VALUATION_TOP_N);
 
+    // "Covered" = fetched for this session (incl. no-earnings names); the screen
+    // is complete once the whole universe has been refreshed since the close.
+    const covered = VALUATION_UNIVERSE.filter((s) => map[s]?.s === session).length;
+
     return {
         asOf: new Date().toISOString(),
+        session,
+        complete: covered >= VALUATION_UNIVERSE.length,
         scanned: valued.length,
         universe: VALUATION_UNIVERSE.length,
         noEarnings: recorded.length - valued.length,
@@ -68,23 +75,24 @@ function buildScreen(map: MetricsMap): ValuationScreen {
 }
 
 /**
- * Incremental daily batch. Reads the cached metrics map, refreshes up to
- * MAX_FETCH_PER_RUN missing/stale symbols (paced under the free-tier limit),
- * rebuilds both ranked lists from everything cached, and stores the screen.
- * Partial runs still produce a usable screen and converge over repeated runs.
+ * Incremental session batch. Refreshes up to MAX_FETCH_PER_RUN symbols that
+ * haven't been fetched yet for the current trading session (paced under the
+ * free-tier limit), rebuilds both ranked lists, and stores the screen. Called
+ * a chunk at a time by the cron after each close, so the whole universe is
+ * rebuilt over a handful of runs; partial runs still render.
  */
 export async function runValuationScan(): Promise<ValuationScreen> {
     const kv = await getMarketKV();
     const map: MetricsMap = kv ? (((await kv.get(VAL_METRICS_KEY, 'json')) as MetricsMap | null) ?? {}) : {};
 
-    const now = Date.now();
-    const need = VALUATION_UNIVERSE.filter((s) => !map[s] || now - map[s].t > STALE_MS);
+    const session = currentSession();
+    const need = VALUATION_UNIVERSE.filter((s) => map[s]?.s !== session);
 
     let fetched = 0;
     for (const sym of need) {
         if (fetched >= MAX_FETCH_PER_RUN) break;
         const m = await fetchMetricLive(sym);
-        if (m) map[sym] = { ...m, t: now }; // record successes (incl. no-earnings); retry errors next run
+        if (m) map[sym] = { ...m, s: session }; // record successes (incl. no-earnings); retry errors next run
         fetched += 1;
         if (fetched < MAX_FETCH_PER_RUN) await sleep(1100); // ~55 calls/min, under the 60/min cap
     }
@@ -97,7 +105,7 @@ export async function runValuationScan(): Promise<ValuationScreen> {
         }
     }
 
-    const screen = buildScreen(map);
+    const screen = buildScreen(map, session);
     if (kv) {
         try {
             await kv.put(VAL_SCREEN_KEY, JSON.stringify(screen), { expirationTtl: SEVEN_DAYS });
@@ -153,15 +161,14 @@ async function triggerBackgroundScan(): Promise<void> {
 }
 
 /**
- * Read the screen for the page, kicking a background refresh when it's older
- * than ~20h or hasn't finished covering the universe yet. Returns whatever is
- * currently stored (may be partial or null on a cold cache).
+ * Read the screen for the page. The cron rebuilds it after each market close;
+ * this also fires a best-effort background refresh when the stored screen isn't
+ * built for the current session yet (e.g. a cold cache before the next cron
+ * tick). Returns whatever is currently stored (may be partial or null).
  */
 export async function ensureFreshScreen(): Promise<ValuationScreen | null> {
     const screen = await getValuationScreen();
-    const ageMs = screen ? Date.now() - Date.parse(screen.asOf) : Infinity;
-    const stale = ageMs > 20 * 60 * 60 * 1000;
-    const incomplete = !screen || screen.scanned < VALUATION_UNIVERSE.length;
-    if (stale || incomplete) await triggerBackgroundScan();
+    const needs = !screen || screen.session !== currentSession() || !screen.complete;
+    if (needs) await triggerBackgroundScan();
     return screen;
 }

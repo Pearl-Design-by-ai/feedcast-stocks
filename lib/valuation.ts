@@ -23,6 +23,10 @@ export interface ValuationEntry {
 export interface ValuationScreen {
     /** ISO timestamp of the last rebuild. */
     asOf: string;
+    /** Trading session (ET date) this screen was built for — see currentSession(). */
+    session: string;
+    /** True once every universe symbol has been fetched for this session. */
+    complete: boolean;
     /** How many universe names currently have a usable P/E. */
     scanned: number;
     /** Universe size. */
@@ -31,6 +35,39 @@ export interface ValuationScreen {
     noEarnings: number;
     cheapest: ValuationEntry[];
     priciest: ValuationEntry[];
+}
+
+/**
+ * The most recent completed US trading session as an ET date string
+ * (YYYY-MM-DD). Before 16:00 ET it's the prior session; weekends roll back to
+ * Friday. Used to refresh the screen once after each market close rather than
+ * on a rolling clock.
+ */
+function etParts(d: Date) {
+    const f = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/New_York',
+        weekday: 'short',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        hour12: false,
+    });
+    const m: Record<string, string> = {};
+    for (const p of f.formatToParts(d)) m[p.type] = p.value;
+    return { y: +m.year, mo: +m.month, d: +m.day, hour: +m.hour % 24, weekday: m.weekday };
+}
+
+export function currentSession(now: Date = new Date()): string {
+    let d = now;
+    if (etParts(d).hour < 16) d = new Date(d.getTime() - 86_400_000); // before the close → prior day
+    for (let i = 0; i < 6; i++) {
+        const w = etParts(d).weekday;
+        if (w !== 'Sat' && w !== 'Sun') break;
+        d = new Date(d.getTime() - 86_400_000);
+    }
+    const p = etParts(d);
+    return `${p.y}-${String(p.mo).padStart(2, '0')}-${String(p.d).padStart(2, '0')}`;
 }
 
 /** How many names each ranked list holds. */

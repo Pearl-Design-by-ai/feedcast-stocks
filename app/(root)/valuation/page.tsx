@@ -46,7 +46,7 @@ export default function ValuationPage() {
                     </a>{' '}
                     isn&apos;t computable per stock from free data, so each name is ranked by its
                     trailing P/E — the accessible valuation proxy — with P/S and dividend yield
-                    alongside. Rebuilt in the background about once a day.
+                    alongside. Rebuilt automatically after each US market close.
                 </p>
             </header>
 

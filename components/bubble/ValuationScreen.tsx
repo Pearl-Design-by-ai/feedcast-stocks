@@ -49,8 +49,8 @@ export function ValuationLists({ screen }: { screen: ValuationScreen | null }) {
         return (
             <div className="flex items-center gap-3 rounded-xl border border-gray-800 bg-gray-900/40 p-6 text-sm text-gray-400">
                 <Loader2 className="h-4 w-4 animate-spin text-teal-400" />
-                Building today&apos;s valuation screen — pulling P/E across ~190 large-caps. Check back
-                in a minute; it fills in as the daily scan runs.
+                Building this session&apos;s valuation screen — pulling P/E across ~190 large-caps.
+                Check back shortly; it refills after each market close.
             </div>
         );
     }
