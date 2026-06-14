@@ -110,6 +110,10 @@
     --ink-strong: #ffffff;
     --tv-theme: dark;
     --warn: #FACC15;
+    /* Positive / price-up green — vivid on dark, deeper green on light where
+       neon green washes out. Drives the green-* and emerald-* utilities. */
+    --up: #4ade80;
+    --up-bg: #22c55e;
 }
 
 .dark {
@@ -180,6 +184,15 @@
     --color-red-500: #FF495B;
     --color-orange-500: #FF8243;
     --color-purple-500: #D13BFF;
+
+    /* Positive/up greens resolve to the theme-aware --up vars (deep green on
+       light). Covers the text + pill-background stops actually used. */
+    --color-green-300: var(--up);
+    --color-green-400: var(--up);
+    --color-green-500: var(--up-bg);
+    --color-emerald-300: var(--up);
+    --color-emerald-400: var(--up);
+    --color-emerald-500: var(--up-bg);
 }
 
 @layer base {
