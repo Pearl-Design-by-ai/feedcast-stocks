@@ -6,7 +6,6 @@ import AnalystRatings from "@/components/stocks/AnalystRatings";
 import CompanyBrief from "@/components/stocks/CompanyBrief";
 import PerformanceNote from "@/components/stocks/PerformanceNote";
 import BullBear from "@/components/stocks/BullBear";
-import StockChat from "@/components/stocks/StockChat";
 import DataDisclaimer from "@/components/DataDisclaimer";
 import {
     SYMBOL_INFO_WIDGET_CONFIG,
@@ -113,8 +112,6 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
                     <AnalystRatings trends={recommendationTrends} />
 
                     <BullBear symbol={symbol.toUpperCase()} name={companyName} />
-
-                    <StockChat symbol={symbol.toUpperCase()} name={companyName} />
 
                     <Suspense fallback={null}>
                         <EarningsPanel symbol={symbol.toUpperCase()} />
