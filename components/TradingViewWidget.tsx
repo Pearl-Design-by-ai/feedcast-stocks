@@ -43,6 +43,13 @@ const TradingViewWidget = ({ title, scriptUrl, config, height = 600, className, 
     };
     if ('colorTheme' in widgetConfig) widgetConfig.colorTheme = tvTheme;
     if ('theme' in widgetConfig) widgetConfig.theme = tvTheme;
+    // The `theme` flag styles the chrome but not the chart pane, which configs
+    // hardcode to a dark backgroundColor/gridColor. Repaint those light too so
+    // the chart interior isn't black on a light page. (Dark keeps the config.)
+    if (tvTheme === 'light') {
+        if ('backgroundColor' in widgetConfig) widgetConfig.backgroundColor = '#ffffff';
+        if ('gridColor' in widgetConfig) widgetConfig.gridColor = '#E5E7EB';
+    }
 
     const containerRef = useTradingViewWidget(scriptUrl, widgetConfig, currentHeight);
 
