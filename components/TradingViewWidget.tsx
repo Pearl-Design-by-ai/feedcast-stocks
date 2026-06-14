@@ -6,6 +6,17 @@ import { cn } from "@/lib/utils";
 import { Maximize2, Minimize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+/** Relative luminance (0–1) of a #RGB / #RRGGBB color, or null if unparseable. */
+function hexLuminance(hex: string): number | null {
+    let h = hex.replace('#', '').trim();
+    if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+    if (h.length !== 6 || /[^0-9a-fA-F]/.test(h)) return null;
+    const r = parseInt(h.slice(0, 2), 16) / 255;
+    const g = parseInt(h.slice(2, 4), 16) / 255;
+    const b = parseInt(h.slice(4, 6), 16) / 255;
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
 interface TradingViewWidgetProps {
     title?: string;
     scriptUrl: string;
@@ -30,18 +41,28 @@ const TradingViewWidget = ({ title, scriptUrl, config, height = 600, className, 
 
     const currentHeight = isExpanded ? windowHeight : height;
 
-    // Follow the app theme: read the effective `--tv-theme` var (which respects
-    // the auto/prefers-color-scheme media query) and re-init on scheme change.
+    // Follow the app theme. Decide from the actual resolved page surface
+    // (--surface-900): it's bulletproof across explicit light/dark, auto
+    // (prefers-color-scheme media query) and the live preview, whereas a bare
+    // keyword var can be flaky. Re-check shortly after mount (client nav can
+    // apply inline vars a tick late) and on a device scheme change.
     const [tvTheme, setTvTheme] = useState<'dark' | 'light'>('dark');
     useEffect(() => {
-        const read = () => {
-            const v = getComputedStyle(document.documentElement).getPropertyValue('--tv-theme').trim();
-            setTvTheme(v === 'light' ? 'light' : 'dark');
+        const decide = () => {
+            const cs = getComputedStyle(document.documentElement);
+            const surface = cs.getPropertyValue('--surface-900').trim();
+            const lum = hexLuminance(surface);
+            const light = lum != null ? lum > 0.5 : cs.getPropertyValue('--tv-theme').trim() === 'light';
+            setTvTheme(light ? 'light' : 'dark');
         };
-        read();
+        decide();
+        const t = setTimeout(decide, 80);
         const mq = window.matchMedia('(prefers-color-scheme: light)');
-        mq.addEventListener?.('change', read);
-        return () => mq.removeEventListener?.('change', read);
+        mq.addEventListener?.('change', decide);
+        return () => {
+            clearTimeout(t);
+            mq.removeEventListener?.('change', decide);
+        };
     }, []);
 
     const widgetConfig: Record<string, unknown> = {
