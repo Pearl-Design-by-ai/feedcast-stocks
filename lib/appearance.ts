@@ -120,6 +120,8 @@ const DARK_INK: Record<string, string> = {
   '--ink-strong': '#ffffff', '--tv-theme': 'dark',
   // Caution/disclaimer accent — amber reads well on dark…
   '--warn': '#FACC15',
+  // Positive/up green — vivid on dark.
+  '--up': '#4ade80', '--up-bg': '#22c55e',
 };
 const LIGHT_INK: Record<string, string> = {
   '--gx-50': '#0a0a0a', '--gx-100': '#18181b', '--gx-200': '#27272a', '--gx-300': '#3f3f46',
@@ -127,6 +129,8 @@ const LIGHT_INK: Record<string, string> = {
   '--ink-strong': '#111827', '--tv-theme': 'light',
   // …but washes out on light, so the disclaimer goes red there.
   '--warn': '#DC2626',
+  // Deep green on light so positive numbers stay readable.
+  '--up': '#15803d', '--up-bg': '#16a34a',
 };
 
 function surfMap(s: { s900: string; s800: string; s700: string; s600: string }): Record<string, string> {
