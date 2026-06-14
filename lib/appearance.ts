@@ -122,6 +122,8 @@ const DARK_INK: Record<string, string> = {
   '--warn': '#FACC15',
   // Positive/up green — vivid on dark.
   '--up': '#4ade80', '--up-bg': '#22c55e',
+  // Negative/down red — vivid on dark.
+  '--down': '#f87171', '--down-bg': '#FF495B',
 };
 const LIGHT_INK: Record<string, string> = {
   '--gx-50': '#0a0a0a', '--gx-100': '#18181b', '--gx-200': '#27272a', '--gx-300': '#3f3f46',
@@ -131,6 +133,8 @@ const LIGHT_INK: Record<string, string> = {
   '--warn': '#DC2626',
   // Deep green on light so positive numbers stay readable.
   '--up': '#15803d', '--up-bg': '#16a34a',
+  // Deep red on light so negative numbers stay readable.
+  '--down': '#b91c1c', '--down-bg': '#dc2626',
 };
 
 function surfMap(s: { s900: string; s800: string; s700: string; s600: string }): Record<string, string> {

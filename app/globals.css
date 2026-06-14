@@ -114,6 +114,10 @@
        neon green washes out. Drives the green-* and emerald-* utilities. */
     --up: #4ade80;
     --up-bg: #22c55e;
+    /* Negative / price-down red — vivid on dark, deeper red on light where
+       bright red/pink washes out. Drives the red-* / rose-* utilities. */
+    --down: #f87171;
+    --down-bg: #FF495B;
 }
 
 .dark {
@@ -181,9 +185,15 @@
     --color-teal-400: var(--brand);
     --color-teal-500: var(--brand-hover);
     --color-teal-600: var(--brand-hover);
-    --color-red-500: #FF495B;
     --color-orange-500: #FF8243;
     --color-purple-500: #D13BFF;
+
+    /* Negative/down reds resolve to the theme-aware --down vars (deep red on
+       light). Covers the text + pill-background stops actually used. */
+    --color-red-300: var(--down);
+    --color-red-400: var(--down);
+    --color-red-500: var(--down-bg);
+    --color-rose-400: var(--down);
 
     /* Positive/up greens resolve to the theme-aware --up vars (deep green on
        light). Covers the text + pill-background stops actually used. */
