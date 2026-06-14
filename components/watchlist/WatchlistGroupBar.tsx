@@ -2,13 +2,14 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Pencil, Trash2, Check, X, Loader2, List, MoreHorizontal } from 'lucide-react';
+import { Plus, Minus, Pencil, Trash2, Check, X, Loader2, List, MoreHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
 import {
     createGroup,
     renameGroup,
     deleteGroup,
     addSymbolsToGroup,
+    removeSymbolsFromGroup,
 } from '@/lib/actions/watchlist-groups.actions';
 import { MAX_GROUPS, type WatchlistGroup } from '@/lib/watchlist-groups';
 import { cn } from '@/lib/utils';
@@ -96,6 +97,19 @@ export default function WatchlistGroupBar({
             const skip = res.skipped > 0 ? ` · ${res.skipped} skipped` : '';
             toast.success(
                 `${res.added} ${res.added === 1 ? 'ticker' : 'tickers'} added to ${shown.name}${skip}`
+            );
+            router.refresh();
+        });
+
+    const doRemove = () =>
+        start(async () => {
+            if (!symbol.trim()) return;
+            const res = await removeSymbolsFromGroup(shown.id, symbol);
+            if (!res.ok) { toast.error(res.error ?? 'Could not remove'); return; }
+            setSymbol('');
+            if (res.removed === 0) { toast.info('No matching tickers in this list'); return; }
+            toast.success(
+                `${res.removed} ${res.removed === 1 ? 'ticker' : 'tickers'} removed from ${shown.name}`
             );
             router.refresh();
         });
@@ -224,23 +238,32 @@ export default function WatchlistGroupBar({
                     )}
                 </div>
 
-                {/* Batch-add tickers to the active list */}
+                {/* Batch add / remove tickers on the active list */}
                 <div className="flex items-center gap-1.5">
                     <input
                         value={symbol}
                         onChange={(e) => setSymbol(e.target.value.toUpperCase())}
                         onKeyDown={(e) => e.key === 'Enter' && doAdd()}
-                        placeholder="Add tickers — e.g. NVDA, AAPL, MSFT"
+                        placeholder="Tickers — e.g. NVDA, AAPL, MSFT"
                         maxLength={160}
-                        className="min-w-0 flex-1 rounded-lg border border-gray-700 bg-gray-800/60 px-3 py-1.5 text-sm text-gray-100 placeholder:text-gray-500 focus:border-teal-400/60 focus:outline-none sm:w-72 sm:flex-none"
+                        className="min-w-0 flex-1 rounded-lg border border-gray-700 bg-gray-800/60 px-3 py-1.5 text-sm text-gray-100 placeholder:text-gray-500 focus:border-teal-400/60 focus:outline-none sm:w-64 sm:flex-none"
                     />
                     <button
                         type="button"
                         onClick={doAdd}
                         disabled={pending || !symbol.trim()}
-                        className="flex shrink-0 items-center gap-1 rounded-lg bg-teal-500/15 px-3.5 py-1.5 text-sm font-semibold text-teal-300 ring-1 ring-inset ring-teal-400/30 transition-colors hover:bg-teal-500/25 disabled:opacity-40"
+                        className="flex shrink-0 items-center gap-1 rounded-lg bg-teal-500/15 px-3 py-1.5 text-sm font-semibold text-teal-300 ring-1 ring-inset ring-teal-400/30 transition-colors hover:bg-teal-500/25 disabled:opacity-40"
                     >
                         {pending ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />} Add
+                    </button>
+                    <button
+                        type="button"
+                        onClick={doRemove}
+                        disabled={pending || !symbol.trim()}
+                        title="Remove these tickers from this list"
+                        className="flex shrink-0 items-center gap-1 rounded-lg bg-red-500/10 px-3 py-1.5 text-sm font-semibold text-red-300 ring-1 ring-inset ring-red-400/30 transition-colors hover:bg-red-500/20 disabled:opacity-40"
+                    >
+                        <Minus size={15} /> Remove
                     </button>
                 </div>
             </div>

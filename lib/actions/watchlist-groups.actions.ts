@@ -200,6 +200,37 @@ export async function addSymbolsToGroup(
     }
 }
 
+/**
+ * Batch-remove comma/space/newline-separated tickers from a group in one go
+ * (mirror of addSymbolsToGroup). Returns how many rows were actually deleted.
+ */
+export async function removeSymbolsFromGroup(
+    groupId: number,
+    raw: string
+): Promise<{ ok: boolean; removed: number; error?: string }> {
+    try {
+        const requested = (raw ?? '').split(/[\s,;]+/).filter((t) => t.trim());
+        const syms = sanitizeSymbols(requested, 50);
+        if (syms.length === 0) return { ok: false, removed: 0, error: 'Enter one or more tickers' };
+
+        const { supabase, user } = await sessionUser();
+        const { data, error } = await supabase
+            .from(ITEMS)
+            .delete()
+            .eq('user_id', user.id)
+            .eq('group_id', groupId)
+            .in('symbol', syms)
+            .select('symbol');
+        if (error) throw error;
+
+        revalidatePath('/watchlist');
+        return { ok: true, removed: data?.length ?? 0 };
+    } catch (error) {
+        console.error('removeSymbolsFromGroup error:', error);
+        return { ok: false, removed: 0, error: 'Could not remove' };
+    }
+}
+
 /** Remove a symbol from one group (the per-row action on the watchlist page). */
 export async function removeSymbolFromGroup(groupId: number, symbol: string): Promise<{ ok: boolean }> {
     try {
