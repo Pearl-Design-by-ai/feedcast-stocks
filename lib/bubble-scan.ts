@@ -118,7 +118,9 @@ export async function runBubbleScan(): Promise<BubbleScan> {
     for (const a of themeAssets) phaseCounts[a.phase] += 1;
     const scored = themeAssets.length;
 
-    const topPop = [...data.values()].sort((a, b) => b.popRisk - a.popRisk).slice(0, 5);
+    // Up to 10 highest-pop-risk names across the whole universe; the page
+    // shows 5 by default and lets the reader expand to all 10.
+    const topPop = [...data.values()].sort((a, b) => b.popRisk - a.popRisk).slice(0, 10);
 
     const asOf = new Intl.DateTimeFormat('en-US', {
         month: 'short',
