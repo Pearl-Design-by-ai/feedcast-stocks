@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { Loader2, Radar, TriangleAlert, ExternalLink, Telescope, Eye } from 'lucide-react';
 import DataDisclaimer from '@/components/DataDisclaimer';
 import TradingViewWidget from '@/components/TradingViewWidget';
-import { FrothGauge, ScoreBar, PhaseChip, AssetTable } from '@/components/bubble/BubbleUi';
+import { FrothGauge, ScoreBar, AssetTable } from '@/components/bubble/BubbleUi';
+import { TopPopGrid } from '@/components/bubble/TopPopGrid';
 import { runBubbleScan } from '@/lib/bubble-scan';
 import { bubbleBand, BUBBLE_SOURCES, HISTORICAL_BUBBLES } from '@/lib/bubble';
 import { ADVANCED_CHART_WIDGET_CONFIG } from '@/lib/constants';
@@ -43,21 +44,7 @@ async function Scan() {
                         Inflated names showing active deflation signals (below the 50-day average,
                         negative 1-month, or already falling from their highs).
                     </p>
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-                        {scan.topPop.map((a) => (
-                            <Link
-                                key={a.symbol}
-                                href={`/stocks/${a.symbol}`}
-                                className="rounded-lg border border-gray-800 bg-gray-900/60 p-3 transition-colors hover:border-red-400/40"
-                            >
-                                <div className="flex items-baseline justify-between">
-                                    <span className="font-semibold text-gray-100">{a.symbol}</span>
-                                    <span className="text-sm font-bold tabular-nums text-red-400">{a.popRisk}</span>
-                                </div>
-                                <div className="mt-2"><PhaseChip phase={a.phase} /></div>
-                            </Link>
-                        ))}
-                    </div>
+                    <TopPopGrid assets={scan.topPop} />
                 </section>
             )}
 
