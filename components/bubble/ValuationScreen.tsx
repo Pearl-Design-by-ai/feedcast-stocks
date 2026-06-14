@@ -38,17 +38,18 @@ function RangeCell({ price, lo, hi }: { price: number | null; lo: number | null;
 
 const TH = 'px-3 py-2 text-right';
 
+/** Rich table — web only. P/E leads (it's the ranking metric). */
 function Table({ rows, peClass }: { rows: ValuationEntry[]; peClass: string }) {
     return (
-        <div className="overflow-x-auto">
-            <table className="w-full min-w-[1180px] text-left text-sm">
+        <div className="hidden overflow-x-auto md:block">
+            <table className="w-full min-w-[1120px] text-left text-sm">
                 <thead>
                     <tr className="border-b border-gray-800 text-[10px] font-bold uppercase tracking-wider text-gray-500">
                         <th className="px-3 py-2 w-10">#</th>
                         <th className="px-3 py-2">Symbol</th>
+                        <th className={TH}>P/E</th>
                         <th className={TH}>Price</th>
                         <th className={TH}>Mkt cap</th>
-                        <th className={TH}>P/E</th>
                         <th className={TH}>P/S</th>
                         <th className={TH}>P/B</th>
                         <th className={TH}>Div yld</th>
@@ -69,9 +70,9 @@ function Table({ rows, peClass }: { rows: ValuationEntry[]; peClass: string }) {
                                     {r.symbol}
                                 </Link>
                             </td>
+                            <td className={cn('px-3 py-2 text-right font-semibold tabular-nums', peClass)}>{ratio(r.pe)}</td>
                             <td className="px-3 py-2 text-right tabular-nums text-gray-200">{money(r.price)}</td>
                             <td className="px-3 py-2 text-right tabular-nums text-gray-300">{marketCap(r.mktCap)}</td>
-                            <td className={cn('px-3 py-2 text-right font-semibold tabular-nums', peClass)}>{ratio(r.pe)}</td>
                             <td className="px-3 py-2 text-right tabular-nums text-gray-400">{ratio(r.ps)}</td>
                             <td className="px-3 py-2 text-right tabular-nums text-gray-400">{ratio(r.pb)}</td>
                             <td className="px-3 py-2 text-right tabular-nums text-gray-400">{pct(r.dy)}</td>
@@ -92,6 +93,33 @@ function Table({ rows, peClass }: { rows: ValuationEntry[]; peClass: string }) {
                 </tbody>
             </table>
         </div>
+    );
+}
+
+/** Simple stacked list — mobile only. P/E leads, with price + 1Y for context. */
+function MobileList({ rows, peClass }: { rows: ValuationEntry[]; peClass: string }) {
+    return (
+        <ul className="space-y-1.5 md:hidden">
+            {rows.map((r, i) => (
+                <li key={r.symbol} className="flex items-center justify-between gap-3 rounded-lg border border-gray-800 bg-gray-900/40 px-3 py-2.5">
+                    <div className="flex min-w-0 items-center gap-3">
+                        <span className="w-5 shrink-0 text-right text-xs tabular-nums text-gray-600">{i + 1}</span>
+                        <div className="min-w-0">
+                            <Link href={`/stocks/${r.symbol}`} className="font-semibold text-gray-100 hover:text-teal-400">{r.symbol}</Link>
+                            <div className="text-[11px] tabular-nums text-gray-500">{money(r.price)} · {marketCap(r.mktCap)}</div>
+                        </div>
+                    </div>
+                    <div className="shrink-0 text-right">
+                        <div className={cn('text-base font-bold tabular-nums', peClass)}>
+                            {ratio(r.pe)} <span className="text-[10px] font-normal text-gray-500">P/E</span>
+                        </div>
+                        <div className={cn('text-[11px] tabular-nums', r.ret1y != null && r.ret1y < 0 ? 'text-red-400' : 'text-emerald-400')}>
+                            {pct(r.ret1y, true)} 1Y
+                        </div>
+                    </div>
+                </li>
+            ))}
+        </ul>
     );
 }
 
@@ -141,6 +169,7 @@ export function ValuationLists({ screen }: { screen: ValuationScreen | null }) {
                 </span>
             </div>
 
+            <MobileList rows={rows} peClass={tab === 'cheapest' ? 'text-emerald-400' : 'text-red-400'} />
             <Table rows={rows} peClass={tab === 'cheapest' ? 'text-emerald-400' : 'text-red-400'} />
 
             <p className="mt-3 text-[11px] leading-relaxed text-gray-500">
