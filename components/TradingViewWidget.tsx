@@ -41,22 +41,32 @@ const TradingViewWidget = ({ title, scriptUrl, config, height = 600, className, 
 
     const currentHeight = isExpanded ? windowHeight : height;
 
-    // Follow the app theme. Decide from the actual resolved page surface
-    // (--surface-900): it's bulletproof across explicit light/dark, auto
-    // (prefers-color-scheme media query) and the live preview, whereas a bare
-    // keyword var can be flaky. Re-check shortly after mount (client nav can
-    // apply inline vars a tick late) and on a device scheme change.
+    // Follow the app theme. Decide from the *resolved* page background actually
+    // painted on <body> (getComputedStyle returns a concrete rgb, accounting for
+    // the active theme/media query) — reading the raw custom property proved
+    // unreliable. Re-check shortly after mount (client nav applies vars a tick
+    // late) and on a device scheme change.
     const [tvTheme, setTvTheme] = useState<'dark' | 'light'>('dark');
     useEffect(() => {
         const decide = () => {
-            const cs = getComputedStyle(document.documentElement);
-            const surface = cs.getPropertyValue('--surface-900').trim();
-            const lum = hexLuminance(surface);
-            const light = lum != null ? lum > 0.5 : cs.getPropertyValue('--tv-theme').trim() === 'light';
+            let light = false;
+            try {
+                const bg = getComputedStyle(document.body).backgroundColor;
+                const m = bg.match(/[\d.]+/g);
+                if (m && m.length >= 3) {
+                    const lum = (0.2126 * +m[0] + 0.7152 * +m[1] + 0.0722 * +m[2]) / 255;
+                    light = lum > 0.5;
+                } else {
+                    const l = hexLuminance(getComputedStyle(document.documentElement).getPropertyValue('--surface-900').trim());
+                    light = l != null && l > 0.5;
+                }
+            } catch {
+                /* keep dark */
+            }
             setTvTheme(light ? 'light' : 'dark');
         };
         decide();
-        const t = setTimeout(decide, 80);
+        const t = setTimeout(decide, 100);
         const mq = window.matchMedia('(prefers-color-scheme: light)');
         mq.addEventListener?.('change', decide);
         return () => {
