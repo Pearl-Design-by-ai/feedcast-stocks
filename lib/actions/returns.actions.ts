@@ -42,10 +42,31 @@ export async function fetchDailyCloses(
     return cached ?? [];
 }
 
-async function fetchDailyClosesUncached(
-    t: string
+/**
+ * Longer-history daily closes (e.g. 5y) for multi-year backtests. Cached 24h
+ * under a range-specific key so it doesn't collide with the 2y series.
+ */
+export async function fetchClosesRange(
+    symbol: string,
+    range = '5y'
 ): Promise<Array<{ date: string; close: number }>> {
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(t)}?range=2y&interval=1d`;
+    const t = tickerOf(symbol);
+    const cached = await kvCachedJSON<Array<{ date: string; close: number }> | null>(
+        `yh:${range}:${t}`,
+        86400,
+        async () => {
+            const out = await fetchDailyClosesUncached(t, range);
+            return out.length > 0 ? out : null;
+        }
+    );
+    return cached ?? [];
+}
+
+async function fetchDailyClosesUncached(
+    t: string,
+    range = '2y'
+): Promise<Array<{ date: string; close: number }>> {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(t)}?range=${range}&interval=1d`;
     try {
         const res = await fetch(url, {
             headers: { 'User-Agent': 'Mozilla/5.0' },

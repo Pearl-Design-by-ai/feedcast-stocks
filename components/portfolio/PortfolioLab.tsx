@@ -7,8 +7,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { buildPortfolio, type PortfolioInputs, type PortfolioPlan, type Holding } from '@/lib/portfolio/engine';
-import { priceBasket } from '@/lib/actions/portfolio.actions';
+import { buildPortfolio, entryPlan, type PortfolioInputs, type PortfolioPlan, type Holding } from '@/lib/portfolio/engine';
+import { priceBasket, getPortfolioReturns, type BacktestRow } from '@/lib/actions/portfolio.actions';
 import { createGroup, addSymbolsToGroup } from '@/lib/actions/watchlist-groups.actions';
 
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'AED', 'TRY'];
@@ -77,8 +77,11 @@ export default function PortfolioLab() {
         universe: 'us', sectorCap: 35, singleNameMax: 10, vehicle: 'mixed', concentration: 'balanced',
     });
     const [plan, setPlan] = useState<PortfolioPlan | null>(null);
+    const [builtInp, setBuiltInp] = useState<PortfolioInputs | null>(null);
     const [prices, setPrices] = useState<Record<string, number | null> | null>(null);
     const [pricing, setPricing] = useState(false);
+    const [backtest, setBacktest] = useState<BacktestRow[] | null>(null);
+    const [bting, setBting] = useState(false);
     const [saving, setSaving] = useState(false);
     const [copied, setCopied] = useState(false);
 
@@ -86,8 +89,23 @@ export default function PortfolioLab() {
 
     const build = () => {
         setPrices(null);
+        setBacktest(null);
+        setBuiltInp(inp);
         setPlan(buildPortfolio(inp));
     };
+
+    const runBacktest = async () => {
+        if (!plan) return;
+        setBting(true);
+        try {
+            const res = await getPortfolioReturns(plan.holdings.map((h) => ({ ticker: h.ticker, weight: h.weight, sleeve: h.sleeve })));
+            setBacktest(res.rows);
+        } finally {
+            setBting(false);
+        }
+    };
+
+    const used = builtInp ?? inp;
 
     const deploy = async () => {
         if (!plan) return;
@@ -273,7 +291,7 @@ export default function PortfolioLab() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {plan.holdings.map((h) => <Row key={h.ticker} h={h} ccy={inp.currency} capital={inp.capital} price={prices?.[h.ticker]} showDeploy={!!prices} />)}
+                                    {plan.holdings.map((h) => <Row key={h.ticker} h={h} ccy={used.currency} capital={used.capital} price={prices?.[h.ticker]} showDeploy={!!prices} />)}
                                 </tbody>
                             </table>
                         </div>
@@ -289,6 +307,69 @@ export default function PortfolioLab() {
                         <Breakdown title="By sector" rows={plan.bySector} />
                         <Breakdown title="By region" rows={plan.byRegion} />
                     </section>
+
+                    {/* Backtested returns */}
+                    <section className="rounded-2xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
+                        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                            <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500">Backtested returns</h3>
+                            {!backtest && (
+                                <button type="button" onClick={runBacktest} disabled={bting}
+                                    className="flex items-center gap-1.5 rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-200 hover:border-teal-400/40 hover:text-teal-300 disabled:opacity-50">
+                                    {bting ? <Loader2 size={13} className="animate-spin" /> : <PieChart size={13} />} Run backtest
+                                </button>
+                            )}
+                        </div>
+                        {!backtest ? (
+                            <p className="text-sm text-gray-500">
+                                Weight-weighted historical total return of this exact mix (dividend-adjusted, weights held constant). {bting && 'Pulling 5 years of history…'}
+                            </p>
+                        ) : (
+                            <>
+                                <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+                                    {backtest.map((r) => (
+                                        <div key={r.label} className="rounded-lg border border-gray-800 bg-gray-950/40 p-3 text-center">
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">{r.label}</p>
+                                            <p className={cn('mt-1 text-lg font-bold tabular-nums', r.pct == null ? 'text-gray-600' : r.pct >= 0 ? 'text-emerald-400' : 'text-red-400')}>
+                                                {r.pct == null ? 'n/a' : `${r.pct > 0 ? '+' : ''}${r.pct.toFixed(1)}%`}
+                                            </p>
+                                            {r.cagr != null && <p className="text-[10px] text-gray-500">{r.cagr > 0 ? '+' : ''}{r.cagr.toFixed(1)}%/yr</p>}
+                                            {r.pct != null && r.coverage < 99 && <p className="mt-0.5 text-[10px] text-gray-600">{r.coverage}% covered</p>}
+                                        </div>
+                                    ))}
+                                </div>
+                                <p className="mt-3 text-[11px] leading-relaxed text-gray-500">
+                                    Total return incl. dividends, assuming the target weights are rebalanced back to plan; cash earns 0%. Multi-year cells show the annualized (CAGR) rate. Lower “covered” means some holdings lacked that much history (e.g. recent IPOs). Past performance is not indicative of future results.
+                                </p>
+                            </>
+                        )}
+                    </section>
+
+                    {/* Market-entry plan */}
+                    {(() => {
+                        const ep = entryPlan(used, plan);
+                        return (
+                            <section className="rounded-2xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
+                                <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-gray-500">Market-entry plan</h3>
+                                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                                    <Stat label="Approach" value={ep.approach} />
+                                    <Stat label="Cadence" value={ep.cadence} />
+                                    <Stat label="Tranches" value={ep.tranches <= 1 ? '1' : `${ep.tranches}`} />
+                                    <Stat label="Per buy" value={fmtMoney(ep.perTranche, used.currency)} />
+                                </div>
+                                <p className="mt-3 text-sm text-gray-300">
+                                    {ep.tranches <= 1
+                                        ? `Deploy the full ${fmtMoney(used.capital, used.currency)} in one go.`
+                                        : `Deploy ${fmtMoney(used.capital, used.currency)} as ${ep.tranches} ${ep.cadence.toLowerCase()} buys of ~${fmtMoney(ep.perTranche, used.currency)} over ${ep.durationLabel}.`}{' '}
+                                    {ep.rebalance}
+                                </p>
+                                <ul className="mt-3 space-y-1.5 text-[13px] text-gray-400">
+                                    {ep.notes.map((n, i) => (
+                                        <li key={i} className="flex gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-600" />{n}</li>
+                                    ))}
+                                </ul>
+                            </section>
+                        );
+                    })()}
 
                     {/* Risk / return */}
                     <section className="rounded-2xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
@@ -371,6 +452,15 @@ function Breakdown({ title, rows }: { title: string; rows: { name: string; pct: 
                     </div>
                 ))}
             </div>
+        </div>
+    );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+    return (
+        <div className="rounded-lg border border-gray-800 bg-gray-950/40 p-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">{label}</p>
+            <p className="mt-1 text-sm font-semibold text-gray-100">{value}</p>
         </div>
     );
 }
