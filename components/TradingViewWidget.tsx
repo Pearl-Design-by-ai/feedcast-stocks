@@ -49,6 +49,15 @@ const TradingViewWidget = ({ title, scriptUrl, config, height = 600, className, 
     if (tvTheme === 'light') {
         if ('backgroundColor' in widgetConfig) widgetConfig.backgroundColor = '#ffffff';
         if ('gridColor' in widgetConfig) widgetConfig.gridColor = '#E5E7EB';
+        // Transparent widgets (e.g. the Top Stories timeline) paint nothing of
+        // their own, so on a light page they keep rendering their default dark
+        // fill. Turn opacity on and give them an explicit white background so
+        // they actually go light. TradingView accepts isTransparent as a bool
+        // or the string 'true'/'false' depending on the embed, so normalise it.
+        if ('isTransparent' in widgetConfig) {
+            widgetConfig.isTransparent = typeof widgetConfig.isTransparent === 'string' ? 'false' : false;
+            if (!('backgroundColor' in widgetConfig)) widgetConfig.backgroundColor = '#ffffff';
+        }
     }
 
     const containerRef = useTradingViewWidget(scriptUrl, widgetConfig, currentHeight);
