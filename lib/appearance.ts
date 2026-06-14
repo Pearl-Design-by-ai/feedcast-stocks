@@ -76,3 +76,86 @@ export function backgroundTone(id: string | null | undefined): BackgroundTone {
     BACKGROUND_TONES.find((t) => t.id === DEFAULT_BACKGROUND)!
   );
 }
+
+// ---------------------------------------------------------------------------
+// Light theme — added so the whole app can flip to light (text, surfaces and
+// charts). The gray scale is fully tokenized in globals.css; a light theme
+// just provides light surfaces + a dark "ink" set, and `--color-white` is
+// driven by `--ink-strong` so text-white / from-white / border-white flip too.
+// ---------------------------------------------------------------------------
+
+export type ThemeMode = 'dark' | 'light' | 'auto';
+export const DEFAULT_THEME: ThemeMode = 'dark';
+
+export type LightToneId = 'pearl' | 'snow' | 'linen' | 'nardo' | 'sage' | 'blush';
+
+export interface LightTone {
+  id: LightToneId;
+  label: string;
+  blurb: string;
+  /** Page (s900, lightest) → panels (s800) → borders (s700) → raised (s600). */
+  surface: { s900: string; s800: string; s700: string; s600: string };
+}
+
+export const LIGHT_TONES: LightTone[] = [
+  { id: 'pearl', label: 'Pearl', blurb: 'Soft off-white, easy on the eyes.', surface: { s900: '#FAFAFA', s800: '#F0F0F1', s700: '#E2E3E5', s600: '#CBCDD2' } },
+  { id: 'snow', label: 'Snow', blurb: 'Clean, bright white.', surface: { s900: '#FFFFFF', s800: '#F4F4F5', s700: '#E5E5E7', s600: '#D2D3D6' } },
+  { id: 'linen', label: 'Linen', blurb: 'Warm paper tone.', surface: { s900: '#FAF6EF', s800: '#F1EADD', s700: '#E3D8C6', s600: '#CFC0A8' } },
+  { id: 'nardo', label: 'Nardo Gray', blurb: 'Cool neutral gray.', surface: { s900: '#E9EAEC', s800: '#DEDFE2', s700: '#CCCED3', s600: '#B2B5BC' } },
+  { id: 'sage', label: 'Sage', blurb: 'Muted green-gray.', surface: { s900: '#EEF1EB', s800: '#E3E8DD', s700: '#D2DAC8', s600: '#B7C2A8' } },
+  { id: 'blush', label: 'Blush', blurb: 'Soft warm pink.', surface: { s900: '#F8EFEF', s800: '#EFE3E3', s700: '#E2D1D1', s600: '#CDB6B6' } },
+];
+
+export const DEFAULT_LIGHT: LightToneId = 'pearl';
+
+export function lightTone(id: string | null | undefined): LightTone {
+  return LIGHT_TONES.find((t) => t.id === id) ?? LIGHT_TONES.find((t) => t.id === DEFAULT_LIGHT)!;
+}
+
+// Fixed "ink" sets — text grays, deepest/lightest insets, the white→ink lever
+// and the chart theme flag. Surfaces are merged in per chosen tone.
+const DARK_INK: Record<string, string> = {
+  '--gx-50': '#f9fafb', '--gx-100': '#f3f4f6', '--gx-200': '#e5e7eb', '--gx-300': '#d1d5db',
+  '--gx-400': '#CCDADC', '--gx-500': '#9095A1', '--gx-950': '#030712',
+  '--ink-strong': '#ffffff', '--tv-theme': 'dark',
+};
+const LIGHT_INK: Record<string, string> = {
+  '--gx-50': '#0a0a0a', '--gx-100': '#18181b', '--gx-200': '#27272a', '--gx-300': '#3f3f46',
+  '--gx-400': '#52525b', '--gx-500': '#6b7280', '--gx-950': '#ffffff',
+  '--ink-strong': '#111827', '--tv-theme': 'light',
+};
+
+function surfMap(s: { s900: string; s800: string; s700: string; s600: string }): Record<string, string> {
+  return { '--surface-900': s.s900, '--surface-800': s.s800, '--surface-700': s.s700, '--surface-600': s.s600 };
+}
+
+/** Full CSS-var map for a theme — used by the client live preview. */
+export function darkVarMap(darkId: string | null | undefined): Record<string, string> {
+  return { ...DARK_INK, ...surfMap(backgroundTone(darkId).surface) };
+}
+export function lightVarMap(lightId: string | null | undefined): Record<string, string> {
+  return { ...LIGHT_INK, ...surfMap(lightTone(lightId).surface) };
+}
+
+function mapToCss(map: Record<string, string>): string {
+  return Object.entries(map).map(([k, v]) => `${k}:${v};`).join('');
+}
+
+/**
+ * The `:root` CSS the (root) layout injects. Dark and light both set the full
+ * scale; `auto` ships dark by default with a light override under
+ * `prefers-color-scheme: light`, so the device decides with no JS/flash.
+ */
+export function buildThemeCss(
+  mode: ThemeMode,
+  darkId: string | null | undefined,
+  lightId: string | null | undefined,
+  brand: string
+): string {
+  const accent = `--brand:${brand};--brand-hover:${brand}CC;`;
+  const dark = `:root{${accent}${mapToCss(darkVarMap(darkId))}}`;
+  const light = `:root{${accent}${mapToCss(lightVarMap(lightId))}}`;
+  if (mode === 'light') return light;
+  if (mode === 'auto') return `${dark}@media (prefers-color-scheme: light){${light}}`;
+  return dark;
+}
