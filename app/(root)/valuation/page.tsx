@@ -33,7 +33,7 @@ export default function ValuationPage() {
                     <Scale className="text-teal-400" /> Valuation Screen
                 </h1>
                 <p className="mt-1 max-w-3xl text-sm leading-relaxed text-gray-400">
-                    A daily batch ranks ~190 major US stocks by valuation to surface the{' '}
+                    A daily batch ranks ~230 major US stocks by valuation to surface the{' '}
                     <span className="text-emerald-400">cheapest 100</span> and{' '}
                     <span className="text-red-400">most expensive 100</span>. The market-wide{' '}
                     <a

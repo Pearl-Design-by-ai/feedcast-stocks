@@ -6,20 +6,58 @@ import { ArrowDownWideNarrow, ArrowUpWideNarrow, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ValuationEntry, ValuationScreen } from '@/lib/valuation';
 
-const fmt = (v: number | null, suffix = '') =>
-    v == null ? '—' : `${v.toFixed(1)}${suffix}`;
+const ratio = (v: number | null) => (v == null ? '—' : v.toFixed(1));
+const money = (v: number | null) => (v == null ? '—' : `$${v.toFixed(2)}`);
+const pct = (v: number | null, signed = false) =>
+    v == null ? '—' : `${signed && v > 0 ? '+' : ''}${v.toFixed(1)}%`;
+
+/** Market cap comes in millions USD. */
+function marketCap(m: number | null) {
+    if (m == null) return '—';
+    if (m >= 1_000_000) return `$${(m / 1_000_000).toFixed(2)}T`;
+    if (m >= 1_000) return `$${(m / 1_000).toFixed(1)}B`;
+    return `$${Math.round(m)}M`;
+}
+
+function RangeCell({ price, lo, hi }: { price: number | null; lo: number | null; hi: number | null }) {
+    if (price == null || lo == null || hi == null || hi <= lo) return <span className="text-gray-600">—</span>;
+    const posPct = Math.max(0, Math.min(100, ((price - lo) / (hi - lo)) * 100));
+    return (
+        <div className="flex items-center gap-1.5">
+            <span className="w-9 text-right text-[10px] tabular-nums text-gray-600">{lo.toFixed(0)}</span>
+            <div className="relative h-1.5 w-20 rounded-full bg-gray-800">
+                <div
+                    className="absolute top-1/2 h-3 w-1 -translate-y-1/2 rounded-full bg-teal-400"
+                    style={{ left: `calc(${posPct}% - 2px)` }}
+                />
+            </div>
+            <span className="w-9 text-[10px] tabular-nums text-gray-600">{hi.toFixed(0)}</span>
+        </div>
+    );
+}
+
+const TH = 'px-3 py-2 text-right';
 
 function Table({ rows, peClass }: { rows: ValuationEntry[]; peClass: string }) {
     return (
         <div className="overflow-x-auto">
-            <table className="w-full min-w-[420px] text-left text-sm">
+            <table className="w-full min-w-[1180px] text-left text-sm">
                 <thead>
                     <tr className="border-b border-gray-800 text-[10px] font-bold uppercase tracking-wider text-gray-500">
                         <th className="px-3 py-2 w-10">#</th>
                         <th className="px-3 py-2">Symbol</th>
-                        <th className="px-3 py-2 text-right">P/E</th>
-                        <th className="px-3 py-2 text-right">P/S</th>
-                        <th className="px-3 py-2 text-right">Div yld</th>
+                        <th className={TH}>Price</th>
+                        <th className={TH}>Mkt cap</th>
+                        <th className={TH}>P/E</th>
+                        <th className={TH}>P/S</th>
+                        <th className={TH}>P/B</th>
+                        <th className={TH}>Div yld</th>
+                        <th className={TH}>ROE</th>
+                        <th className={TH}>Net mgn</th>
+                        <th className={TH}>Rev gr</th>
+                        <th className={TH}>1Y</th>
+                        <th className={TH}>Beta</th>
+                        <th className="px-3 py-2">52-week range</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -31,9 +69,24 @@ function Table({ rows, peClass }: { rows: ValuationEntry[]; peClass: string }) {
                                     {r.symbol}
                                 </Link>
                             </td>
-                            <td className={cn('px-3 py-2 text-right font-semibold tabular-nums', peClass)}>{fmt(r.pe)}</td>
-                            <td className="px-3 py-2 text-right tabular-nums text-gray-400">{fmt(r.ps)}</td>
-                            <td className="px-3 py-2 text-right tabular-nums text-gray-400">{fmt(r.dy, '%')}</td>
+                            <td className="px-3 py-2 text-right tabular-nums text-gray-200">{money(r.price)}</td>
+                            <td className="px-3 py-2 text-right tabular-nums text-gray-300">{marketCap(r.mktCap)}</td>
+                            <td className={cn('px-3 py-2 text-right font-semibold tabular-nums', peClass)}>{ratio(r.pe)}</td>
+                            <td className="px-3 py-2 text-right tabular-nums text-gray-400">{ratio(r.ps)}</td>
+                            <td className="px-3 py-2 text-right tabular-nums text-gray-400">{ratio(r.pb)}</td>
+                            <td className="px-3 py-2 text-right tabular-nums text-gray-400">{pct(r.dy)}</td>
+                            <td className="px-3 py-2 text-right tabular-nums text-gray-400">{pct(r.roe)}</td>
+                            <td className="px-3 py-2 text-right tabular-nums text-gray-400">{pct(r.npm)}</td>
+                            <td className={cn('px-3 py-2 text-right tabular-nums', r.revGrowth != null && r.revGrowth < 0 ? 'text-red-400' : 'text-gray-300')}>
+                                {pct(r.revGrowth, true)}
+                            </td>
+                            <td className={cn('px-3 py-2 text-right tabular-nums', r.ret1y != null && r.ret1y < 0 ? 'text-red-400' : 'text-emerald-400')}>
+                                {pct(r.ret1y, true)}
+                            </td>
+                            <td className="px-3 py-2 text-right tabular-nums text-gray-400">{ratio(r.beta)}</td>
+                            <td className="px-3 py-2">
+                                <RangeCell price={r.price} lo={r.lo52} hi={r.hi52} />
+                            </td>
                         </tr>
                     ))}
                 </tbody>
@@ -49,7 +102,7 @@ export function ValuationLists({ screen }: { screen: ValuationScreen | null }) {
         return (
             <div className="flex items-center gap-3 rounded-xl border border-gray-800 bg-gray-900/40 p-6 text-sm text-gray-400">
                 <Loader2 className="h-4 w-4 animate-spin text-teal-400" />
-                Building this session&apos;s valuation screen — pulling P/E across ~190 large-caps.
+                Building this session&apos;s valuation screen — pulling data across ~230 large-caps.
                 Check back shortly; it refills after each market close.
             </div>
         );
@@ -92,9 +145,10 @@ export function ValuationLists({ screen }: { screen: ValuationScreen | null }) {
 
             <p className="mt-3 text-[11px] leading-relaxed text-gray-500">
                 Ranked by trailing P/E (lower = cheaper on earnings). {screen.noEarnings} names are
-                excluded for having no positive trailing earnings. A low P/E isn&apos;t automatically a
-                bargain — it can flag a value trap or a cyclical peak — and a high one can be a fast
-                grower. Screen, not advice.
+                excluded for having no positive trailing earnings. ROE, net margin and revenue growth
+                are trailing; the 52-week range marks where the last price sits between its low and
+                high. A low P/E isn&apos;t automatically a bargain — it can flag a value trap or a
+                cyclical peak. Screen, not advice.
             </p>
         </div>
     );
