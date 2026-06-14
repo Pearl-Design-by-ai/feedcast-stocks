@@ -5,17 +5,7 @@ import useTradingViewWidget from "@/hooks/useTradingViewWidget";
 import { cn } from "@/lib/utils";
 import { Maximize2, Minimize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
-/** Relative luminance (0–1) of a #RGB / #RRGGBB color, or null if unparseable. */
-function hexLuminance(hex: string): number | null {
-    let h = hex.replace('#', '').trim();
-    if (h.length === 3) h = h.split('').map((c) => c + c).join('');
-    if (h.length !== 6 || /[^0-9a-fA-F]/.test(h)) return null;
-    const r = parseInt(h.slice(0, 2), 16) / 255;
-    const g = parseInt(h.slice(2, 4), 16) / 255;
-    const b = parseInt(h.slice(4, 6), 16) / 255;
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
+import { useEffectiveTheme } from '@/components/ThemeProvider';
 
 interface TradingViewWidgetProps {
     title?: string;
@@ -41,39 +31,9 @@ const TradingViewWidget = ({ title, scriptUrl, config, height = 600, className, 
 
     const currentHeight = isExpanded ? windowHeight : height;
 
-    // Follow the app theme. Decide from the *resolved* page background actually
-    // painted on <body> (getComputedStyle returns a concrete rgb, accounting for
-    // the active theme/media query) — reading the raw custom property proved
-    // unreliable. Re-check shortly after mount (client nav applies vars a tick
-    // late) and on a device scheme change.
-    const [tvTheme, setTvTheme] = useState<'dark' | 'light'>('dark');
-    useEffect(() => {
-        const decide = () => {
-            let light = false;
-            try {
-                const bg = getComputedStyle(document.body).backgroundColor;
-                const m = bg.match(/[\d.]+/g);
-                if (m && m.length >= 3) {
-                    const lum = (0.2126 * +m[0] + 0.7152 * +m[1] + 0.0722 * +m[2]) / 255;
-                    light = lum > 0.5;
-                } else {
-                    const l = hexLuminance(getComputedStyle(document.documentElement).getPropertyValue('--surface-900').trim());
-                    light = l != null && l > 0.5;
-                }
-            } catch {
-                /* keep dark */
-            }
-            setTvTheme(light ? 'light' : 'dark');
-        };
-        decide();
-        const t = setTimeout(decide, 100);
-        const mq = window.matchMedia('(prefers-color-scheme: light)');
-        mq.addEventListener?.('change', decide);
-        return () => {
-            clearTimeout(t);
-            mq.removeEventListener?.('change', decide);
-        };
-    }, []);
+    // Follow the app theme, supplied by the server-known ThemeProvider context
+    // (light/dark/auto resolved there). Deterministic — no fragile DOM reads.
+    const tvTheme = useEffectiveTheme();
 
     const widgetConfig: Record<string, unknown> = {
         ...config,
