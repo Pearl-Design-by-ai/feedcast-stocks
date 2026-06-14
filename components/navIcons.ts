@@ -32,6 +32,7 @@ import {
     ListChecks,
     Lightbulb,
     Settings2,
+    Briefcase,
     type LucideIcon,
 } from 'lucide-react';
 
@@ -42,6 +43,7 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
     '/alerts': Bell,
     '/bubble-detector': Radar,
     '/valuation': Scale,
+    '/portfolio-lab': Briefcase,
     '/ask': Sparkles,
     '/learn': GraduationCap,
     '/market-regime': Activity,
