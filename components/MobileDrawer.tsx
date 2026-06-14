@@ -1,11 +1,12 @@
 'use client';
 
 /**
- * Mobile navigation drawer — mirrors the main feedcast.news app: tapping the
- * logo in the header slides a full-height panel in from the left while the
- * page stays dimmed behind it. Content is grouped like the main app's menu
- * (profile block → core pages → collapsible Markets → personalize → about),
- * with sign-out anchored at the bottom.
+ * Mobile navigation drawer — tapping the logo slides a full-height panel in
+ * from the left over the dimmed page. The menu mirrors the desktop SideNav:
+ * everything is grouped into collapsible category accordions (Home / My Lists
+ * / Research / Markets / More), each remembering its open state (shared with
+ * the rail via the same localStorage keys) and auto-opening the section that
+ * holds the active route. Sign-out is anchored at the bottom.
  *
  * Renders only below md — md+ uses the persistent SideNav rail.
  */
@@ -13,35 +14,21 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
-  X,
-  ChevronDown,
-  LayoutDashboard,
-  Search,
-  Star,
-  Bell,
-  Radar,
-  Scale,
-  GraduationCap,
-  Activity,
-  Palette,
-  Info,
-  LifeBuoy,
-  Code,
-  ArrowLeft,
-  LogOut,
-  type LucideIcon,
-} from 'lucide-react';
+import { X, ChevronDown, ArrowLeft, LogOut } from 'lucide-react';
 import { FeedcastLogo } from '@/components/FeedcastLogo';
 import SearchCommand from '@/components/SearchCommand';
-import { MARKETS_NAV } from '@/lib/constants';
+import { NAV_SECTIONS, NAV_DEFAULT_OPEN, SEARCH_HREF } from '@/lib/constants';
+import { NAV_ICONS, SECTION_ICONS, NAV_FALLBACK_ICON } from '@/components/navIcons';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 
 const FEEDCAST_HOME = 'https://www.feedcast.news/';
+const SECTION_KEY = (id: string) => `fcm_nav_sec_${id}`;
 
 const ROW =
   'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] text-gray-200 transition-colors hover:bg-gray-700/70 hover:text-teal-400';
+const SUBROW =
+  'flex w-full items-center gap-3 rounded-lg py-2 pl-9 pr-3 text-[14px] text-gray-300 transition-colors hover:bg-gray-700/70 hover:text-teal-400';
 
 function openSearch() {
   window.dispatchEvent(
@@ -58,8 +45,14 @@ export default function MobileDrawer({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const onMarketPage = MARKETS_NAV.items.some((item) => pathname.startsWith(item.href));
-  const [marketsOpen, setMarketsOpen] = useState(onMarketPage);
+  const [sections, setSections] = useState<Record<string, boolean>>(() => {
+    const init: Record<string, boolean> = {};
+    for (const s of NAV_SECTIONS) init[s.id] = NAV_DEFAULT_OPEN.includes(s.id);
+    return init;
+  });
+
+  const isActive = (href: string) =>
+    href === '/' ? pathname === '/' : pathname.startsWith(href);
 
   // Close on navigation and lock body scroll while open.
   useEffect(() => setOpen(false), [pathname]);
@@ -72,23 +65,67 @@ export default function MobileDrawer({
     };
   }, [open]);
 
+  // Apply saved open state + reveal the active section.
+  useEffect(() => {
+    setSections((prev) => {
+      const next = { ...prev };
+      for (const s of NAV_SECTIONS) {
+        let v = NAV_DEFAULT_OPEN.includes(s.id);
+        try {
+          const stored = localStorage.getItem(SECTION_KEY(s.id));
+          if (stored != null) v = stored === 'true';
+        } catch {
+          /* ignore */
+        }
+        if (s.items.some((it) => isActive(it.href))) v = true;
+        next[s.id] = v;
+      }
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
   const close = () => setOpen(false);
+
+  const toggleSection = (id: string) => {
+    setSections((prev) => {
+      const next = !prev[id];
+      try {
+        localStorage.setItem(SECTION_KEY(id), String(next));
+      } catch {
+        /* ignore */
+      }
+      return { ...prev, [id]: next };
+    });
+  };
 
   const handleSignOut = async () => {
     await getSupabaseBrowserClient().auth.signOut();
     window.location.href = FEEDCAST_HOME;
   };
 
-  const item = (href: string, label: string, Icon: LucideIcon, accent = false) => {
-    const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
+  const renderItem = (href: string, label: string) => {
+    const Icon = NAV_ICONS[href] ?? NAV_FALLBACK_ICON;
+    const active = isActive(href);
+    const accent = href === '/appearance';
+
+    if (href === SEARCH_HREF) {
+      return (
+        <button key={href} type="button" onClick={() => { close(); openSearch(); }} className={SUBROW}>
+          <Icon size={16} className="shrink-0" />
+          {label}
+        </button>
+      );
+    }
+
     return (
       <Link
         key={href}
         href={href}
         onClick={close}
-        className={cn(ROW, accent && 'text-teal-400', active && 'bg-gray-700/60 text-teal-400')}
+        className={cn(SUBROW, accent && 'text-teal-400', active && 'bg-gray-700/50 text-teal-400')}
       >
-        <Icon size={18} className="shrink-0" />
+        <Icon size={16} className="shrink-0" />
         {label}
       </Link>
     );
@@ -96,7 +133,7 @@ export default function MobileDrawer({
 
   return (
     <>
-      {/* Trigger: the logo itself opens the menu (like the main app). */}
+      {/* Trigger: the logo itself opens the menu. */}
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -112,7 +149,6 @@ export default function MobileDrawer({
 
       {open && (
         <div className="fixed inset-0 z-[100] md:hidden">
-          {/* Dimmed page behind — tap to close. */}
           <div
             className="absolute inset-0 bg-black/60 animate-in fade-in-0 duration-150"
             onClick={close}
@@ -143,68 +179,34 @@ export default function MobileDrawer({
             </div>
 
             <nav className="flex flex-1 flex-col px-3 pb-6">
-              {/* Core */}
-              {item('/', 'Dashboard', LayoutDashboard)}
-              <button type="button" onClick={() => { close(); openSearch(); }} className={ROW}>
-                <Search size={18} className="shrink-0" />
-                Search
-              </button>
-              {item('/watchlist', 'Watchlist', Star)}
-              {item('/alerts', 'Alerts', Bell)}
-              {item('/bubble-detector', 'Bubble Detector', Radar)}
-              {item('/valuation', 'Valuation', Scale)}
-              {item('/learn', 'Learn', GraduationCap)}
-
-              <div className="my-3 h-px bg-gray-700/70" />
-
-              {/* Markets — collapsible group */}
-              <button
-                type="button"
-                onClick={() => setMarketsOpen((v) => !v)}
-                aria-expanded={marketsOpen}
-                className={cn(ROW, 'justify-between')}
-              >
-                <span className="flex items-center gap-3">
-                  <Activity size={18} className="shrink-0" />
-                  Markets
-                </span>
-                <ChevronDown
-                  size={16}
-                  className={cn('text-gray-500 transition-transform duration-200', marketsOpen && 'rotate-180')}
-                />
-              </button>
-              {marketsOpen && (
-                <div className="flex flex-col animate-in fade-in-0 slide-in-from-top-1 duration-150">
-                  {MARKETS_NAV.items.map(({ href, label }) => {
-                    const active = pathname.startsWith(href);
-                    return (
-                      <Link
-                        key={href}
-                        href={href}
-                        onClick={close}
-                        className={cn(
-                          'rounded-lg py-2 pl-12 pr-3 text-[14px] text-gray-300 transition-colors hover:bg-gray-700/70 hover:text-teal-400',
-                          active && 'text-teal-400'
-                        )}
-                      >
-                        {label}
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-
-              <div className="my-3 h-px bg-gray-700/70" />
-
-              {/* Personalize */}
-              {item('/appearance', 'Appearance', Palette, true)}
-
-              <div className="my-3 h-px bg-gray-700/70" />
-
-              {/* About */}
-              {item('/about', 'About', Info)}
-              {item('/help', 'Help', LifeBuoy)}
-              {item('/api-docs', 'API Docs', Code)}
+              {NAV_SECTIONS.map((section) => {
+                const SecIcon = SECTION_ICONS[section.id] ?? NAV_FALLBACK_ICON;
+                const sectionOpen = sections[section.id];
+                return (
+                  <div key={section.id}>
+                    <button
+                      type="button"
+                      onClick={() => toggleSection(section.id)}
+                      aria-expanded={sectionOpen}
+                      className={cn(ROW, 'justify-between text-gray-300')}
+                    >
+                      <span className="flex items-center gap-3">
+                        <SecIcon size={18} className="shrink-0" />
+                        {section.label}
+                      </span>
+                      <ChevronDown
+                        size={16}
+                        className={cn('text-gray-500 transition-transform duration-200', sectionOpen && 'rotate-180')}
+                      />
+                    </button>
+                    {sectionOpen && (
+                      <div className="mb-1 flex flex-col animate-in fade-in-0 slide-in-from-top-1 duration-150">
+                        {section.items.map((it) => renderItem(it.href, it.label))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
 
               {/* Bottom: back + sign out */}
               <div className="mt-auto pt-6">
@@ -220,13 +222,10 @@ export default function MobileDrawer({
               </div>
             </nav>
           </div>
-
         </div>
       )}
 
-      {/* Hidden SearchCommand mounts the global Cmd/Ctrl+K listener so the
-          Search row works on mobile, where the SideNav (which usually hosts
-          it) doesn't render. The dialog itself is portal-rendered. */}
+      {/* Hidden SearchCommand mounts the global Cmd/Ctrl+K listener for mobile. */}
       <div className="hidden">
         <SearchCommand renderAs="text" label="Search" initialStocks={initialStocks} />
       </div>
