@@ -62,6 +62,7 @@ const MAIN_ICONS: Record<string, LucideIcon> = {
   '/watchlist': Star,
   '/alerts': Bell,
   '/bubble-detector': Radar,
+  '/valuation': Scale,
   '/learn': GraduationCap,
 };
 
