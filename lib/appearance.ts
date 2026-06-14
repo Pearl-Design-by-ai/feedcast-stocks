@@ -118,11 +118,15 @@ const DARK_INK: Record<string, string> = {
   '--gx-50': '#f9fafb', '--gx-100': '#f3f4f6', '--gx-200': '#e5e7eb', '--gx-300': '#d1d5db',
   '--gx-400': '#CCDADC', '--gx-500': '#9095A1', '--gx-950': '#030712',
   '--ink-strong': '#ffffff', '--tv-theme': 'dark',
+  // Caution/disclaimer accent — amber reads well on dark…
+  '--warn': '#FACC15',
 };
 const LIGHT_INK: Record<string, string> = {
   '--gx-50': '#0a0a0a', '--gx-100': '#18181b', '--gx-200': '#27272a', '--gx-300': '#3f3f46',
   '--gx-400': '#52525b', '--gx-500': '#6b7280', '--gx-950': '#ffffff',
   '--ink-strong': '#111827', '--tv-theme': 'light',
+  // …but washes out on light, so the disclaimer goes red there.
+  '--warn': '#DC2626',
 };
 
 function surfMap(s: { s900: string; s800: string; s700: string; s600: string }): Record<string, string> {

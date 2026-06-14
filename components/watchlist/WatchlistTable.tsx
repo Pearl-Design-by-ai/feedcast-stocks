@@ -47,7 +47,7 @@ function MobileCard({
 }) {
     const isPositive = stock.change >= 0;
     return (
-        <div className="rounded-xl border border-white/10 bg-black/40 p-4">
+        <div className="rounded-xl border border-white/10 bg-gray-900/40 p-4">
             {/* Identity + price */}
             <div className="flex items-start justify-between gap-3">
                 <Link href={`/stocks/${stock.symbol}`} className="flex min-w-0 items-center gap-3">
@@ -217,7 +217,7 @@ export default function WatchlistTable({ data, onRefresh, groupId }: WatchlistTa
         </div>
 
         {/* Desktop: full data table. */}
-        <div className="hidden overflow-x-auto rounded-xl border border-white/10 bg-black/40 backdrop-blur-md shadow-xl md:block">
+        <div className="hidden overflow-x-auto rounded-xl border border-white/10 bg-gray-900/40 backdrop-blur-md shadow-xl md:block">
             <table className="w-full min-w-[1080px] text-left text-sm border-collapse">
                 <thead className="bg-white/5 text-gray-400 font-medium border-b border-white/10">
                     <tr>

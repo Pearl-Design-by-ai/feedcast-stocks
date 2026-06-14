@@ -110,7 +110,7 @@ export default function ApiDocsPage() {
             <div className="bg-gray-800 p-4 rounded-xl border border-gray-600 w-full flex flex-col gap-3 relative shadow-2xl">
               <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-1 h-12 bg-teal-500 rounded-full" />
               <span className="text-xs font-mono text-teal-500 mb-1">Inngest Function</span>
-              <div className="flex items-center justify-between text-sm text-gray-200 bg-black/40 p-2 rounded border border-gray-700">
+              <div className="flex items-center justify-between text-sm text-gray-200 bg-gray-900/40 p-2 rounded border border-gray-700">
                 <span>Attempt Gemini</span>
                 <CheckCircle2 size={14} className="text-teal-500" />
               </div>

@@ -28,7 +28,7 @@ async function NewsSection({ symbols }: { symbols: string[] }) {
 
 function TableSkeleton() {
     return (
-        <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/40 p-10 text-sm text-gray-500">
+        <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-gray-900/40 p-10 text-sm text-gray-500">
             <Loader2 className="h-4 w-4 animate-spin text-teal-400" />
             Loading live data for this watchlist…
         </div>
