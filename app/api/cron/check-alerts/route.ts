@@ -2,6 +2,29 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { isFeedcastEmailConfigured, sendStockAlertEmail } from '@/lib/email/feedcast';
+import { getValuationScreen, runValuationScan } from '@/lib/actions/valuation.actions';
+import { currentSession } from '@/lib/valuation';
+
+/**
+ * Rebuild the valuation screen once per trading session. This 5-minute cron is
+ * the reliable driver (a worker request that runs to completion, unlike a
+ * page's best-effort background task): right after each US close the session
+ * flips, the stored screen is no longer "complete", and the next few ticks
+ * refill it a chunk at a time. Idempotent and cheap once built. Returns how
+ * many names are scored, or -1 when no work was needed.
+ */
+async function rebuildValuationIfNeeded(): Promise<number> {
+    try {
+        const session = currentSession();
+        const screen = await getValuationScreen();
+        if (screen && screen.session === session && screen.complete) return -1;
+        const next = await runValuationScan();
+        return next.scanned;
+    } catch (err) {
+        console.error('check-alerts: valuation rebuild failed', err);
+        return -1;
+    }
+}
 
 /**
  * Price-alert cron endpoint.
@@ -267,10 +290,14 @@ async function handle(request: NextRequest) {
   // Email owners of any triggered-but-unnotified alerts (this run + retries).
   const notified = await notifyTriggeredAlerts(admin, token);
 
+  // Rebuild the valuation screen once per session (after each close).
+  const valuationScored = await rebuildValuationIfNeeded();
+
   return NextResponse.json({
     checked,
     triggered: triggeredIds.length,
     notified,
+    valuationScored,
   });
 }
 
