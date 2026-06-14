@@ -12,12 +12,32 @@
 
 export interface ValuationEntry {
     symbol: string;
-    /** Trailing P/E. */
+    /** Last trade / close. */
+    price: number | null;
+    /** Trailing P/E (the ranking metric, always > 0 here). */
     pe: number;
-    /** Trailing price/sales, when available. */
+    /** Trailing price/sales. */
     ps: number | null;
-    /** Dividend yield %, when available. */
+    /** Price/book. */
+    pb: number | null;
+    /** Dividend yield %. */
     dy: number | null;
+    /** Market cap, in millions USD. */
+    mktCap: number | null;
+    /** Return on equity %, trailing. */
+    roe: number | null;
+    /** Net profit margin %, trailing. */
+    npm: number | null;
+    /** Revenue growth %, YoY trailing. */
+    revGrowth: number | null;
+    /** 52-week price return %. */
+    ret1y: number | null;
+    /** Beta vs the market. */
+    beta: number | null;
+    /** 52-week high. */
+    hi52: number | null;
+    /** 52-week low. */
+    lo52: number | null;
 }
 
 export interface ValuationScreen {
