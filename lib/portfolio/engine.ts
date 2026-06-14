@@ -82,6 +82,51 @@ export interface PortfolioPlan {
 const round1 = (n: number) => Math.round(n * 10) / 10;
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 
+export interface EntryPlan {
+    approach: string;
+    cadence: 'Weekly' | 'Monthly' | 'Lump sum';
+    tranches: number;
+    perTranche: number;
+    durationLabel: string;
+    rebalance: string;
+    notes: string[];
+}
+
+/**
+ * Suggested phasing for putting the capital to work — lump-sum vs dollar-cost
+ * averaging — scaled by how volatile the chosen book is, plus risk tolerance
+ * and horizon. Heuristic and educational, not advice.
+ */
+export function entryPlan(inp: PortfolioInputs, plan: PortfolioPlan): EntryPlan {
+    const arch = plan.archetype;
+    const baseTranches = arch === 'thematic' ? 12 : arch === 'growth' ? 10 : arch === 'income' ? 6 : 4;
+    const weekly = arch === 'thematic' || arch === 'growth';
+
+    let t = baseTranches;
+    if (inp.horizon === 'short') t = Math.ceil(t * 0.6);
+    if (inp.risk === 'high') t = Math.ceil(t * 0.7);
+    if (inp.risk === 'low') t = Math.ceil(t * 1.25);
+    t = clamp(Math.round(t), 1, 16);
+
+    const cadence: EntryPlan['cadence'] = t <= 1 ? 'Lump sum' : weekly ? 'Weekly' : 'Monthly';
+    const perTranche = Math.round(inp.capital / t);
+    const durationLabel =
+        t <= 1 ? 'all at once' : weekly ? `~${t} weeks` : `~${t} months`;
+    const rebalance = weekly ? 'Review and rebalance about quarterly.' : 'Review and rebalance every 6–12 months.';
+
+    const notes: string[] = [];
+    if (t <= 1) {
+        notes.push('Low volatility + your settings favor deploying in one go; historically lump-sum beats averaging-in on average, but you take all the timing risk on day one.');
+    } else {
+        notes.push(`Spread entry into ${t} equal buys of about ${perTranche.toLocaleString('en-US')} ${inp.currency} to cut single-day timing risk on a ${arch} book.`);
+        notes.push('Averaging-in trades some expected return for smoother entry and less regret — keep the cadence mechanical, not market-timed.');
+    }
+    notes.push('Keep the cash sleeve as buffer/dry powder; top up on large drawdowns rather than chasing.');
+    notes.push('Watch trading costs and minimum lot sizes on smaller per-tranche amounts.');
+
+    return { approach: t <= 1 ? 'Lump sum' : 'Dollar-cost average', cadence, tranches: t, perTranche, durationLabel, rebalance, notes };
+}
+
 const ARCHETYPE = {
     growth: { equity: 92, bond: 0, cash: 8, favStyle: ['growth'] as Style[], sectorCap: 35, singleMax: 10 },
     income: { equity: 66, bond: 24, cash: 10, favStyle: ['dividend', 'value'] as Style[], sectorCap: 30, singleMax: 8 },
