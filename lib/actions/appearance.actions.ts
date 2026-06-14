@@ -2,11 +2,13 @@
 
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { ACCENT_COLORS, type AccentColorId } from '@/lib/accent';
-import { BACKGROUND_TONES, type BackgroundToneId } from '@/lib/appearance';
+import { BACKGROUND_TONES, LIGHT_TONES, type BackgroundToneId, type LightToneId, type ThemeMode } from '@/lib/appearance';
 
 export interface AppearanceChoice {
   accentColor?: AccentColorId;
   background?: BackgroundToneId;
+  lightBackground?: LightToneId;
+  theme?: ThemeMode;
 }
 
 /**
@@ -32,6 +34,15 @@ export async function saveAppearance(
   ) {
     return { ok: false, error: 'Invalid background tone' };
   }
+  if (
+    choice.lightBackground !== undefined &&
+    !LIGHT_TONES.some((t) => t.id === choice.lightBackground)
+  ) {
+    return { ok: false, error: 'Invalid light background' };
+  }
+  if (choice.theme !== undefined && !['dark', 'light', 'auto'].includes(choice.theme)) {
+    return { ok: false, error: 'Invalid theme' };
+  }
 
   const supabase = await getSupabaseServerClient();
   const {
@@ -42,6 +53,8 @@ export async function saveAppearance(
   const prefs = {
     ...(choice.accentColor !== undefined && { accentColor: choice.accentColor }),
     ...(choice.background !== undefined && { marketsBackground: choice.background }),
+    ...(choice.lightBackground !== undefined && { marketsLightBackground: choice.lightBackground }),
+    ...(choice.theme !== undefined && { marketsTheme: choice.theme }),
   };
 
   // Atomic server-side JSONB merge (see supabase/migrations/005) — a plain

@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import AppearanceSettings from '@/components/appearance/AppearanceSettings';
 import { ACCENT_COLORS, type AccentColorId } from '@/lib/accent';
-import { backgroundTone } from '@/lib/appearance';
+import { backgroundTone, lightTone, DEFAULT_THEME, type ThemeMode } from '@/lib/appearance';
 
 export const metadata: Metadata = {
     title: 'Appearance',
@@ -27,6 +27,8 @@ export default async function AppearancePage() {
     const prefs = (data?.reading_preferences as {
         accentColor?: string;
         marketsBackground?: string;
+        marketsLightBackground?: string;
+        marketsTheme?: string;
     } | null) ?? {};
 
     // 'black' (the main app's "no accent") and unknown ids fall back to gold,
@@ -36,20 +38,27 @@ export default async function AppearancePage() {
             ? (prefs.accentColor as AccentColorId)
             : 'gold';
     const initialBackground = backgroundTone(prefs.marketsBackground).id;
+    const initialLightBackground = lightTone(prefs.marketsLightBackground).id;
+    const initialTheme: ThemeMode = (['dark', 'light', 'auto'].includes(prefs.marketsTheme ?? '')
+        ? prefs.marketsTheme
+        : DEFAULT_THEME) as ThemeMode;
 
     return (
         <div className="flex min-h-screen w-full flex-col gap-6 p-4 md:p-8">
             <header className="flex flex-col gap-1">
                 <h1 className="text-3xl font-bold text-gray-100">Appearance</h1>
                 <p className="max-w-3xl text-sm text-gray-400">
-                    Make Markets yours — pick a dark background tone and an accent color.
-                    Choices save to your Feedcast profile and follow you across devices.
+                    Make Markets yours — pick light or dark (or follow your device), a background
+                    tone and an accent color. Choices save to your Feedcast profile and follow you
+                    across devices.
                 </p>
             </header>
 
             <AppearanceSettings
                 initialAccent={initialAccent}
                 initialBackground={initialBackground}
+                initialLightBackground={initialLightBackground}
+                initialTheme={initialTheme}
             />
         </div>
     );

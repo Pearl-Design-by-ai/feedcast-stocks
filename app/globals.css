@@ -95,6 +95,20 @@
     --surface-800: #141414;
     --surface-700: #212328;
     --surface-600: #30333A;
+
+    /* Text/ink gray scale + the white→ink lever + chart theme flag. Defaults
+       are the dark-theme values (identical to the old hardcoded grays). The
+       (root) layout overrides the whole set for light / auto themes, so
+       text, borders and white accents flip across the entire app. */
+    --gx-50: #f9fafb;
+    --gx-100: #f3f4f6;
+    --gx-200: #e5e7eb;
+    --gx-300: #d1d5db;
+    --gx-400: #CCDADC;
+    --gx-500: #9095A1;
+    --gx-950: #030712;
+    --ink-strong: #ffffff;
+    --tv-theme: dark;
 }
 
 .dark {
@@ -136,12 +150,20 @@
     /* Extended Gray Scale — surface levels resolve to the runtime --surface-*
        vars so the member's chosen background tone themes the whole app
        (mirrors how teal-* resolves to --brand below). */
+    --color-gray-950: var(--gx-950);
     --color-gray-900: var(--surface-900);
     --color-gray-800: var(--surface-800);
     --color-gray-700: var(--surface-700);
     --color-gray-600: var(--surface-600);
-    --color-gray-500: #9095A1;
-    --color-gray-400: #CCDADC;
+    --color-gray-500: var(--gx-500);
+    --color-gray-400: var(--gx-400);
+    --color-gray-300: var(--gx-300);
+    --color-gray-200: var(--gx-200);
+    --color-gray-100: var(--gx-100);
+    --color-gray-50: var(--gx-50);
+    /* `white` is driven by the ink lever so text-white / from-white /
+       border-white flip in light mode (and white knobs become dark-on-light). */
+    --color-white: var(--ink-strong);
 
     /* Vibrant Colors */
     --color-blue-600: #5862FF;

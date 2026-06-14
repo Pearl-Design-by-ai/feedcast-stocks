@@ -5,7 +5,7 @@ import SideNav from "@/components/SideNav";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { searchStocks } from "@/lib/actions/finnhub.actions";
 import { accentHex } from "@/lib/accent";
-import { backgroundTone } from "@/lib/appearance";
+import { buildThemeCss, type ThemeMode } from "@/lib/appearance";
 
 // Auth is handled by the main Feedcast app (SSO). Unauthenticated users
 // are bounced to the Feedcast sign-in.
@@ -34,7 +34,7 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
     // or on /appearance here; background tone chosen on /appearance) from
     // user_preferences.reading_preferences. RLS scopes the read to the
     // logged-in user; falls back to the defaults (gold accent, Obsidian tone).
-    const prefsPromise = (async (): Promise<{ accentColor?: string; marketsBackground?: string }> => {
+    const prefsPromise = (async (): Promise<{ accentColor?: string; marketsBackground?: string; marketsLightBackground?: string; marketsTheme?: string }> => {
         try {
             const { data } = await supabase
                 .from('user_preferences')
@@ -44,6 +44,8 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
             return (data?.reading_preferences as {
                 accentColor?: string;
                 marketsBackground?: string;
+                marketsLightBackground?: string;
+                marketsTheme?: string;
             } | null) ?? {};
         } catch {
             // Non-fatal — keep the defaults.
@@ -61,13 +63,14 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
     ]);
 
     const brand = accentHex(prefs.accentColor);
-    const tone = backgroundTone(prefs.marketsBackground);
+    const mode = (['dark', 'light', 'auto'].includes(prefs.marketsTheme ?? '') ? prefs.marketsTheme : 'dark') as ThemeMode;
 
     // Injected as a :root override (rather than inline on <main>) so portaled
-    // UI — dropdowns, dialogs, the command palette — gets the same tone and
-    // accent as the page content. The /appearance page mirrors these same
-    // properties onto document.documentElement for its instant live preview.
-    const themeCss = `:root{--brand:${brand};--brand-hover:${brand}CC;--surface-900:${tone.surface.s900};--surface-800:${tone.surface.s800};--surface-700:${tone.surface.s700};--surface-600:${tone.surface.s600};}`;
+    // UI — dropdowns, dialogs, the command palette — gets the same theme and
+    // accent as the page content. Dark/light/auto each set the full gray scale
+    // (auto via a prefers-color-scheme media query). The /appearance page
+    // mirrors these onto document.documentElement for its instant live preview.
+    const themeCss = buildThemeCss(mode, prefs.marketsBackground, prefs.marketsLightBackground, brand);
 
     return (
         <main className="min-h-screen text-gray-400">

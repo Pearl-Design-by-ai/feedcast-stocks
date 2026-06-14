@@ -30,12 +30,28 @@ const TradingViewWidget = ({ title, scriptUrl, config, height = 600, className, 
 
     const currentHeight = isExpanded ? windowHeight : height;
 
-    const widgetConfig = {
+    // Follow the app theme: read the effective `--tv-theme` var (which respects
+    // the auto/prefers-color-scheme media query) and re-init on scheme change.
+    const [tvTheme, setTvTheme] = useState<'dark' | 'light'>('dark');
+    useEffect(() => {
+        const read = () => {
+            const v = getComputedStyle(document.documentElement).getPropertyValue('--tv-theme').trim();
+            setTvTheme(v === 'light' ? 'light' : 'dark');
+        };
+        read();
+        const mq = window.matchMedia('(prefers-color-scheme: light)');
+        mq.addEventListener?.('change', read);
+        return () => mq.removeEventListener?.('change', read);
+    }, []);
+
+    const widgetConfig: Record<string, unknown> = {
         ...config,
         height: currentHeight,
         width: "100%",
         autosize: true,
     };
+    if ('colorTheme' in widgetConfig) widgetConfig.colorTheme = tvTheme;
+    if ('theme' in widgetConfig) widgetConfig.theme = tvTheme;
 
     const containerRef = useTradingViewWidget(scriptUrl, widgetConfig, currentHeight);
 
