@@ -28,6 +28,79 @@ export const MARKETS_NAV = {
     ],
 };
 
+// Left-menu model: everything grouped into collapsible categories, shared by
+// the desktop SideNav and the mobile drawer. (NAV_ITEMS / MARKETS_NAV above are
+// kept for the top header nav.) '/search' opens the command palette rather than
+// navigating — the menus special-case it.
+export interface NavSection {
+    id: string;
+    label: string;
+    items: { href: string; label: string }[];
+}
+
+export const SEARCH_HREF = '/search';
+
+export const NAV_SECTIONS: NavSection[] = [
+    {
+        id: 'home',
+        label: 'Home',
+        items: [
+            { href: '/', label: 'Dashboard' },
+            { href: '/search', label: 'Search' },
+        ],
+    },
+    {
+        id: 'lists',
+        label: 'My Lists',
+        items: [
+            { href: '/watchlist', label: 'Watchlist' },
+            { href: '/alerts', label: 'Alerts' },
+        ],
+    },
+    {
+        id: 'research',
+        label: 'Research',
+        items: [
+            { href: '/bubble-detector', label: 'Bubble Detector' },
+            { href: '/valuation', label: 'Valuation' },
+            { href: '/ask', label: 'Ask the Markets' },
+            { href: '/learn', label: 'Learn' },
+        ],
+    },
+    {
+        id: 'markets',
+        label: 'Markets',
+        items: [
+            { href: '/market-regime', label: 'Market Regime' },
+            { href: '/market-indicators', label: 'Indicators' },
+            { href: '/sectors', label: 'Sectors' },
+            { href: '/world-indices', label: 'World Indices' },
+            { href: '/currency', label: 'Currency' },
+            { href: '/commodities', label: 'Commodities' },
+            { href: '/fixed-income', label: 'Fixed Income' },
+            { href: '/crypto', label: 'Crypto' },
+            { href: '/economic-calendar', label: 'Economic Calendar' },
+            { href: '/calendar', label: 'Earnings & IPO' },
+            { href: '/screener', label: 'Screener' },
+            { href: '/compare', label: 'Compare' },
+        ],
+    },
+    {
+        id: 'more',
+        label: 'More',
+        items: [
+            { href: '/appearance', label: 'Appearance' },
+            { href: '/about', label: 'About' },
+            { href: '/help', label: 'Help' },
+            { href: '/api-docs', label: 'API Docs' },
+        ],
+    },
+];
+
+/** Sections expanded by default; the others start collapsed (and any section
+ *  containing the active route auto-opens). */
+export const NAV_DEFAULT_OPEN = ['home', 'lists', 'research'];
+
 // TradingView Charts
 export const HEATMAP_WIDGET_CONFIG = {
     dataSource: 'SPX500',

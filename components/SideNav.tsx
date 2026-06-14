@@ -1,104 +1,31 @@
 'use client';
 
 /**
- * Desktop-permanent left sidebar for FeedCast Markets — designed to match the
- * main Feedcast app's SideNav (frosted glass rail, accent hairline, a
- * hamburger toggle that collapses the 260px panel into a 52px icon rail).
- * Open state persists to localStorage so it survives reloads.
+ * Desktop-permanent left sidebar for FeedCast Markets. A frosted-glass rail
+ * with a hamburger that collapses the 260px panel into a 52px icon rail
+ * (state persisted to localStorage). When expanded, the menu is organized into
+ * collapsible category accordions (Home / My Lists / Research / Markets /
+ * More) — each section remembers its open state, and the section holding the
+ * active route auto-opens. When collapsed to the icon rail, every item shows
+ * as a flat icon (accordions don't apply without labels).
  *
- * Below md the rail doesn't render — the Header's MobileDrawer (logo-
- * triggered slide-in panel) handles narrow viewports, like the main site.
- *
- * Brand color: rows use `text-teal-400`, which globals.css maps to the runtime
- * `--brand` var. The (root) layout sets `--brand` per-member from their saved
- * accent color, so this rail is tinted with the same accent they chose on
- * www.feedcast.news.
+ * Below md the rail doesn't render — the Header's MobileDrawer handles narrow
+ * viewports. Brand color: rows use `text-teal-400`, mapped to the member's
+ * accent via the `--brand` var set in the (root) layout.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Fragment } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import {
-  Menu,
-  PanelLeftClose,
-  ArrowLeft,
-  LayoutDashboard,
-  Radar,
-  GraduationCap,
-  Search,
-  Star,
-  Bell,
-  Sparkles,
-  Activity,
-  Gauge,
-  LayoutGrid,
-  Globe,
-  Banknote,
-  Wheat,
-  Landmark,
-  Bitcoin,
-  CalendarClock,
-  CalendarDays,
-  Filter,
-  Scale,
-  Palette,
-  Info,
-  LifeBuoy,
-  Code,
-  type LucideIcon,
-} from 'lucide-react';
+import { Menu, PanelLeftClose, ArrowLeft, ChevronDown } from 'lucide-react';
 import SearchCommand from '@/components/SearchCommand';
-import { NAV_ITEMS, MARKETS_NAV } from '@/lib/constants';
+import { NAV_SECTIONS, NAV_DEFAULT_OPEN, SEARCH_HREF } from '@/lib/constants';
+import { NAV_ICONS, SECTION_ICONS, NAV_FALLBACK_ICON } from '@/components/navIcons';
 import { cn } from '@/lib/utils';
 
 const STORAGE_KEY = 'fcm_sidenav_open';
+const SECTION_KEY = (id: string) => `fcm_nav_sec_${id}`;
 const FEEDCAST_HOME = 'https://www.feedcast.news/';
-
-type Item = { href: string; label: string; icon: LucideIcon; search?: boolean };
-
-const MAIN_ICONS: Record<string, LucideIcon> = {
-  '/': LayoutDashboard,
-  '/search': Search,
-  '/watchlist': Star,
-  '/alerts': Bell,
-  '/bubble-detector': Radar,
-  '/valuation': Scale,
-  '/learn': GraduationCap,
-};
-
-const MARKETS_ICONS: Record<string, LucideIcon> = {
-  '/ask': Sparkles,
-  '/market-regime': Activity,
-  '/market-indicators': Gauge,
-  '/sectors': LayoutGrid,
-  '/world-indices': Globe,
-  '/currency': Banknote,
-  '/commodities': Wheat,
-  '/fixed-income': Landmark,
-  '/crypto': Bitcoin,
-  '/economic-calendar': CalendarClock,
-  '/calendar': CalendarDays,
-  '/screener': Filter,
-  '/compare': Scale,
-};
-
-const MAIN_ITEMS: Item[] = NAV_ITEMS.map((i) => ({
-  ...i,
-  icon: MAIN_ICONS[i.href] ?? LayoutDashboard,
-  search: i.href === '/search',
-}));
-
-const MARKETS_ITEMS: Item[] = MARKETS_NAV.items.map((i) => ({
-  ...i,
-  icon: MARKETS_ICONS[i.href] ?? Activity,
-}));
-
-const MORE_ITEMS: Item[] = [
-  { href: '/appearance', label: 'Appearance', icon: Palette },
-  { href: '/about', label: 'About', icon: Info },
-  { href: '/help', label: 'Help', icon: LifeBuoy },
-  { href: '/api-docs', label: 'API Docs', icon: Code },
-];
 
 /** Open the SearchCommand dialog via its global Cmd/Ctrl+K listener. */
 function openSearch() {
@@ -110,10 +37,20 @@ function openSearch() {
 export function SideNav({ initialStocks }: { initialStocks: StockWithWatchlistStatus[] }) {
   const pathname = usePathname();
 
-  // Open by default — new members see the full menu on first visit. SSR and
-  // the first client paint both render open (no hydration mismatch); the
-  // effect collapses it only for members who previously chose to hide it.
+  // Rail open vs. collapsed-to-icons. SSR + first paint render open (no
+  // hydration mismatch); the effect collapses it for members who hid it.
   const [open, setOpen] = useState(true);
+
+  // Per-section accordion state — deterministic default so SSR matches the
+  // first client render; localStorage + active-route auto-open applied after.
+  const [sections, setSections] = useState<Record<string, boolean>>(() => {
+    const init: Record<string, boolean> = {};
+    for (const s of NAV_SECTIONS) init[s.id] = NAV_DEFAULT_OPEN.includes(s.id);
+    return init;
+  });
+
+  const isActive = (href: string) =>
+    href === '/' ? pathname === '/' : pathname.startsWith(href);
 
   useEffect(() => {
     try {
@@ -121,9 +58,26 @@ export function SideNav({ initialStocks }: { initialStocks: StockWithWatchlistSt
     } catch {
       /* localStorage blocked — stay open */
     }
-  }, []);
+    setSections((prev) => {
+      const next = { ...prev };
+      for (const s of NAV_SECTIONS) {
+        let v = NAV_DEFAULT_OPEN.includes(s.id);
+        try {
+          const stored = localStorage.getItem(SECTION_KEY(s.id));
+          if (stored != null) v = stored === 'true';
+        } catch {
+          /* ignore */
+        }
+        // Always reveal the section that contains the current page.
+        if (s.items.some((it) => isActive(it.href))) v = true;
+        next[s.id] = v;
+      }
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
-  const toggle = () => {
+  const toggleRail = () => {
     setOpen((v) => {
       const next = !v;
       try {
@@ -135,40 +89,49 @@ export function SideNav({ initialStocks }: { initialStocks: StockWithWatchlistSt
     });
   };
 
-  const compact = !open;
+  const toggleSection = (id: string) => {
+    setSections((prev) => {
+      const next = !prev[id];
+      try {
+        localStorage.setItem(SECTION_KEY(id), String(next));
+      } catch {
+        /* ignore */
+      }
+      return { ...prev, [id]: next };
+    });
+  };
 
-  const isActive = (href: string) =>
-    href === '/' ? pathname === '/' : pathname.startsWith(href);
+  const compact = !open;
 
   const rowClass = (active: boolean) =>
     cn(
       'transition-colors',
       compact
         ? 'flex items-center justify-center h-10 w-10 mx-auto my-0.5 rounded-md'
-        : 'flex items-center gap-3 rounded-md px-4 py-2.5 text-[14px]',
+        : 'flex items-center gap-3 rounded-md px-4 py-2 text-[14px]',
       active
         ? 'bg-gray-700/60 text-teal-400'
         : 'text-gray-300 hover:bg-gray-700/70 hover:text-teal-400',
     );
 
-  const renderItem = (item: Item) => {
-    const active = isActive(item.href);
-    const Icon = item.icon;
+  const renderItem = (href: string, label: string) => {
+    const Icon = NAV_ICONS[href] ?? NAV_FALLBACK_ICON;
+    const active = isActive(href);
     const inner = (
       <>
         <Icon size={compact ? 18 : 16} className="shrink-0" />
-        {!compact && <span className="truncate">{item.label}</span>}
+        {!compact && <span className="truncate">{label}</span>}
       </>
     );
 
-    if (item.search) {
+    if (href === SEARCH_HREF) {
       return (
         <button
-          key={item.href}
+          key={href}
           type="button"
           onClick={openSearch}
-          title={compact ? item.label : undefined}
-          aria-label={item.label}
+          title={compact ? label : undefined}
+          aria-label={label}
           className={cn(rowClass(false), 'w-full text-left')}
         >
           {inner}
@@ -178,9 +141,9 @@ export function SideNav({ initialStocks }: { initialStocks: StockWithWatchlistSt
 
     return (
       <Link
-        key={item.href}
-        href={item.href}
-        title={compact ? item.label : undefined}
+        key={href}
+        href={href}
+        title={compact ? label : undefined}
         aria-current={active ? 'page' : undefined}
         className={rowClass(active)}
       >
@@ -188,15 +151,6 @@ export function SideNav({ initialStocks }: { initialStocks: StockWithWatchlistSt
       </Link>
     );
   };
-
-  const sectionLabel = (label: string) =>
-    compact ? (
-      <div className="my-2 mx-auto h-px w-6 bg-gray-700" />
-    ) : (
-      <div className="px-4 pt-4 pb-1 text-[10px] font-bold uppercase tracking-wider text-gray-500">
-        {label}
-      </div>
-    );
 
   return (
     <aside
@@ -206,9 +160,7 @@ export function SideNav({ initialStocks }: { initialStocks: StockWithWatchlistSt
       )}
       aria-label="Primary navigation"
     >
-      {/* Hidden SearchCommand instance: mounts the global Cmd/Ctrl+K listener so
-          the Search row can open the dialog. The dialog itself is portal-rendered
-          and unaffected by the wrapper being hidden. */}
+      {/* Hidden SearchCommand: mounts the global Cmd/Ctrl+K listener. */}
       <div className="hidden">
         <SearchCommand renderAs="text" label="Search" initialStocks={initialStocks} />
       </div>
@@ -217,10 +169,10 @@ export function SideNav({ initialStocks }: { initialStocks: StockWithWatchlistSt
         {/* Accent hairline — tinted by the member's accent via --brand. */}
         <div className="h-[2px] bg-gradient-to-r from-teal-400/0 via-teal-400/70 to-teal-400/0" />
 
-        {/* Toggle row — anchored top so the hamburger never shifts on screen. */}
+        {/* Hamburger / collapse toggle — anchored top so it never shifts. */}
         <button
           type="button"
-          onClick={toggle}
+          onClick={toggleRail}
           aria-label={open ? 'Collapse navigation' : 'Expand navigation'}
           aria-expanded={open}
           className={cn(
@@ -245,7 +197,7 @@ export function SideNav({ initialStocks }: { initialStocks: StockWithWatchlistSt
           <a
             href={FEEDCAST_HOME}
             title={compact ? 'Back to Feedcast' : undefined}
-            className={cn(rowClass(false))}
+            className={rowClass(false)}
           >
             <ArrowLeft size={compact ? 18 : 16} className="shrink-0" />
             {!compact && <span className="truncate">Back to Feedcast</span>}
@@ -253,13 +205,43 @@ export function SideNav({ initialStocks }: { initialStocks: StockWithWatchlistSt
 
           <div className="my-2 h-px bg-gray-700/70" />
 
-          {MAIN_ITEMS.map(renderItem)}
-
-          {sectionLabel('Markets')}
-          {MARKETS_ITEMS.map(renderItem)}
-
-          {sectionLabel('More')}
-          {MORE_ITEMS.map(renderItem)}
+          {compact
+            ? // Icon rail: all items flat, divided by section.
+              NAV_SECTIONS.map((section, idx) => (
+                <Fragment key={section.id}>
+                  {idx > 0 && <div className="my-2 mx-auto h-px w-6 bg-gray-700" />}
+                  {section.items.map((it) => renderItem(it.href, it.label))}
+                </Fragment>
+              ))
+            : // Expanded: collapsible category accordions.
+              NAV_SECTIONS.map((section) => {
+                const SecIcon = SECTION_ICONS[section.id] ?? NAV_FALLBACK_ICON;
+                const sectionOpen = sections[section.id];
+                return (
+                  <div key={section.id} className="mt-0.5">
+                    <button
+                      type="button"
+                      onClick={() => toggleSection(section.id)}
+                      aria-expanded={sectionOpen}
+                      className="flex w-full items-center justify-between rounded-md px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-gray-500 transition-colors hover:text-gray-300"
+                    >
+                      <span className="flex items-center gap-2">
+                        <SecIcon size={14} className="shrink-0" />
+                        {section.label}
+                      </span>
+                      <ChevronDown
+                        size={15}
+                        className={cn('transition-transform duration-200', sectionOpen && 'rotate-180')}
+                      />
+                    </button>
+                    {sectionOpen && (
+                      <div className="mb-1 animate-in fade-in-0 slide-in-from-top-1 duration-150">
+                        {section.items.map((it) => renderItem(it.href, it.label))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
         </nav>
       </div>
     </aside>

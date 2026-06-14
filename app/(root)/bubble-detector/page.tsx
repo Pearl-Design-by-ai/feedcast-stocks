@@ -1,14 +1,12 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { Loader2, Radar, TriangleAlert, ExternalLink, Telescope, Eye, Scale } from 'lucide-react';
+import { Loader2, Radar, TriangleAlert, ExternalLink, Telescope, Eye } from 'lucide-react';
 import DataDisclaimer from '@/components/DataDisclaimer';
 import TradingViewWidget from '@/components/TradingViewWidget';
 import { FrothGauge, ScoreBar, AssetTable } from '@/components/bubble/BubbleUi';
 import { TopPopGrid } from '@/components/bubble/TopPopGrid';
-import { ValuationLists } from '@/components/bubble/ValuationScreen';
 import { runBubbleScan } from '@/lib/bubble-scan';
-import { ensureFreshScreen } from '@/lib/actions/valuation.actions';
 import { bubbleBand, BUBBLE_SOURCES, HISTORICAL_BUBBLES } from '@/lib/bubble';
 import { ADVANCED_CHART_WIDGET_CONFIG } from '@/lib/constants';
 import { formatSymbolForTradingView } from '@/lib/utils';
@@ -185,20 +183,6 @@ async function Scan() {
     );
 }
 
-async function ValuationSection() {
-    const screen = await ensureFreshScreen();
-    return <ValuationLists screen={screen} />;
-}
-
-function ValuationSkeleton() {
-    return (
-        <div className="flex items-center gap-3 rounded-xl border border-gray-800 bg-gray-900/40 p-6 text-sm text-gray-500">
-            <Loader2 className="h-4 w-4 animate-spin text-teal-400" />
-            Loading the valuation screen…
-        </div>
-    );
-}
-
 function ScanSkeleton() {
     return (
         <div className="flex items-center gap-3 rounded-2xl border border-gray-800 bg-gray-900/40 p-10 text-sm text-gray-500">
@@ -230,27 +214,6 @@ export default function BubbleDetectorPage() {
             <Suspense fallback={<ScanSkeleton />}>
                 <Scan />
             </Suspense>
-
-            {/* Daily valuation screen — cheapest & most expensive large-caps */}
-            <section className="flex flex-col gap-3 rounded-xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
-                <div>
-                    <h2 className="flex items-center gap-2 text-base font-semibold text-gray-100">
-                        <Scale size={16} className="text-teal-400" /> Cheapest &amp; most expensive stocks
-                    </h2>
-                    <p className="mt-1 max-w-3xl text-xs leading-relaxed text-gray-400">
-                        A daily batch ranks ~190 major US stocks by valuation. The market-wide{' '}
-                        <a href="https://www.multpl.com/shiller-pe" target="_blank" rel="noopener noreferrer" className="text-teal-400 hover:underline">
-                            Shiller CAPE
-                        </a>{' '}
-                        isn&apos;t computable per stock from free data, so each name is ranked by its
-                        trailing P/E — the accessible valuation proxy — to surface the cheapest 100 and
-                        priciest 100. Rebuilt in the background about once a day.
-                    </p>
-                </div>
-                <Suspense fallback={<ValuationSkeleton />}>
-                    <ValuationSection />
-                </Suspense>
-            </section>
 
             {/* Lessons from past bubbles */}
             <section className="rounded-xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
