@@ -4,6 +4,7 @@ export const NAV_ITEMS = [
     { href: '/watchlist', label: 'Watchlist' },
     { href: '/alerts', label: 'Alerts' },
     { href: '/bubble-detector', label: 'Bubble Detector' },
+    { href: '/valuation', label: 'Valuation' },
     { href: '/learn', label: 'Learn' },
 ];
 

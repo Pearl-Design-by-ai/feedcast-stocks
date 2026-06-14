@@ -21,6 +21,7 @@ import {
   Star,
   Bell,
   Radar,
+  Scale,
   GraduationCap,
   Activity,
   Palette,
@@ -151,6 +152,7 @@ export default function MobileDrawer({
               {item('/watchlist', 'Watchlist', Star)}
               {item('/alerts', 'Alerts', Bell)}
               {item('/bubble-detector', 'Bubble Detector', Radar)}
+              {item('/valuation', 'Valuation', Scale)}
               {item('/learn', 'Learn', GraduationCap)}
 
               <div className="my-3 h-px bg-gray-700/70" />
