@@ -59,7 +59,7 @@ export default function StockSentimentCard({ insight }: StockSentimentCardProps)
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 rounded-2xl border border-gray-800 bg-black/20 p-4 md:min-w-[320px]">
+                    <div className="grid grid-cols-2 gap-3 rounded-2xl border border-gray-800 bg-gray-950/40 p-4 md:min-w-[320px]">
                         <div>
                             <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gray-500">
                                 Avg. Buzz
@@ -99,7 +99,7 @@ export default function StockSentimentCard({ insight }: StockSentimentCardProps)
                     {insight.sources.map((source) => (
                         <article
                             key={source.source}
-                            className="rounded-xl border border-gray-800 bg-black/20 p-4"
+                            className="rounded-xl border border-gray-800 bg-gray-950/40 p-4"
                         >
                             <div className="flex items-center justify-between">
                                 <h3 className="text-base font-semibold text-white">{source.label}</h3>
@@ -109,7 +109,7 @@ export default function StockSentimentCard({ insight }: StockSentimentCardProps)
                             </div>
 
                             <div className="mt-4 grid grid-cols-2 gap-3">
-                                <div className="rounded-lg border border-gray-800 bg-black/20 p-3">
+                                <div className="rounded-lg border border-gray-800 bg-gray-950/40 p-3">
                                     <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gray-500">
                                         Buzz
                                     </p>
@@ -117,7 +117,7 @@ export default function StockSentimentCard({ insight }: StockSentimentCardProps)
                                         {formatScore(source.buzzScore, '/100')}
                                     </p>
                                 </div>
-                                <div className="rounded-lg border border-gray-800 bg-black/20 p-3">
+                                <div className="rounded-lg border border-gray-800 bg-gray-950/40 p-3">
                                     <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gray-500">
                                         Bullish
                                     </p>
@@ -125,7 +125,7 @@ export default function StockSentimentCard({ insight }: StockSentimentCardProps)
                                         {formatScore(source.bullishPct, '%')}
                                     </p>
                                 </div>
-                                <div className="rounded-lg border border-gray-800 bg-black/20 p-3">
+                                <div className="rounded-lg border border-gray-800 bg-gray-950/40 p-3">
                                     <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gray-500">
                                         {source.metricLabel}
                                     </p>
@@ -133,7 +133,7 @@ export default function StockSentimentCard({ insight }: StockSentimentCardProps)
                                         {formatCompactNumber(source.metricValue)}
                                     </p>
                                 </div>
-                                <div className="rounded-lg border border-gray-800 bg-black/20 p-3">
+                                <div className="rounded-lg border border-gray-800 bg-gray-950/40 p-3">
                                     <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gray-500">
                                         Trend
                                     </p>

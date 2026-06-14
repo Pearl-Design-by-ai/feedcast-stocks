@@ -392,7 +392,7 @@ export default function PortfolioLab() {
                                     {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? 'Copied' : 'Copy'}
                                 </button>
                             </div>
-                            <pre className="max-h-72 overflow-auto rounded-lg bg-black/50 p-3 text-[11px] leading-relaxed text-gray-300"><code>{CODE}</code></pre>
+                            <pre className="max-h-72 overflow-auto rounded-lg bg-gray-950/60 p-3 text-[11px] leading-relaxed text-gray-300"><code>{CODE}</code></pre>
                         </div>
                         <div className="rounded-2xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
                             <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-gray-500">Tweak the bias</h3>
