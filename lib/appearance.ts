@@ -120,6 +120,10 @@ const DARK_INK: Record<string, string> = {
   '--ink-strong': '#ffffff', '--tv-theme': 'dark',
   // Caution/disclaimer accent — amber reads well on dark…
   '--warn': '#FACC15',
+  // Caution band accent (bubble risk amber) — vivid amber on dark…
+  '--caution': '#fbbf24',
+  // Symbol/tag chip accent — light blue on dark.
+  '--tag': '#93c5fd',
   // Positive/up green — vivid on dark.
   '--up': '#4ade80', '--up-bg': '#22c55e',
   // Negative/down red — vivid on dark.
@@ -131,6 +135,10 @@ const LIGHT_INK: Record<string, string> = {
   '--ink-strong': '#111827', '--tv-theme': 'light',
   // …but washes out on light, so the disclaimer goes red there.
   '--warn': '#DC2626',
+  // …amber washes out on light too, so the caution band goes deep orange.
+  '--caution': '#C2410C',
+  // Deep blue on light so symbol/tag chips stay readable.
+  '--tag': '#1d4ed8',
   // Deep green on light so positive numbers stay readable.
   '--up': '#15803d', '--up-bg': '#16a34a',
   // Deep red on light so negative numbers stay readable.

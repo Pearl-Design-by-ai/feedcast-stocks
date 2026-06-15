@@ -58,6 +58,19 @@ const TradingViewWidget = ({ title, scriptUrl, config, height = 600, className, 
             widgetConfig.isTransparent = typeof widgetConfig.isTransparent === 'string' ? 'false' : false;
             if (!('backgroundColor' in widgetConfig)) widgetConfig.backgroundColor = '#ffffff';
         }
+        // For the Advanced Chart family (candle / baseline / studies — they carry
+        // a `theme` key), the top-level backgroundColor doesn't reliably repaint
+        // the candle pane itself, so it can stay black on a light page. The
+        // authoritative control is paneProperties.background via `overrides`;
+        // force it solid white so the chart interior actually goes light.
+        if ('theme' in widgetConfig) {
+            const existing = (typeof widgetConfig.overrides === 'object' && widgetConfig.overrides) || {};
+            widgetConfig.overrides = {
+                ...existing,
+                'paneProperties.background': '#ffffff',
+                'paneProperties.backgroundType': 'solid',
+            };
+        }
     }
 
     const containerRef = useTradingViewWidget(scriptUrl, widgetConfig, currentHeight);

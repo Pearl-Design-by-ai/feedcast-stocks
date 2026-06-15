@@ -25,11 +25,11 @@ export default function NewsGrid({ news }: NewsGridProps) {
                     >
                         <div className="p-4 flex flex-col h-full">
                             <div className="flex items-start justify-between mb-2">
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${item.related ? "bg-blue-900/50 text-blue-300" : "bg-gray-800 text-gray-400"
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${item.related ? "bg-[var(--tag)]/15 text-[var(--tag)]" : "bg-gray-800 text-gray-400"
                                     }`}>
                                     {item.related || "MARKET"}
                                 </span>
-                                <ExternalLink className="w-3 h-3 text-gray-600 group-hover:text-gray-400" />
+                                <ExternalLink className="w-3 h-3 text-gray-500 group-hover:text-gray-300" />
                             </div>
                             <h3 className="text-sm font-semibold text-gray-200 mb-2 line-clamp-2 group-hover:text-blue-400 transition-colors">
                                 {item.headline}
@@ -37,7 +37,7 @@ export default function NewsGrid({ news }: NewsGridProps) {
                             <p className="text-xs text-gray-500 line-clamp-3 mb-4 flex-1">
                                 {item.summary}
                             </p>
-                            <div className="flex items-center justify-between text-[10px] text-gray-600 mt-auto">
+                            <div className="flex items-center justify-between text-[10px] text-gray-500 mt-auto">
                                 <span>{item.source}</span>
                                 <span>
                                     {item.datetime ? formatDistanceToNow(item.datetime * 1000, { addSuffix: true }) : ''}
