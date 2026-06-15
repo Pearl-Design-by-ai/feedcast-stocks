@@ -120,6 +120,18 @@
     --teal-300: #5eead4;
     --teal-200: #99f6e4;
     --teal-100: #ccfbf1;
+    /* Accent palette — bright Tailwind tones on dark, deepened on light (the
+       (root) layout swaps the whole set). Drives the alert gold, links and the
+       bubble/learn category chips so none of them wash out on a light page. */
+    --yellow-400: #FDD458; --yellow-500: #E8BA40;
+    --orange-400: #fb923c; --orange-500: #FF8243;
+    --purple-400: #c084fc; --purple-500: #D13BFF;
+    --blue-300: #93c5fd; --blue-400: #60a5fa; --blue-500: #3b82f6; --blue-600: #5862FF;
+    --sky-400: #38bdf8; --sky-500: #0ea5e9;
+    --indigo-300: #a5b4fc; --indigo-400: #818cf8;
+    --violet-400: #a78bfa; --violet-500: #8b5cf6;
+    --amber-300: #fcd34d; --amber-500: #f59e0b;
+    --cyan-400: #22d3ee; --pink-400: #f472b6; --fuchsia-400: #e879f9;
     /* Positive / price-up green — vivid on dark, deeper green on light where
        neon green washes out. Drives the green-* and emerald-* utilities. */
     --up: #4ade80;
@@ -184,10 +196,30 @@
        border-white flip in light mode (and white knobs become dark-on-light). */
     --color-white: var(--ink-strong);
 
-    /* Vibrant Colors */
-    --color-blue-600: #5862FF;
-    --color-yellow-400: #FDD458;
-    --color-yellow-500: #E8BA40;
+    /* Vibrant accent palette — every shade resolves to a theme-aware var so the
+       bright Tailwind tones (alert gold, links, the bubble/learn category
+       chips) deepen on light instead of washing out. Dark keeps the originals. */
+    --color-yellow-400: var(--yellow-400);
+    --color-yellow-500: var(--yellow-500);
+    --color-orange-400: var(--orange-400);
+    --color-orange-500: var(--orange-500);
+    --color-purple-400: var(--purple-400);
+    --color-purple-500: var(--purple-500);
+    --color-blue-300: var(--blue-300);
+    --color-blue-400: var(--blue-400);
+    --color-blue-500: var(--blue-500);
+    --color-blue-600: var(--blue-600);
+    --color-sky-400: var(--sky-400);
+    --color-sky-500: var(--sky-500);
+    --color-indigo-300: var(--indigo-300);
+    --color-indigo-400: var(--indigo-400);
+    --color-violet-400: var(--violet-400);
+    --color-violet-500: var(--violet-500);
+    --color-amber-300: var(--amber-300);
+    --color-amber-500: var(--amber-500);
+    --color-cyan-400: var(--cyan-400);
+    --color-pink-400: var(--pink-400);
+    --color-fuchsia-400: var(--fuchsia-400);
     /* Caution amber resolves to the theme-aware --caution var (deep orange on
        light, where amber washes out). Used by the bubble-detector risk bands. */
     --color-amber-400: var(--caution);
@@ -203,8 +235,6 @@
     --color-teal-300: var(--teal-300);
     --color-teal-200: var(--teal-200);
     --color-teal-100: var(--teal-100);
-    --color-orange-500: #FF8243;
-    --color-purple-500: #D13BFF;
 
     /* Negative/down reds resolve to the theme-aware --down vars (deep red on
        light). Covers the text + pill-background stops actually used. */

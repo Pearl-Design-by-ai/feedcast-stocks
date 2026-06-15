@@ -377,7 +377,7 @@ export default function AlertsManager({ alerts, prices, suggestions }: AlertsMan
                         type="button"
                         onClick={submitCreate}
                         disabled={pending}
-                        className="flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-yellow-500 px-4 py-2 text-sm font-bold text-black transition-colors hover:bg-yellow-400 disabled:opacity-50"
+                        className="flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-yellow-500 px-4 py-2 text-sm font-bold text-gray-950 transition-colors hover:bg-yellow-400 disabled:opacity-50"
                     >
                         {pending ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />} Add alert
                     </button>

@@ -126,6 +126,17 @@ const DARK_INK: Record<string, string> = {
   '--tag': '#93c5fd',
   // Light-teal accent text (active tabs, "+ Add", links) — mint on dark.
   '--teal-300': '#5eead4', '--teal-200': '#99f6e4', '--teal-100': '#ccfbf1',
+  // Accent palette (alerts gold, links, category chips) — bright Tailwind
+  // tones on dark; each gets a deeper, readable value on light (see LIGHT_INK).
+  '--yellow-400': '#FDD458', '--yellow-500': '#E8BA40',
+  '--orange-400': '#fb923c', '--orange-500': '#FF8243',
+  '--purple-400': '#c084fc', '--purple-500': '#D13BFF',
+  '--blue-300': '#93c5fd', '--blue-400': '#60a5fa', '--blue-500': '#3b82f6', '--blue-600': '#5862FF',
+  '--sky-400': '#38bdf8', '--sky-500': '#0ea5e9',
+  '--indigo-300': '#a5b4fc', '--indigo-400': '#818cf8',
+  '--violet-400': '#a78bfa', '--violet-500': '#8b5cf6',
+  '--amber-300': '#fcd34d', '--amber-500': '#f59e0b',
+  '--cyan-400': '#22d3ee', '--pink-400': '#f472b6', '--fuchsia-400': '#e879f9',
   // Positive/up green — vivid on dark.
   '--up': '#4ade80', '--up-bg': '#22c55e',
   // Negative/down red — vivid on dark.
@@ -143,6 +154,17 @@ const LIGHT_INK: Record<string, string> = {
   '--tag': '#1d4ed8',
   // Mint teal washes out on light, so accent text goes deep teal there.
   '--teal-300': '#0f766e', '--teal-200': '#0d9488', '--teal-100': '#115e59',
+  // Accent palette deepened for light — the bright Tailwind tones wash out on
+  // a light page, so links, alert gold and category chips go to ~700/800.
+  '--yellow-400': '#B45309', '--yellow-500': '#92400E',
+  '--orange-400': '#C2410C', '--orange-500': '#9A3412',
+  '--purple-400': '#7E22CE', '--purple-500': '#6B21A8',
+  '--blue-300': '#1D4ED8', '--blue-400': '#1D4ED8', '--blue-500': '#1E40AF', '--blue-600': '#1E40AF',
+  '--sky-400': '#0369A1', '--sky-500': '#075985',
+  '--indigo-300': '#4338CA', '--indigo-400': '#3730A3',
+  '--violet-400': '#6D28D9', '--violet-500': '#5B21B6',
+  '--amber-300': '#B45309', '--amber-500': '#92400E',
+  '--cyan-400': '#0E7490', '--pink-400': '#BE185D', '--fuchsia-400': '#A21CAF',
   // Deep green on light so positive numbers stay readable.
   '--up': '#15803d', '--up-bg': '#16a34a',
   // Deep red on light so negative numbers stay readable.
