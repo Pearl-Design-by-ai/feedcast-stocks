@@ -93,10 +93,14 @@ export function currentSession(now: Date = new Date()): string {
 /** How many names each ranked list holds. */
 export const VALUATION_TOP_N = 100;
 
-/** KV keys (versioned so a shape change can't read stale data). */
-export const VAL_METRICS_KEY = 'val:metrics:v1';
-export const VAL_SCREEN_KEY = 'val:screen:v1';
-export const VAL_LOCK_KEY = 'val:scan:lock:v1';
+/** KV keys (versioned so a shape change can't read stale data). v2 adds the
+ *  enriched per-symbol fields (price, mkt cap, P/B, ROE, net margin, revenue
+ *  growth, 1Y return, beta, 52-week range) — bumping the version discards the
+ *  old v1 records that only carried P/E / P/S / dividend yield so the next scan
+ *  refetches the full metric set. */
+export const VAL_METRICS_KEY = 'val:metrics:v2';
+export const VAL_SCREEN_KEY = 'val:screen:v2';
+export const VAL_LOCK_KEY = 'val:scan:lock:v2';
 
 /**
  * Curated universe of liquid US large-caps across every sector, so the
