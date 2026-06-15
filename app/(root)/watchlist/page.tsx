@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { getGroupItems } from '@/lib/actions/watchlist.actions';
-import { listGroups } from '@/lib/actions/watchlist-groups.actions';
+import { listGroups, getGroupsPortfolio } from '@/lib/actions/watchlist-groups.actions';
 import { getNews, getWatchlistData } from '@/lib/actions/finnhub.actions';
 import WatchlistManager from '@/components/watchlist/WatchlistManager';
 import WatchlistGroupBar from '@/components/watchlist/WatchlistGroupBar';
@@ -57,7 +57,9 @@ export default async function WatchlistPage({
 
     const { list } = await searchParams;
 
-    const groups = await listGroups();
+    // Lists + each list's portfolio move run in parallel — the portfolio scan
+    // queries by user, so it doesn't need the groups first.
+    const [groups, portfolios] = await Promise.all([listGroups(), getGroupsPortfolio()]);
     const requested = list ? Number(list) : NaN;
     const active = groups.find((g) => g.id === requested) ?? groups[0];
     const items = active ? await getGroupItems(active.id) : [];
@@ -84,7 +86,7 @@ export default async function WatchlistPage({
 
             <DataDisclaimer className="mb-6 max-w-2xl" />
 
-            {active && <WatchlistGroupBar groups={groups} activeId={active.id} />}
+            {active && <WatchlistGroupBar groups={groups} activeId={active.id} portfolios={portfolios} />}
 
             <div className="mt-6 space-y-8">
                 {items.length === 0 ? (

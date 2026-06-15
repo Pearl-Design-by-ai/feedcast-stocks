@@ -2,9 +2,9 @@
 
 import { revalidatePath } from 'next/cache';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
-import { getCompanyProfile } from '@/lib/actions/finnhub.actions';
+import { getCompanyProfile, getQuote } from '@/lib/actions/finnhub.actions';
 import { isTickerLike, sanitizeSymbols } from '@/lib/utils';
-import { MAX_GROUPS, type WatchlistGroup } from '@/lib/watchlist-groups';
+import { MAX_GROUPS, type WatchlistGroup, type GroupPortfolio } from '@/lib/watchlist-groups';
 
 const GROUPS = 'stock_watchlist_groups';
 const ITEMS = 'stock_watchlist';
@@ -46,6 +46,59 @@ export async function listGroups(): Promise<WatchlistGroup[]> {
     } catch (error) {
         console.error('listGroups error:', error);
         return [];
+    }
+}
+
+/**
+ * Per-group portfolio move for the current session's lists: treat each list as
+ * one share of every holding and report how that basket is up/down today. The
+ * % is value-weighted by price — Σ(today's change) / Σ(prior close) — so a
+ * pricier name counts for more, matching "total current value". Quotes are
+ * fetched once per unique symbol across all lists (KV-cached, 5 in flight), so
+ * this stays within the free-tier budget even with the full five lists.
+ */
+export async function getGroupsPortfolio(): Promise<Record<number, GroupPortfolio>> {
+    try {
+        const { supabase, user } = await sessionUser();
+        const { data, error } = await supabase
+            .from(ITEMS)
+            .select('group_id, symbol')
+            .eq('user_id', user.id);
+        if (error) throw error;
+        const rows = (data ?? []) as { group_id: number; symbol: string }[];
+        if (rows.length === 0) return {};
+
+        // One quote per unique symbol (deduped across lists), 5 in flight.
+        const unique = Array.from(new Set(rows.map((r) => r.symbol.toUpperCase())));
+        const quotes = new Map<string, { c: number | null; d: number; pc: number | null }>();
+        let next = 0;
+        const worker = async () => {
+            while (next < unique.length) {
+                const s = unique[next++];
+                const q = await getQuote(s).catch(() => null);
+                quotes.set(s, { c: q?.c ?? null, d: q?.d ?? 0, pc: q?.pc ?? null });
+            }
+        };
+        await Promise.all(Array.from({ length: Math.min(5, unique.length) }, worker));
+
+        const acc: Record<number, GroupPortfolio> = {};
+        for (const { group_id, symbol } of rows) {
+            const bucket = (acc[group_id] ??= { count: 0, value: 0, changeAbs: 0, changePct: null });
+            const q = quotes.get(symbol.toUpperCase());
+            if (!q || q.c == null || q.pc == null) continue; // skip names with no usable quote
+            bucket.count += 1;
+            bucket.value += q.c;
+            bucket.changeAbs += q.d;
+        }
+        for (const id of Object.keys(acc)) {
+            const b = acc[Number(id)];
+            const prevTotal = b.value - b.changeAbs; // Σ prior close = Σ price − Σ change
+            b.changePct = prevTotal > 0 ? (b.changeAbs / prevTotal) * 100 : null;
+        }
+        return acc;
+    } catch (error) {
+        console.error('getGroupsPortfolio error:', error);
+        return {};
     }
 }
 

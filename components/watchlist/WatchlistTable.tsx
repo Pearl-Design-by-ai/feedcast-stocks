@@ -35,6 +35,44 @@ function PctCell({ value }: { value: number | null | undefined }) {
 }
 
 
+/**
+ * This list read as a one-share-of-each portfolio: how the whole basket is up
+ * or down today. value-weighted by price — Σ(today's change) / Σ(prior close) —
+ * matching "total current value". Recomputes off the live-polled rows, so the
+ * % moves with the 30s price refresh. Skips names whose quote isn't available.
+ */
+function PortfolioSummary({ stocks }: { stocks: WatchlistStockData[] }) {
+    const priced = stocks.filter((s) => s.price != null && s.prevClose != null);
+    if (priced.length === 0) return null;
+
+    const value = priced.reduce((sum, s) => sum + (s.price ?? 0), 0);
+    const changeAbs = priced.reduce((sum, s) => sum + (s.change ?? 0), 0);
+    const prevTotal = value - changeAbs;
+    const changePct = prevTotal > 0 ? (changeAbs / prevTotal) * 100 : null;
+    const up = changeAbs > 0;
+    const flat = changeAbs === 0;
+    const tone = flat ? 'text-gray-300' : up ? 'text-green-400' : 'text-red-400';
+
+    return (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-gray-900/40 px-4 py-3">
+            <div className="flex items-baseline gap-2">
+                <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Portfolio today</span>
+                <span className="text-[11px] text-gray-500">
+                    {priced.length} {priced.length === 1 ? 'holding' : 'holdings'}, 1 share each
+                </span>
+            </div>
+            <div className="flex items-center gap-3 tabular-nums">
+                <span className="text-sm text-gray-300">{formatCurrency(value)}</span>
+                <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm font-semibold ${flat ? 'bg-white/5' : up ? 'bg-green-500/10' : 'bg-red-500/10'} ${tone}`}>
+                    {!flat && (up ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />)}
+                    {up ? '+' : ''}{formatCurrency(changeAbs)}
+                    {changePct != null && <span className="opacity-80">({up ? '+' : ''}{changePct.toFixed(2)}%)</span>}
+                </span>
+            </div>
+        </div>
+    );
+}
+
 /** One stock as a phone-width card — same data and actions as the table row. */
 function MobileCard({
     stock,
@@ -209,6 +247,8 @@ export default function WatchlistTable({ data, onRefresh, groupId }: WatchlistTa
 
     return (
         <>
+        <PortfolioSummary stocks={stocks} />
+
         {/* Mobile: stacked cards — the 10-column table can't work on a phone. */}
         <div className="flex flex-col gap-3 md:hidden">
             {stocks.map((stock) => (
