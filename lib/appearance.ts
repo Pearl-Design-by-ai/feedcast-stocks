@@ -124,6 +124,8 @@ const DARK_INK: Record<string, string> = {
   '--caution': '#fbbf24',
   // Symbol/tag chip accent — light blue on dark.
   '--tag': '#93c5fd',
+  // Light-teal accent text (active tabs, "+ Add", links) — mint on dark.
+  '--teal-300': '#5eead4', '--teal-200': '#99f6e4', '--teal-100': '#ccfbf1',
   // Positive/up green — vivid on dark.
   '--up': '#4ade80', '--up-bg': '#22c55e',
   // Negative/down red — vivid on dark.
@@ -139,6 +141,8 @@ const LIGHT_INK: Record<string, string> = {
   '--caution': '#C2410C',
   // Deep blue on light so symbol/tag chips stay readable.
   '--tag': '#1d4ed8',
+  // Mint teal washes out on light, so accent text goes deep teal there.
+  '--teal-300': '#0f766e', '--teal-200': '#0d9488', '--teal-100': '#115e59',
   // Deep green on light so positive numbers stay readable.
   '--up': '#15803d', '--up-bg': '#16a34a',
   // Deep red on light so negative numbers stay readable.
