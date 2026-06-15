@@ -11,8 +11,21 @@ import {
     addSymbolsToGroup,
     removeSymbolsFromGroup,
 } from '@/lib/actions/watchlist-groups.actions';
-import { MAX_GROUPS, type WatchlistGroup } from '@/lib/watchlist-groups';
+import { MAX_GROUPS, type WatchlistGroup, type GroupPortfolio } from '@/lib/watchlist-groups';
 import { cn } from '@/lib/utils';
+
+/** Each list's portfolio day move, shown on its tab. Treats the list as one
+ *  share of every holding (value-weighted by price). Dash when no quote yet. */
+function PortfolioBadge({ p }: { p?: GroupPortfolio }) {
+    if (!p || p.count === 0 || p.changePct == null) return null;
+    const v = p.changePct;
+    const cls = v > 0 ? 'text-green-400' : v < 0 ? 'text-red-400' : 'text-gray-400';
+    return (
+        <span className={cn('tabular-nums text-xs font-semibold', cls)}>
+            {v > 0 ? '+' : ''}{v.toFixed(2)}%
+        </span>
+    );
+}
 
 /**
  * Toolbar for the up-to-5 watchlist groups: switch between lists with pill
@@ -23,9 +36,12 @@ import { cn } from '@/lib/utils';
 export default function WatchlistGroupBar({
     groups,
     activeId,
+    portfolios,
 }: {
     groups: WatchlistGroup[];
     activeId: number;
+    /** Per-group portfolio day move, keyed by group id. */
+    portfolios?: Record<number, GroupPortfolio>;
 }) {
     const router = useRouter();
     const [pending, start] = useTransition();
@@ -136,6 +152,7 @@ export default function WatchlistGroupBar({
                             )}
                         >
                             {g.name}
+                            <PortfolioBadge p={portfolios?.[g.id]} />
                             {isLoading && <Loader2 size={13} className="animate-spin" />}
                         </button>
                     );
