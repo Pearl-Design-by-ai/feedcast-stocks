@@ -115,6 +115,11 @@
     --caution: #fbbf24;
     /* Symbol/tag chip accent — light blue on dark, deep blue on light. */
     --tag: #93c5fd;
+    /* Light-teal accent text (active tabs, "+ Add", links) — mint on dark,
+       deep teal on light where mint washes out. Drives teal-100/200/300. */
+    --teal-300: #5eead4;
+    --teal-200: #99f6e4;
+    --teal-100: #ccfbf1;
     /* Positive / price-up green — vivid on dark, deeper green on light where
        neon green washes out. Drives the green-* and emerald-* utilities. */
     --up: #4ade80;
@@ -193,6 +198,11 @@
     --color-teal-400: var(--brand);
     --color-teal-500: var(--brand-hover);
     --color-teal-600: var(--brand-hover);
+    /* Lighter teal shades are accent *text* (not brand): theme-aware so the
+       mint that reads on dark becomes a deep, readable teal on light. */
+    --color-teal-300: var(--teal-300);
+    --color-teal-200: var(--teal-200);
+    --color-teal-100: var(--teal-100);
     --color-orange-500: #FF8243;
     --color-purple-500: #D13BFF;
 
