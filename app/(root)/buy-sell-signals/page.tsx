@@ -5,8 +5,8 @@ import { Loader2, Signal } from 'lucide-react';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { isPowerUserEmail } from '@/lib/constants';
 import DataDisclaimer from '@/components/DataDisclaimer';
-import { SignalCard } from '@/components/signals/SignalsUi';
-import { getIndexSignals } from '@/lib/signals-scan';
+import { SignalCard, MacroStrip, SectorBoard } from '@/components/signals/SignalsUi';
+import { getSignalsReport } from '@/lib/signals-scan';
 import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = {
@@ -17,9 +17,9 @@ export const metadata: Metadata = {
 const TONE_TEXT = { pos: 'text-emerald-400', neutral: 'text-amber-400', neg: 'text-red-400' } as const;
 
 async function Signals() {
-    const { signals, tone, asOf } = await getIndexSignals();
+    const { indices, sectors, macro, tone, asOf } = await getSignalsReport();
 
-    if (signals.length === 0) {
+    if (indices.length === 0) {
         return (
             <div className="rounded-xl border border-gray-800 bg-gray-900/40 p-6 text-sm text-gray-500">
                 Signal data is unavailable right now — please check back shortly.
@@ -40,11 +40,15 @@ async function Signals() {
                 <p className="mt-1 text-sm text-gray-400">{tone.note}</p>
             </div>
 
+            <MacroStrip macro={macro} />
+
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                {signals.map((s) => (
+                {indices.map((s) => (
                     <SignalCard key={s.key} s={s} />
                 ))}
             </div>
+
+            <SectorBoard sectors={sectors} />
         </>
     );
 }
