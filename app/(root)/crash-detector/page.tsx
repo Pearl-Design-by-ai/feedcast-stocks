@@ -31,6 +31,7 @@ async function Report() {
                 score={r.score}
                 band={r.band}
                 asOf={r.asOf}
+                dataDate={r.dataDate}
                 liveCount={r.liveCount}
                 structuralCount={r.structuralCount}
                 summary={r.summary}

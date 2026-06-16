@@ -2,7 +2,7 @@
  * Presentational pieces for the Crash Detector (server-safe, no hooks).
  */
 
-import { cn } from '@/lib/utils';
+import { cn, formatEodDate } from '@/lib/utils';
 import {
     CLASS_LABEL,
     CLASS_TONE,
@@ -42,6 +42,7 @@ export function CrashGauge({
     score,
     band,
     asOf,
+    dataDate,
     liveCount,
     structuralCount,
     summary,
@@ -49,6 +50,7 @@ export function CrashGauge({
     score: number;
     band: CrashBand;
     asOf: string;
+    dataDate: string;
     liveCount: number;
     structuralCount: number;
     summary: string;
@@ -69,7 +71,7 @@ export function CrashGauge({
                     <span className={cn('rounded-md px-2 py-1 text-sm font-semibold', TONE_CHIP[band.tone])}>
                         {band.label}
                     </span>
-                    <p className="mt-1 text-[11px] text-gray-500">as of {asOf}</p>
+                    <p className="mt-1 text-[11px] text-gray-500">EOD data through {formatEodDate(dataDate)} · refreshed {asOf}</p>
                 </div>
             </div>
 

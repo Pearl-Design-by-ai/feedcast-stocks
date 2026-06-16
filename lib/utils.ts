@@ -119,6 +119,20 @@ export const formatPrice = (price: number) => {
 // Alias for consistency
 export const formatCurrency = formatPrice;
 
+/**
+ * Format an EOD "YYYY-MM-DD" date (the date of a daily close) for display, e.g.
+ * "Jun 13, 2026". Parsed as UTC so the calendar date never shifts by timezone.
+ * Returns "—" for missing input.
+ */
+export function formatEodDate(iso: string | null | undefined): string {
+    if (!iso) return '—';
+    const [y, m, d] = iso.split('-').map(Number);
+    if (!y || !m || !d) return iso;
+    return new Intl.DateTimeFormat('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC',
+    }).format(new Date(Date.UTC(y, m - 1, d)));
+}
+
 export function formatNumber(num: number): string {
     // If number is small (likely already in millions from Finnhub), multiply by 1M to get actual value
     // Typical mega-cap is > 100B. 100B in millions is 100,000.

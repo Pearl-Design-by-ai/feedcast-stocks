@@ -13,6 +13,8 @@ import { usePathname } from 'next/navigation';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { getCommentary } from '@/lib/actions/commentary.actions';
 import { MarkdownLite } from '@/components/ask/MarkdownLite';
+import { currentSession } from '@/lib/valuation';
+import { formatEodDate } from '@/lib/utils';
 
 // Path segment → topic (must match the engine's TOPIC_LABELS keys).
 const TOPIC_PATHS = new Set([
@@ -58,14 +60,10 @@ export default function AiCommentary({ topic: topicProp }: { topic?: string } = 
         if (cancelled) return;
         if (res.ok) {
           setComment(res.comment);
-          // Stamp when this commentary's data was read, in market time, so it's
-          // clear which session/hour the read reflects. (The engine serves it
-          // from a short cache, so this is accurate to within a few minutes.)
-          setAsOf(
-            new Intl.DateTimeFormat('en-US', {
-              month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York',
-            }).format(new Date())
-          );
+          // The commentary is grounded in end-of-day market data, so stamp it
+          // with the most recent *completed* trading session rather than "now" —
+          // it makes clear the read is on the prior session's close, not live.
+          setAsOf(currentSession());
         } else {
           setComment(null);
         }
@@ -101,7 +99,7 @@ export default function AiCommentary({ topic: topicProp }: { topic?: string } = 
             <MarkdownLite text={comment} />
           </div>
           <p className="mt-2 text-[11px] text-gray-500">
-            AI Generated{asOf && <> · data as of <span className="tabular-nums">{asOf} ET</span></>}
+            AI Generated{asOf && <> · based on end-of-day data through <span className="tabular-nums">{formatEodDate(asOf)}</span>&apos;s close</>}
           </p>
         </>
       )}

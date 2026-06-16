@@ -21,28 +21,35 @@ import {
 
 export interface SignalsReport {
     asOf: string;
+    /** The most recent close date in the underlying EOD data (YYYY-MM-DD). */
+    dataDate: string;
     indices: IndexSignal[];
     sectors: IndexSignal[];
     macro: MacroRead[];
     tone: ReturnType<typeof marketTone>;
 }
 
-async function loadCloses(symbols: string[]): Promise<Map<string, number[]>> {
-    const out = new Map<string, number[]>();
+async function loadCloses(symbols: string[]): Promise<{ closes: Map<string, number[]>; dataDate: string }> {
+    const closes = new Map<string, number[]>();
+    let dataDate = '';
     let next = 0;
     async function worker() {
         while (next < symbols.length) {
             const sym = symbols[next++];
             try {
                 const series = await fetchDailyCloses(sym);
-                if (series.length > 0) out.set(sym, series.map((c) => c.close));
+                if (series.length > 0) {
+                    closes.set(sym, series.map((c) => c.close));
+                    const d = series[series.length - 1].date;
+                    if (d > dataDate) dataDate = d; // ISO dates sort lexically
+                }
             } catch {
                 /* drop this symbol */
             }
         }
     }
     await Promise.all(Array.from({ length: 6 }, worker));
-    return out;
+    return { closes, dataDate };
 }
 
 export async function getSignalsReport(): Promise<SignalsReport> {
@@ -51,7 +58,7 @@ export async function getSignalsReport(): Promise<SignalsReport> {
         ...SECTOR_ETFS.map((d) => d.symbol),
         ...MACRO_SERIES.map((d) => d.symbol),
     ];
-    const data = await loadCloses(allSymbols);
+    const { closes: data, dataDate } = await loadCloses(allSymbols);
 
     const indices = SIGNAL_INDICES
         .map((d) => { const c = data.get(d.symbol); return c ? computeIndexSignal(d, c) : null; })
@@ -70,5 +77,5 @@ export async function getSignalsReport(): Promise<SignalsReport> {
         month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York',
     }).format(new Date());
 
-    return { asOf, indices, sectors, macro, tone: marketTone(indices) };
+    return { asOf, dataDate, indices, sectors, macro, tone: marketTone(indices) };
 }

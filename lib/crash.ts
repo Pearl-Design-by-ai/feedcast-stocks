@@ -92,6 +92,8 @@ export interface CrashReport {
     score: number;
     band: CrashBand;
     asOf: string;
+    /** Most recent close date in the underlying live EOD data (YYYY-MM-DD). */
+    dataDate: string;
     /** How many of the score's indicators are live-computed vs structural. */
     liveCount: number;
     structuralCount: number;
