@@ -62,6 +62,7 @@ export const NAV_SECTIONS: NavSection[] = [
         label: 'Research',
         items: [
             { href: '/bubble-detector', label: 'Bubble Detector' },
+            { href: '/crash-detector', label: 'Crash Detector' },
             { href: '/valuation', label: 'Valuation' },
             { href: '/portfolio-lab', label: 'Portfolio Lab' },
             { href: '/ask', label: 'Ask the Markets' },
