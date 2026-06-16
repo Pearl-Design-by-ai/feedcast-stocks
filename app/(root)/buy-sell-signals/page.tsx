@@ -5,7 +5,7 @@ import DataDisclaimer from '@/components/DataDisclaimer';
 import { SignalCard, MacroStrip, SectorBoard, RecoveryStats, WhyMarketsRise } from '@/components/signals/SignalsUi';
 import { getSignalsReport } from '@/lib/signals-scan';
 import { CORRECTION_STATS, WHY_MARKETS_RISE } from '@/lib/market-history';
-import { cn } from '@/lib/utils';
+import { cn, formatEodDate } from '@/lib/utils';
 
 export const metadata: Metadata = {
     title: 'Buy & Sell Signals',
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 const TONE_TEXT = { pos: 'text-emerald-400', neutral: 'text-amber-400', neg: 'text-red-400' } as const;
 
 async function Signals() {
-    const { indices, sectors, macro, tone, asOf } = await getSignalsReport();
+    const { indices, sectors, macro, tone, asOf, dataDate } = await getSignalsReport();
 
     if (indices.length === 0) {
         return (
@@ -32,7 +32,7 @@ async function Signals() {
                         <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Overall index tape</p>
                         <p className={cn('text-2xl font-bold', TONE_TEXT[tone.tone])}>{tone.label}</p>
                     </div>
-                    <span className="text-[11px] text-gray-500">as of {asOf} ET · EOD</span>
+                    <span className="text-[11px] text-gray-500">Data through {formatEodDate(dataDate)} close (EOD) · refreshed {asOf} ET</span>
                 </div>
                 <p className="mt-1 text-sm text-gray-400">{tone.note}</p>
             </div>

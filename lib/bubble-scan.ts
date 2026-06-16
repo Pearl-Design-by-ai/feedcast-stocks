@@ -43,10 +43,13 @@ export interface BubbleScan {
     /** Count of scored theme assets in each phase (excludes broad market). */
     phaseCounts: Record<Phase, number>;
     asOf: string;
+    /** Most recent close date in the underlying EOD data (YYYY-MM-DD). */
+    dataDate: string;
 }
 
-async function fetchAll(symbols: string[]): Promise<Map<string, AssetBubble>> {
+async function fetchAll(symbols: string[]): Promise<{ assets: Map<string, AssetBubble>; dataDate: string }> {
     const out = new Map<string, AssetBubble>();
+    let dataDate = '';
     let next = 0;
     async function worker() {
         while (next < symbols.length) {
@@ -54,14 +57,18 @@ async function fetchAll(symbols: string[]): Promise<Map<string, AssetBubble>> {
             try {
                 const series = await fetchDailyCloses(sym);
                 const b = computeBubble(sym, series.map((c) => c.close));
-                if (b) out.set(sym, b);
+                if (b) {
+                    out.set(sym, b);
+                    const d = series[series.length - 1]?.date;
+                    if (d && d > dataDate) dataDate = d;
+                }
             } catch {
                 // One bad symbol shouldn't sink the scan.
             }
         }
     }
     await Promise.all(Array.from({ length: 6 }, worker));
-    return out;
+    return { assets: out, dataDate };
 }
 
 const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
@@ -72,7 +79,7 @@ export async function runBubbleScan(): Promise<BubbleScan> {
     const universeSymbols = Array.from(
         new Set([...ALL_BUBBLE_SYMBOLS, ...ALL_CANDIDATE_SYMBOLS])
     );
-    const data = await fetchAll(universeSymbols);
+    const { assets: data, dataDate } = await fetchAll(universeSymbols);
 
     const themes: ThemeScan[] = BUBBLE_THEMES.map((theme) => {
         const assets = theme.symbols
@@ -129,5 +136,5 @@ export async function runBubbleScan(): Promise<BubbleScan> {
         timeZone: 'America/New_York',
     }).format(new Date());
 
-    return { themes, candidates, frothIndex, topPop, scored, universe, phaseCounts, asOf };
+    return { themes, candidates, frothIndex, topPop, scored, universe, phaseCounts, asOf, dataDate };
 }

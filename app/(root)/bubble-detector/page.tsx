@@ -28,6 +28,7 @@ async function Scan() {
             <FrothGauge
                 value={scan.frothIndex}
                 asOf={scan.asOf}
+                dataDate={scan.dataDate}
                 scored={scan.scored}
                 universe={scan.universe}
                 phaseCounts={scan.phaseCounts}

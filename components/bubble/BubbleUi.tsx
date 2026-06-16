@@ -3,7 +3,7 @@
  */
 
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
+import { cn, formatEodDate } from '@/lib/utils';
 import { bubbleBand, PHASE_LABEL, PHASE_TONE, type AssetBubble, type Phase } from '@/lib/bubble';
 
 type Tone = 'pos' | 'warn' | 'neg' | 'neutral';
@@ -44,12 +44,14 @@ function frothVerdict(value: number, scored: number, universe: number): string {
 export function FrothGauge({
     value,
     asOf,
+    dataDate,
     scored,
     universe,
     phaseCounts,
 }: {
     value: number;
     asOf: string;
+    dataDate?: string;
     scored: number;
     universe: number;
     phaseCounts: Record<Phase, number>;
@@ -80,7 +82,9 @@ export function FrothGauge({
                     >
                         {band.label}
                     </span>
-                    <p className="mt-1 text-[11px] text-gray-500">as of {asOf}</p>
+                    <p className="mt-1 text-[11px] text-gray-500">
+                        {dataDate ? <>EOD data through {formatEodDate(dataDate)} · refreshed {asOf}</> : <>as of {asOf}</>}
+                    </p>
                 </div>
             </div>
             <div className="relative mb-1 mt-8">
