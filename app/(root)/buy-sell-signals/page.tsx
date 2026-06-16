@@ -1,0 +1,108 @@
+import type { Metadata } from 'next';
+import { Suspense } from 'react';
+import { notFound } from 'next/navigation';
+import { Loader2, Signal } from 'lucide-react';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { isPowerUserEmail } from '@/lib/constants';
+import DataDisclaimer from '@/components/DataDisclaimer';
+import { SignalCard } from '@/components/signals/SignalsUi';
+import { getIndexSignals } from '@/lib/signals-scan';
+import { cn } from '@/lib/utils';
+
+export const metadata: Metadata = {
+    title: 'Buy & Sell Signals',
+    robots: { index: false, follow: false },
+};
+
+const TONE_TEXT = { pos: 'text-emerald-400', neutral: 'text-amber-400', neg: 'text-red-400' } as const;
+
+async function Signals() {
+    const { signals, tone, asOf } = await getIndexSignals();
+
+    if (signals.length === 0) {
+        return (
+            <div className="rounded-xl border border-gray-800 bg-gray-900/40 p-6 text-sm text-gray-500">
+                Signal data is unavailable right now — please check back shortly.
+            </div>
+        );
+    }
+
+    return (
+        <>
+            <div className="rounded-xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
+                <div className="flex flex-wrap items-end justify-between gap-2">
+                    <div>
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Overall index tape</p>
+                        <p className={cn('text-2xl font-bold', TONE_TEXT[tone.tone])}>{tone.label}</p>
+                    </div>
+                    <span className="text-[11px] text-gray-500">as of {asOf} ET · EOD</span>
+                </div>
+                <p className="mt-1 text-sm text-gray-400">{tone.note}</p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                {signals.map((s) => (
+                    <SignalCard key={s.key} s={s} />
+                ))}
+            </div>
+        </>
+    );
+}
+
+function Skeleton() {
+    return (
+        <div className="flex items-center gap-3 rounded-2xl border border-gray-800 bg-gray-900/40 p-10 text-sm text-gray-500">
+            <Loader2 className="h-4 w-4 animate-spin text-teal-400" />
+            Scoring the indices — trend, momentum and key levels from end-of-day data…
+        </div>
+    );
+}
+
+export default async function BuySellSignalsPage() {
+    // Power-user gate (defense in depth — the nav item is also hidden).
+    const supabase = await getSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!isPowerUserEmail(user?.email)) notFound();
+
+    return (
+        <div className="flex min-h-screen w-full flex-col gap-6 p-4 md:p-8">
+            <header className="flex flex-col gap-3">
+                <div className="flex flex-col gap-1">
+                    <h1 className="flex items-center gap-2 text-3xl font-bold text-gray-100">
+                        <Signal className="text-teal-400" /> Buy &amp; Sell Signals
+                    </h1>
+                    <p className="max-w-3xl text-sm text-gray-400">
+                        Graded <strong className="text-gray-200">Buy / Hold / Sell</strong> calls for the four major
+                        US indices — S&amp;P 500, Nasdaq, Russell 2000 and the Dow — from a transparent blend of trend,
+                        the 50/200 structure, RSI momentum, multi-window returns and position vs the 52-week high.
+                        Each card shows the key support/resistance levels and a plain-language read of what to expect
+                        next session off the latest close.
+                    </p>
+                </div>
+                <DataDisclaimer className="w-fit" />
+            </header>
+
+            <Suspense fallback={<Skeleton />}>
+                <Signals />
+            </Suspense>
+
+            <section className="rounded-xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
+                <h2 className="mb-2 text-base font-semibold text-gray-100">How the grade is built</h2>
+                <p className="text-xs leading-relaxed text-gray-400">
+                    A 0–100 signal score starts neutral at 50 and adds/subtracts for: primary trend (price vs the
+                    200-day), short-term trend (vs the 50-day), the 50/200 cross, RSI-14 momentum (with an
+                    overbought fade and oversold-bounce adjustment), 1-/3-month and 1-week returns, and distance
+                    from the 52-week high. The score maps to <span className="text-emerald-400">Strong Buy</span> (≥72),
+                    Buy (60–72), <span className="text-amber-400">Hold</span> (45–60), Sell (33–45) and{' '}
+                    <span className="text-red-400">Strong Sell</span> (&lt;33).
+                </p>
+                <p className="mt-2 text-[11px] leading-relaxed text-gray-500">
+                    Signals are computed from end-of-day closes (cached up to 6h), so they move once per trading day
+                    after the US close — the &quot;next-session read&quot; is a level-based scenario, not a price
+                    prediction. Heuristic and informational only — <span className="text-gray-400">not investment
+                    advice.</span> Private to your account.
+                </p>
+            </section>
+        </div>
+    );
+}

@@ -17,7 +17,7 @@ import { usePathname } from 'next/navigation';
 import { X, ChevronDown, ArrowLeft, LogOut } from 'lucide-react';
 import { FeedcastLogo } from '@/components/FeedcastLogo';
 import SearchCommand from '@/components/SearchCommand';
-import { NAV_SECTIONS, NAV_DEFAULT_OPEN, SEARCH_HREF } from '@/lib/constants';
+import { navSectionsForUser, NAV_DEFAULT_OPEN, SEARCH_HREF } from '@/lib/constants';
 import { NAV_ICONS, SECTION_ICONS, NAV_FALLBACK_ICON } from '@/components/navIcons';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
@@ -39,15 +39,18 @@ function openSearch() {
 export default function MobileDrawer({
   user,
   initialStocks,
+  isPowerUser = false,
 }: {
   user: User;
   initialStocks: StockWithWatchlistStatus[];
+  isPowerUser?: boolean;
 }) {
   const pathname = usePathname();
+  const navSections = navSectionsForUser(isPowerUser);
   const [open, setOpen] = useState(false);
   const [sections, setSections] = useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {};
-    for (const s of NAV_SECTIONS) init[s.id] = NAV_DEFAULT_OPEN.includes(s.id);
+    for (const s of navSections) init[s.id] = NAV_DEFAULT_OPEN.includes(s.id);
     return init;
   });
 
@@ -69,7 +72,7 @@ export default function MobileDrawer({
   useEffect(() => {
     setSections((prev) => {
       const next = { ...prev };
-      for (const s of NAV_SECTIONS) {
+      for (const s of navSections) {
         let v = NAV_DEFAULT_OPEN.includes(s.id);
         try {
           const stored = localStorage.getItem(SECTION_KEY(s.id));
@@ -179,7 +182,7 @@ export default function MobileDrawer({
             </div>
 
             <nav className="flex flex-1 flex-col px-3 pb-6">
-              {NAV_SECTIONS.map((section) => {
+              {navSections.map((section) => {
                 const SecIcon = SECTION_ICONS[section.id] ?? NAV_FALLBACK_ICON;
                 const sectionOpen = sections[section.id];
                 return (

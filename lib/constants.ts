@@ -103,6 +103,35 @@ export const NAV_SECTIONS: NavSection[] = [
  *  containing the active route auto-opens). */
 export const NAV_DEFAULT_OPEN = ['home', 'lists', 'research'];
 
+/**
+ * Power-user gating. Some modules (e.g. Buy & Sell Signals) are limited to
+ * specific accounts. This hides the nav item; the route itself also enforces it
+ * server-side. Compare case-insensitively.
+ */
+export const POWER_USER_EMAILS = ['altuginci@gmail.com'];
+
+export function isPowerUserEmail(email: string | null | undefined): boolean {
+    return !!email && POWER_USER_EMAILS.includes(email.trim().toLowerCase());
+}
+
+/** Nav item shown only to power users, injected into the Research section. */
+const POWER_NAV_ITEMS: Record<string, { href: string; label: string }[]> = {
+    research: [{ href: '/buy-sell-signals', label: 'Buy & Sell Signals' }],
+};
+
+/**
+ * The nav sections for a given user — the base NAV_SECTIONS plus any
+ * power-user-only items appended to their section. Used by the SideNav and the
+ * mobile drawer so both stay in sync.
+ */
+export function navSectionsForUser(isPowerUser: boolean): NavSection[] {
+    if (!isPowerUser) return NAV_SECTIONS;
+    return NAV_SECTIONS.map((section) => {
+        const extra = POWER_NAV_ITEMS[section.id];
+        return extra ? { ...section, items: [...section.items, ...extra] } : section;
+    });
+}
+
 // TradingView Charts
 export const HEATMAP_WIDGET_CONFIG = {
     dataSource: 'SPX500',
