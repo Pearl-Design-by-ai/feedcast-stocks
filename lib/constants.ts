@@ -63,6 +63,7 @@ export const NAV_SECTIONS: NavSection[] = [
         items: [
             { href: '/bubble-detector', label: 'Bubble Detector' },
             { href: '/crash-detector', label: 'Crash Detector' },
+            { href: '/buy-sell-signals', label: 'Buy & Sell Signals' },
             { href: '/valuation', label: 'Valuation' },
             { href: '/portfolio-lab', label: 'Portfolio Lab' },
             { href: '/ask', label: 'Ask the Markets' },
@@ -104,9 +105,10 @@ export const NAV_SECTIONS: NavSection[] = [
 export const NAV_DEFAULT_OPEN = ['home', 'lists', 'research'];
 
 /**
- * Power-user gating. Some modules (e.g. Buy & Sell Signals) are limited to
- * specific accounts. This hides the nav item; the route itself also enforces it
- * server-side. Compare case-insensitively.
+ * Power-user gating. Generic hook for limiting a module to specific accounts —
+ * currently no modules are gated (Buy & Sell Signals is open to everyone), but
+ * the mechanism stays wired up for future power-only features. Compare
+ * case-insensitively.
  */
 export const POWER_USER_EMAILS = ['altuginci@gmail.com'];
 
@@ -114,10 +116,8 @@ export function isPowerUserEmail(email: string | null | undefined): boolean {
     return !!email && POWER_USER_EMAILS.includes(email.trim().toLowerCase());
 }
 
-/** Nav item shown only to power users, injected into the Research section. */
-const POWER_NAV_ITEMS: Record<string, { href: string; label: string }[]> = {
-    research: [{ href: '/buy-sell-signals', label: 'Buy & Sell Signals' }],
-};
+/** Nav items injected only for power users, by section id. Empty for now. */
+const POWER_NAV_ITEMS: Record<string, { href: string; label: string }[]> = {};
 
 /**
  * The nav sections for a given user — the base NAV_SECTIONS plus any
