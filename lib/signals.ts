@@ -23,8 +23,12 @@ import {
     offHighOf,
     lastOf,
 } from '@/lib/crash';
+import { recoveryForDrawdown } from '@/lib/market-history';
 
 export type Grade = 'strong-buy' | 'buy' | 'hold' | 'sell' | 'strong-sell';
+
+/** Long-run nominal annual drift assumptions used for the EOY projection. */
+const EOY_DRIFT: Record<string, number> = { spx: 0.08, ndx: 0.11, rut: 0.09, dji: 0.07 };
 
 export interface IndexDef {
     key: string;
@@ -80,6 +84,18 @@ export interface SubSignal {
     detail: string;
 }
 
+/** End-of-year scenario band + a typical-correction downside with recovery time. */
+export interface Projection {
+    year: number;
+    base: number; basePct: number;
+    up: number; upPct: number;
+    down: number; downPct: number;
+    /** Typical-correction scenario level (independent of the EOY band). */
+    correction: number; correctionPct: number;
+    /** Historical time to recover that correction. */
+    recovery: string;
+}
+
 export interface IndexSignal {
     key: string;
     name: string;
@@ -95,6 +111,7 @@ export interface IndexSignal {
     support: { level: number; label: string } | null;
     resistance: { level: number; label: string } | null;
     outlook: string;
+    projection: Projection | null;
     limited: boolean;
 }
 
@@ -167,6 +184,46 @@ export function scoreCloses(closes: number[]): number | null {
     }
     if (ext200 != null && ext200 > 15) s -= 4;
     return Math.round(clamp(s, 0, 100));
+}
+
+/**
+ * End-of-year projection: a ±1-sigma band around a long-run drift path for the
+ * remaining year, plus a typical-correction downside with its historical
+ * recovery time. Annualized vol from the last ~60 daily returns; clearly a
+ * probabilistic scenario, not a prediction.
+ */
+export function computeProjection(key: string, closes: number[]): Projection | null {
+    const n = closes.length;
+    if (n < 40) return null;
+    const last = lastOf(closes)!;
+    const now = new Date();
+    const year = now.getUTCFullYear();
+    const yearEndMs = Date.UTC(year, 11, 31);
+    const f = clamp((yearEndMs - now.getTime()) / (365.25 * 24 * 3600 * 1000), 0.04, 1);
+
+    const rets: number[] = [];
+    for (let i = Math.max(1, n - 60); i < n; i++) rets.push(Math.log(closes[i] / closes[i - 1]));
+    const mean = rets.reduce((a, b) => a + b, 0) / rets.length;
+    const variance = rets.reduce((a, b) => a + (b - mean) ** 2, 0) / Math.max(1, rets.length - 1);
+    const annVol = Math.sqrt(variance) * Math.sqrt(252);
+    const horizonVol = annVol * Math.sqrt(f);
+
+    const drift = (EOY_DRIFT[key] ?? 0.08) * f;
+    const base = last * (1 + drift);
+    const up = last * (1 + drift + horizonVol);
+    const down = last * (1 + drift - horizonVol);
+
+    const correctionPct = -clamp(Math.max(0.1, horizonVol * 1.5), 0.1, 0.2);
+    const correction = last * (1 + correctionPct);
+
+    return {
+        year,
+        base, basePct: (base / last - 1) * 100,
+        up, upPct: (up / last - 1) * 100,
+        down, downPct: (down / last - 1) * 100,
+        correction, correctionPct: correctionPct * 100,
+        recovery: recoveryForDrawdown(correctionPct * 100),
+    };
 }
 
 /** Full signal for one instrument from its daily-close series. */
@@ -243,8 +300,9 @@ export function computeIndexSignal(def: IndexDef, closes: number[]): IndexSignal
     const resistance = resistanceCandidates.length ? resistanceCandidates.reduce((a, b) => (b.level < a.level ? b : a)) : null;
 
     const outlook = buildOutlook({ name: def.name, last, dayChangePct, grade, support, resistance, rsi, offHigh });
+    const projection = computeProjection(def.key, closes);
 
-    return { key: def.key, name: def.name, symbol: def.symbol, blurb: def.blurb, score, scorePrev, trend, grade, last, dayChangePct, subs, support, resistance, outlook, limited };
+    return { key: def.key, name: def.name, symbol: def.symbol, blurb: def.blurb, score, scorePrev, trend, grade, last, dayChangePct, subs, support, resistance, outlook, projection, limited };
 }
 
 function buildOutlook(p: {
