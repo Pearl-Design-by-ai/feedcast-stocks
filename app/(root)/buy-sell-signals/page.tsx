@@ -1,9 +1,6 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import { notFound } from 'next/navigation';
 import { Loader2, Signal } from 'lucide-react';
-import { getSupabaseServerClient } from '@/lib/supabase/server';
-import { isPowerUserEmail } from '@/lib/constants';
 import DataDisclaimer from '@/components/DataDisclaimer';
 import { SignalCard, MacroStrip, SectorBoard } from '@/components/signals/SignalsUi';
 import { getSignalsReport } from '@/lib/signals-scan';
@@ -11,7 +8,6 @@ import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = {
     title: 'Buy & Sell Signals',
-    robots: { index: false, follow: false },
 };
 
 const TONE_TEXT = { pos: 'text-emerald-400', neutral: 'text-amber-400', neg: 'text-red-400' } as const;
@@ -62,12 +58,7 @@ function Skeleton() {
     );
 }
 
-export default async function BuySellSignalsPage() {
-    // Power-user gate (defense in depth — the nav item is also hidden).
-    const supabase = await getSupabaseServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!isPowerUserEmail(user?.email)) notFound();
-
+export default function BuySellSignalsPage() {
     return (
         <div className="flex min-h-screen w-full flex-col gap-6 p-4 md:p-8">
             <header className="flex flex-col gap-3">
@@ -104,7 +95,7 @@ export default async function BuySellSignalsPage() {
                     Signals are computed from end-of-day closes (cached up to 6h), so they move once per trading day
                     after the US close — the &quot;next-session read&quot; is a level-based scenario, not a price
                     prediction. Heuristic and informational only — <span className="text-gray-400">not investment
-                    advice.</span> Private to your account.
+                    advice.</span>
                 </p>
             </section>
         </div>
