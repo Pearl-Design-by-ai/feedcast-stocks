@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { Loader2, Scale } from 'lucide-react';
 import DataDisclaimer from '@/components/DataDisclaimer';
 import { ValuationLists } from '@/components/bubble/ValuationScreen';
+import MarketContext from '@/components/valuation/MarketContext';
 import { ensureFreshScreen } from '@/lib/actions/valuation.actions';
 
 export const metadata: Metadata = {
@@ -33,24 +34,28 @@ export default function ValuationPage() {
                     <Scale className="text-teal-400" /> Valuation Screen
                 </h1>
                 <p className="mt-1 max-w-3xl text-sm leading-relaxed text-gray-400">
-                    A daily batch ranks ~230 major US stocks by valuation to surface the{' '}
+                    Two views in one place. First the <span className="text-gray-200">whole-market read</span> —
+                    broad valuation gauges, which sectors look cheap vs expensive, and where the rotation
+                    may go next. Then the live <span className="text-gray-200">per-stock screen</span>: a daily
+                    batch ranks ~230 major US stocks by trailing P/E to surface the{' '}
                     <span className="text-emerald-400">cheapest 100</span> and{' '}
-                    <span className="text-red-400">most expensive 100</span>. The market-wide{' '}
-                    <a
-                        href="https://www.multpl.com/shiller-pe"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-teal-400 hover:underline"
-                    >
-                        Shiller CAPE
-                    </a>{' '}
-                    isn&apos;t computable per stock from free data, so each name is ranked by its
-                    trailing P/E — the accessible valuation proxy — with P/S and dividend yield
-                    alongside. Rebuilt automatically after each US market close.
+                    <span className="text-red-400">most expensive 100</span> (with P/S and dividend yield
+                    alongside), rebuilt automatically after each US market close.
                 </p>
             </header>
 
             <DataDisclaimer className="mb-6 max-w-2xl" />
+
+            <div className="mb-8">
+                <MarketContext />
+            </div>
+
+            <div className="mb-4">
+                <h2 className="text-lg font-bold text-gray-100">Cheapest &amp; most expensive stocks</h2>
+                <p className="mt-0.5 text-xs text-gray-500">
+                    Live per-stock screen — ranked by trailing P/E across ~230 large-caps.
+                </p>
+            </div>
 
             <Suspense fallback={<ValuationSkeleton />}>
                 <ValuationSection />
