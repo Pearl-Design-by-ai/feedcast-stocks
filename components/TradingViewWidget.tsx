@@ -43,7 +43,14 @@ const TradingViewWidget = ({ title, scriptUrl, config, height = 600, className, 
         width: "100%",
         autosize: true,
     };
-    if ('colorTheme' in widgetConfig) widgetConfig.colorTheme = tvTheme;
+    // Set BOTH theme keys to the effective theme. The newer TradingView embeds
+    // (notably the Advanced Chart used for candle/baseline/studies) key the
+    // whole UI — including the chart pane — off `colorTheme`; our chart configs
+    // only carried the older `theme` key, which that embed ignores, so the pane
+    // fell back to its dark default on a light page. Setting colorTheme on every
+    // config fixes the advanced charts; it's a harmless no-op on embeds that
+    // already read `theme`.
+    widgetConfig.colorTheme = tvTheme;
     if ('theme' in widgetConfig) widgetConfig.theme = tvTheme;
     // The `theme` flag styles the chrome but not the chart pane, which configs
     // hardcode to a dark backgroundColor/gridColor. Repaint those light too so
