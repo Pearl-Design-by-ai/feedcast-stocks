@@ -3,6 +3,7 @@
 // fold the per-asset scores into per-theme and overall readings.
 
 import { fetchDailyCloses } from '@/lib/actions/returns.actions';
+import { currentSession } from '@/lib/valuation';
 import {
     BUBBLE_THEMES,
     BUBBLE_CANDIDATES,
@@ -47,7 +48,9 @@ export interface BubbleScan {
     dataDate: string;
 }
 
-async function fetchAll(symbols: string[]): Promise<{ assets: Map<string, AssetBubble>; dataDate: string }> {
+// Closes through the last completed session — Yahoo includes today's forming
+// bar intraday, but these are EOD scores, so trim anything after `session`.
+async function fetchAll(symbols: string[], session: string): Promise<{ assets: Map<string, AssetBubble>; dataDate: string }> {
     const out = new Map<string, AssetBubble>();
     let dataDate = '';
     let next = 0;
@@ -55,7 +58,7 @@ async function fetchAll(symbols: string[]): Promise<{ assets: Map<string, AssetB
         while (next < symbols.length) {
             const sym = symbols[next++];
             try {
-                const series = await fetchDailyCloses(sym);
+                const series = (await fetchDailyCloses(sym)).filter((c) => c.date <= session);
                 const b = computeBubble(sym, series.map((c) => c.close));
                 if (b) {
                     out.set(sym, b);
@@ -79,7 +82,7 @@ export async function runBubbleScan(): Promise<BubbleScan> {
     const universeSymbols = Array.from(
         new Set([...ALL_BUBBLE_SYMBOLS, ...ALL_CANDIDATE_SYMBOLS])
     );
-    const { assets: data, dataDate } = await fetchAll(universeSymbols);
+    const { assets: data, dataDate } = await fetchAll(universeSymbols, currentSession());
 
     const themes: ThemeScan[] = BUBBLE_THEMES.map((theme) => {
         const assets = theme.symbols

@@ -8,6 +8,7 @@
  */
 
 import { fetchDailyCloses } from '@/lib/actions/returns.actions';
+import { currentSession } from '@/lib/valuation';
 import {
     SIGNAL_INDICES,
     SECTOR_ETFS,
@@ -29,7 +30,13 @@ export interface SignalsReport {
     tone: ReturnType<typeof marketTone>;
 }
 
-async function loadCloses(symbols: string[]): Promise<{ closes: Map<string, number[]>; dataDate: string }> {
+/**
+ * Load closes through the last *completed* session. Yahoo's daily feed includes
+ * today's still-forming bar during market hours, so we trim anything dated after
+ * `session` (the most recent completed US session) — the indicators are EOD and
+ * should read off the prior close, not an intraday partial.
+ */
+async function loadCloses(symbols: string[], session: string): Promise<{ closes: Map<string, number[]>; dataDate: string }> {
     const closes = new Map<string, number[]>();
     let dataDate = '';
     let next = 0;
@@ -37,7 +44,7 @@ async function loadCloses(symbols: string[]): Promise<{ closes: Map<string, numb
         while (next < symbols.length) {
             const sym = symbols[next++];
             try {
-                const series = await fetchDailyCloses(sym);
+                const series = (await fetchDailyCloses(sym)).filter((c) => c.date <= session);
                 if (series.length > 0) {
                     closes.set(sym, series.map((c) => c.close));
                     const d = series[series.length - 1].date;
@@ -58,7 +65,7 @@ export async function getSignalsReport(): Promise<SignalsReport> {
         ...SECTOR_ETFS.map((d) => d.symbol),
         ...MACRO_SERIES.map((d) => d.symbol),
     ];
-    const { closes: data, dataDate } = await loadCloses(allSymbols);
+    const { closes: data, dataDate } = await loadCloses(allSymbols, currentSession());
 
     const indices = SIGNAL_INDICES
         .map((d) => { const c = data.get(d.symbol); return c ? computeIndexSignal(d, c) : null; })

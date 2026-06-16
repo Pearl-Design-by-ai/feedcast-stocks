@@ -10,6 +10,7 @@
  */
 
 import { fetchDailyCloses } from '@/lib/actions/returns.actions';
+import { currentSession } from '@/lib/valuation';
 import {
     ALL_CRASH_SYMBOLS,
     CRASH_SYMBOLS,
@@ -35,7 +36,9 @@ import {
 
 const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 
-async function fetchSeries(symbols: string[]): Promise<{ closes: Map<string, number[]>; dataDate: string }> {
+// Closes through the last completed session — Yahoo includes today's forming
+// bar intraday, but these are EOD signals, so trim anything after `session`.
+async function fetchSeries(symbols: string[], session: string): Promise<{ closes: Map<string, number[]>; dataDate: string }> {
     const closes = new Map<string, number[]>();
     let dataDate = '';
     let next = 0;
@@ -43,7 +46,7 @@ async function fetchSeries(symbols: string[]): Promise<{ closes: Map<string, num
         while (next < symbols.length) {
             const sym = symbols[next++];
             try {
-                const series = await fetchDailyCloses(sym);
+                const series = (await fetchDailyCloses(sym)).filter((c) => c.date <= session);
                 if (series.length > 0) {
                     closes.set(sym, series.map((c) => c.close));
                     const d = series[series.length - 1].date;
@@ -248,7 +251,7 @@ function buildSummary(
 }
 
 export async function runCrashScan(): Promise<CrashReport> {
-    const { closes, dataDate } = await fetchSeries(ALL_CRASH_SYMBOLS);
+    const { closes, dataDate } = await fetchSeries(ALL_CRASH_SYMBOLS, currentSession());
     const live = buildLiveIndicators(closes);
 
     // Compose: live signals + structural overlay. If the live feed largely
