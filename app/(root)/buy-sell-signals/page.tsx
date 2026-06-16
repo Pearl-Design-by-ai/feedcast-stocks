@@ -2,8 +2,9 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { Loader2, Signal } from 'lucide-react';
 import DataDisclaimer from '@/components/DataDisclaimer';
-import { SignalCard, MacroStrip, SectorBoard } from '@/components/signals/SignalsUi';
+import { SignalCard, MacroStrip, SectorBoard, RecoveryStats, WhyMarketsRise } from '@/components/signals/SignalsUi';
 import { getSignalsReport } from '@/lib/signals-scan';
+import { CORRECTION_STATS, WHY_MARKETS_RISE } from '@/lib/market-history';
 import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = {
@@ -80,6 +81,10 @@ export default function BuySellSignalsPage() {
             <Suspense fallback={<Skeleton />}>
                 <Signals />
             </Suspense>
+
+            <RecoveryStats stats={CORRECTION_STATS} />
+
+            <WhyMarketsRise reasons={WHY_MARKETS_RISE} />
 
             <section className="rounded-xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
                 <h2 className="mb-2 text-base font-semibold text-gray-100">How the grade is built</h2>

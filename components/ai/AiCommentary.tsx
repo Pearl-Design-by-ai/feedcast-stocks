@@ -41,6 +41,7 @@ export default function AiCommentary({ topic: topicProp }: { topic?: string } = 
   // which is what makes this usable on the home page where the path is "/".
   const topic = topicProp ?? topicFromPath(pathname || '');
   const [comment, setComment] = useState<string | null>(null);
+  const [asOf, setAsOf] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -51,9 +52,23 @@ export default function AiCommentary({ topic: topicProp }: { topic?: string } = 
     let cancelled = false;
     setLoading(true);
     setComment(null);
+    setAsOf(null);
     getCommentary(topic)
       .then((res) => {
-        if (!cancelled) setComment(res.ok ? res.comment : null);
+        if (cancelled) return;
+        if (res.ok) {
+          setComment(res.comment);
+          // Stamp when this commentary's data was read, in market time, so it's
+          // clear which session/hour the read reflects. (The engine serves it
+          // from a short cache, so this is accurate to within a few minutes.)
+          setAsOf(
+            new Intl.DateTimeFormat('en-US', {
+              month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York',
+            }).format(new Date())
+          );
+        } else {
+          setComment(null);
+        }
       })
       .catch(() => {
         if (!cancelled) setComment(null);
@@ -85,7 +100,9 @@ export default function AiCommentary({ topic: topicProp }: { topic?: string } = 
           <div className="text-sm leading-relaxed text-gray-300">
             <MarkdownLite text={comment} />
           </div>
-          <p className="mt-2 text-[11px] text-gray-500">AI Generated</p>
+          <p className="mt-2 text-[11px] text-gray-500">
+            AI Generated{asOf && <> · data as of <span className="tabular-nums">{asOf} ET</span></>}
+          </p>
         </>
       )}
     </div>

@@ -191,10 +191,102 @@ export function SignalCard({ s }: { s: IndexSignal }) {
                 </div>
             </div>
 
+            {/* End-of-year projection */}
+            {s.projection && (
+                <div className="mt-3 rounded-lg border border-gray-800 bg-gray-900/60 p-3">
+                    <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-gray-500">{s.projection.year} end-of-year scenarios</p>
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                        <div>
+                            <p className="text-[10px] uppercase tracking-wide text-emerald-400">Upside</p>
+                            <p className="text-sm font-bold tabular-nums text-gray-100">{fmtNum(s.projection.up)}</p>
+                            <p className="text-[11px] tabular-nums text-emerald-400">+{s.projection.upPct.toFixed(1)}%</p>
+                        </div>
+                        <div>
+                            <p className="text-[10px] uppercase tracking-wide text-gray-400">Base</p>
+                            <p className="text-sm font-bold tabular-nums text-gray-100">{fmtNum(s.projection.base)}</p>
+                            <p className={cn('text-[11px] tabular-nums', s.projection.basePct >= 0 ? 'text-gray-300' : 'text-red-400')}>{s.projection.basePct >= 0 ? '+' : ''}{s.projection.basePct.toFixed(1)}%</p>
+                        </div>
+                        <div>
+                            <p className="text-[10px] uppercase tracking-wide text-red-400">Downside</p>
+                            <p className="text-sm font-bold tabular-nums text-gray-100">{fmtNum(s.projection.down)}</p>
+                            <p className="text-[11px] tabular-nums text-red-400">{s.projection.downPct.toFixed(1)}%</p>
+                        </div>
+                    </div>
+                    <p className="mt-2 border-t border-gray-800 pt-2 text-[11px] leading-relaxed text-gray-400">
+                        A typical correction from here (~{fmtNum(s.projection.correction)}, {s.projection.correctionPct.toFixed(0)}%) has
+                        historically taken <span className="font-semibold text-gray-300">{s.projection.recovery}</span> to recover its prior peak.
+                    </p>
+                </div>
+            )}
+
             {/* Forward outlook */}
             <div className="mt-3 rounded-lg bg-gray-800/50 p-3">
                 <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-teal-300">Next-session read</p>
                 <p className="text-xs leading-relaxed text-gray-300">{s.outlook}</p>
+            </div>
+        </div>
+    );
+}
+
+const DD_TONE: Record<'pos' | 'neutral' | 'warn' | 'neg', string> = {
+    pos: 'text-emerald-400',
+    neutral: 'text-gray-300',
+    warn: 'text-amber-400',
+    neg: 'text-red-400',
+};
+
+/** Historical drawdown → recovery statistics. */
+export function RecoveryStats({ stats }: { stats: import('@/lib/market-history').DrawdownStat[] }) {
+    return (
+        <div className="rounded-xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
+            <h2 className="text-base font-semibold text-gray-100">Corrections &amp; recovery — the statistics</h2>
+            <p className="mb-3 mt-0.5 text-xs text-gray-500">
+                How deep selloffs usually run and how long they&apos;ve taken to recover the prior peak (S&amp;P 500,
+                long-run averages). Drawdowns are frequent and temporary — every cycle differs.
+            </p>
+            <div className="overflow-x-auto">
+                <table className="w-full min-w-[640px] text-left text-sm">
+                    <thead>
+                        <tr className="border-b border-gray-800 text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                            <th className="px-3 py-2">Drawdown</th>
+                            <th className="px-3 py-2">Frequency</th>
+                            <th className="px-3 py-2">Avg decline</th>
+                            <th className="px-3 py-2">Time to recover</th>
+                            <th className="px-3 py-2">Character</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {stats.map((d) => (
+                            <tr key={d.band} className="border-b border-gray-800/60">
+                                <td className={cn('px-3 py-2.5 font-semibold', DD_TONE[d.tone])}>{d.band}</td>
+                                <td className="px-3 py-2.5 text-xs text-gray-400">{d.frequency}</td>
+                                <td className="px-3 py-2.5 tabular-nums text-gray-300">{d.avgDecline}</td>
+                                <td className="px-3 py-2.5 font-semibold tabular-nums text-gray-200">{d.recovery}</td>
+                                <td className="px-3 py-2.5 text-xs text-gray-400">{d.note}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+
+/** The fundamental long-run case for US equities. */
+export function WhyMarketsRise({ reasons }: { reasons: import('@/lib/market-history').WhyUp[] }) {
+    return (
+        <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/[0.03] p-4 md:p-5">
+            <h2 className="text-base font-semibold text-emerald-400">Why US markets rise over the long run</h2>
+            <p className="mb-3 mt-0.5 text-xs text-gray-500">
+                Signals are short-term. The reason the long-term trend is up is fundamental — here&apos;s the case, with examples.
+            </p>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {reasons.map((r) => (
+                    <div key={r.title} className="rounded-lg border border-gray-800 bg-gray-900/50 p-3.5">
+                        <p className="text-sm font-semibold text-gray-100">{r.title}</p>
+                        <p className="mt-1 text-[11px] leading-relaxed text-gray-400">{r.body}</p>
+                    </div>
+                ))}
             </div>
         </div>
     );
