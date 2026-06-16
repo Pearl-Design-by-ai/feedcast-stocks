@@ -5,7 +5,7 @@ import useTradingViewWidget from "@/hooks/useTradingViewWidget";
 import { cn } from "@/lib/utils";
 import { Maximize2, Minimize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useEffectiveTheme } from '@/components/ThemeProvider';
+import { useChartTheme } from '@/components/ThemeProvider';
 
 interface TradingViewWidgetProps {
     title?: string;
@@ -31,9 +31,11 @@ const TradingViewWidget = ({ title, scriptUrl, config, height = 600, className, 
 
     const currentHeight = isExpanded ? windowHeight : height;
 
-    // Follow the app theme, supplied by the server-known ThemeProvider context
-    // (light/dark/auto resolved there). Deterministic — no fragile DOM reads.
-    const tvTheme = useEffectiveTheme();
+    // Follow the live app theme via the authoritative `--tv-theme` token (SSR
+    // value from the ThemeProvider context, then the real DOM value). This keeps
+    // every chart's pane matching the selected theme even after a client-side
+    // navigation or an /appearance live-preview change.
+    const tvTheme = useChartTheme();
 
     const widgetConfig: Record<string, unknown> = {
         ...config,
