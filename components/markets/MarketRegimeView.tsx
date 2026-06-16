@@ -39,7 +39,7 @@ export default async function MarketRegimeView() {
                             {regime.verdict}
                         </span>
                     </div>
-                    <span className="text-sm text-gray-500">as of {regime.asOf}</span>
+                    <span className="text-sm text-gray-500">end-of-day · as of {regime.asOf}</span>
                 </div>
 
                 <div

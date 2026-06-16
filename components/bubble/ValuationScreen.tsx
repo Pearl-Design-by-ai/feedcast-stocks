@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowDownWideNarrow, ArrowUpWideNarrow, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatEodDate } from '@/lib/utils';
 import type { ValuationEntry, ValuationScreen } from '@/lib/valuation';
 
 const ratio = (v: number | null) => (v == null ? '—' : v.toFixed(1));
@@ -165,7 +165,7 @@ export function ValuationLists({ screen }: { screen: ValuationScreen | null }) {
                     <ArrowUpWideNarrow size={15} /> Most expensive {screen.priciest.length}
                 </button>
                 <span className="ml-auto text-[11px] text-gray-500">
-                    {screen.scanned}/{screen.universe} scored · {asOf} ET
+                    {screen.scanned}/{screen.universe} scored · data through {formatEodDate(screen.session)} close (EOD) · rebuilt {asOf} ET
                 </span>
             </div>
 
