@@ -6,6 +6,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { searchStocks } from "@/lib/actions/finnhub.actions";
 import { accentHex } from "@/lib/accent";
 import { buildThemeCss, type ThemeMode } from "@/lib/appearance";
+import { isPowerUserEmail } from "@/lib/constants";
 import ThemeProvider from "@/components/ThemeProvider";
 
 // Auth is handled by the main Feedcast app (SSO). Unauthenticated users
@@ -65,6 +66,7 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
 
     const brand = accentHex(prefs.accentColor);
     const mode = (['dark', 'light', 'auto'].includes(prefs.marketsTheme ?? '') ? prefs.marketsTheme : 'dark') as ThemeMode;
+    const powerUser = isPowerUserEmail(sessionUser.email);
 
     // Injected as a :root override (rather than inline on <main>) so portaled
     // UI — dropdowns, dialogs, the command palette — gets the same theme and
@@ -77,13 +79,13 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
         <main className="min-h-screen text-gray-400">
             <style>{themeCss}</style>
             <ThemeProvider mode={mode}>
-                <Header user={sessionUser} initialStocks={initialStocks} />
+                <Header user={sessionUser} initialStocks={initialStocks} isPowerUser={powerUser} />
 
                 {/* Centered app shell — sidebar + content read as one centered block
                     on wide screens, mirroring the main Feedcast layout. */}
                 <div className="mx-auto w-full max-w-[1660px] px-4 md:px-6 lg:px-8">
                     <div className="flex md:gap-6">
-                        <SideNav initialStocks={initialStocks} />
+                        <SideNav initialStocks={initialStocks} isPowerUser={powerUser} />
                         <div className="min-w-0 flex-1">
                             <div className="mx-auto w-full max-w-[1400px] py-8 md:py-10">
                                 {children}

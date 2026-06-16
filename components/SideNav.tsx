@@ -19,7 +19,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Menu, PanelLeftClose, ArrowLeft, ChevronDown } from 'lucide-react';
 import SearchCommand from '@/components/SearchCommand';
-import { NAV_SECTIONS, NAV_DEFAULT_OPEN, SEARCH_HREF } from '@/lib/constants';
+import { navSectionsForUser, NAV_DEFAULT_OPEN, SEARCH_HREF } from '@/lib/constants';
 import { NAV_ICONS, SECTION_ICONS, NAV_FALLBACK_ICON } from '@/components/navIcons';
 import { cn } from '@/lib/utils';
 
@@ -34,8 +34,9 @@ function openSearch() {
   );
 }
 
-export function SideNav({ initialStocks }: { initialStocks: StockWithWatchlistStatus[] }) {
+export function SideNav({ initialStocks, isPowerUser = false }: { initialStocks: StockWithWatchlistStatus[]; isPowerUser?: boolean }) {
   const pathname = usePathname();
+  const navSections = navSectionsForUser(isPowerUser);
 
   // Rail open vs. collapsed-to-icons. SSR + first paint render open (no
   // hydration mismatch); the effect collapses it for members who hid it.
@@ -45,7 +46,7 @@ export function SideNav({ initialStocks }: { initialStocks: StockWithWatchlistSt
   // first client render; localStorage + active-route auto-open applied after.
   const [sections, setSections] = useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {};
-    for (const s of NAV_SECTIONS) init[s.id] = NAV_DEFAULT_OPEN.includes(s.id);
+    for (const s of navSections) init[s.id] = NAV_DEFAULT_OPEN.includes(s.id);
     return init;
   });
 
@@ -60,7 +61,7 @@ export function SideNav({ initialStocks }: { initialStocks: StockWithWatchlistSt
     }
     setSections((prev) => {
       const next = { ...prev };
-      for (const s of NAV_SECTIONS) {
+      for (const s of navSections) {
         let v = NAV_DEFAULT_OPEN.includes(s.id);
         try {
           const stored = localStorage.getItem(SECTION_KEY(s.id));
@@ -207,14 +208,14 @@ export function SideNav({ initialStocks }: { initialStocks: StockWithWatchlistSt
 
           {compact
             ? // Icon rail: all items flat, divided by section.
-              NAV_SECTIONS.map((section, idx) => (
+              navSections.map((section, idx) => (
                 <Fragment key={section.id}>
                   {idx > 0 && <div className="my-2 mx-auto h-px w-6 bg-gray-700" />}
                   {section.items.map((it) => renderItem(it.href, it.label))}
                 </Fragment>
               ))
             : // Expanded: collapsible category accordions.
-              NAV_SECTIONS.map((section) => {
+              navSections.map((section) => {
                 const SecIcon = SECTION_ICONS[section.id] ?? NAV_FALLBACK_ICON;
                 const sectionOpen = sections[section.id];
                 return (
