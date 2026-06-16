@@ -2,9 +2,9 @@
  * Presentational pieces for the Buy & Sell Signals page (server-safe).
  */
 
-import { ArrowUp, ArrowDown, Minus } from 'lucide-react';
+import { ArrowUp, ArrowDown, Minus, TrendingUp, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { GRADE_META, type IndexSignal, type SubState } from '@/lib/signals';
+import { GRADE_META, type IndexSignal, type SubState, type MacroRead, type SignalTrend } from '@/lib/signals';
 
 const GRADE_TONE: Record<'pos2' | 'pos' | 'neutral' | 'neg' | 'neg2', { text: string; chip: string; bar: string }> = {
     pos2: { text: 'text-emerald-400', chip: 'bg-emerald-500/15 text-emerald-400 ring-1 ring-inset ring-emerald-400/40', bar: 'bg-emerald-400' },
@@ -22,6 +22,91 @@ const SUB_TONE: Record<SubState, string> = {
 
 const fmtNum = (v: number | null) =>
     v == null ? '—' : v.toLocaleString('en-US', { maximumFractionDigits: v >= 1000 ? 0 : 2 });
+
+/** Week-over-week signal-trend chip. */
+function TrendChip({ trend, delta }: { trend: SignalTrend; delta: number | null }) {
+    if (trend === 'improving') return <span className="inline-flex items-center gap-0.5 text-[11px] font-medium text-emerald-400"><TrendingUp size={12} />improving{delta != null ? ` +${delta}` : ''}</span>;
+    if (trend === 'weakening') return <span className="inline-flex items-center gap-0.5 text-[11px] font-medium text-red-400"><TrendingDown size={12} />weakening{delta != null ? ` ${delta}` : ''}</span>;
+    return <span className="inline-flex items-center gap-0.5 text-[11px] font-medium text-gray-500"><Minus size={12} />steady</span>;
+}
+
+const MACRO_TONE: Record<'pos' | 'neutral' | 'neg', string> = {
+    pos: 'text-emerald-400',
+    neutral: 'text-gray-300',
+    neg: 'text-red-400',
+};
+
+/** Macro backdrop strip — the risk environment around the index calls. */
+export function MacroStrip({ macro }: { macro: MacroRead[] }) {
+    if (macro.length === 0) return null;
+    return (
+        <div className="rounded-xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
+            <h2 className="mb-3 text-sm font-semibold text-gray-100">Macro backdrop <span className="font-normal text-gray-500">— the environment for stocks</span></h2>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {macro.map((m) => (
+                    <div key={m.key} className="rounded-lg border border-gray-800 bg-gray-900/60 p-3">
+                        <div className="flex items-baseline justify-between gap-2">
+                            <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">{m.name}</span>
+                            <span className={cn('text-[11px] tabular-nums', m.dayUp ? 'text-green-400' : 'text-red-400')}>{m.dayChange}</span>
+                        </div>
+                        <p className={cn('mt-1 text-xl font-bold tabular-nums', MACRO_TONE[m.tone])}>{m.value}</p>
+                        <p className="mt-1 text-[11px] leading-relaxed text-gray-400">{m.read}</p>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+/** Compact sector board — every SPDR sector graded, sorted strongest first. */
+export function SectorBoard({ sectors }: { sectors: IndexSignal[] }) {
+    if (sectors.length === 0) return null;
+    return (
+        <div className="rounded-xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
+            <h2 className="text-base font-semibold text-gray-100">Sector signals</h2>
+            <p className="mb-3 mt-0.5 text-xs text-gray-500">All 11 S&amp;P sectors on the same engine — strongest at the top. Favor green, avoid red.</p>
+            <div className="overflow-x-auto">
+                <table className="w-full min-w-[560px] text-left text-sm">
+                    <thead>
+                        <tr className="border-b border-gray-800 text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                            <th className="px-3 py-2">Sector</th>
+                            <th className="px-3 py-2">Day</th>
+                            <th className="px-3 py-2 w-40">Signal score</th>
+                            <th className="px-3 py-2">Trend</th>
+                            <th className="px-3 py-2 text-right">Call</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {sectors.map((s) => {
+                            const meta = GRADE_META[s.grade];
+                            const tone = GRADE_TONE[meta.tone];
+                            const up = (s.dayChangePct ?? 0) >= 0;
+                            const delta = s.scorePrev != null ? s.score - s.scorePrev : null;
+                            return (
+                                <tr key={s.key} className="border-b border-gray-800/60 hover:bg-gray-800/40">
+                                    <td className="px-3 py-2.5 font-semibold text-gray-100">{s.name} <span className="ml-1 font-mono text-[10px] text-gray-500">{s.symbol}</span></td>
+                                    <td className={cn('px-3 py-2.5 tabular-nums text-xs', up ? 'text-green-400' : 'text-red-400')}>{s.dayChangePct != null ? `${up ? '+' : ''}${s.dayChangePct.toFixed(2)}%` : '—'}</td>
+                                    <td className="px-3 py-2.5">
+                                        <div className="flex items-center gap-2">
+                                            <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-gray-800">
+                                                <div className={cn('h-full rounded-full', tone.bar)} style={{ width: `${s.score}%` }} />
+                                            </div>
+                                            <span className="w-7 shrink-0 text-right text-xs font-semibold tabular-nums text-gray-300">{s.score}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-3 py-2.5"><TrendChip trend={s.trend} delta={delta} /></td>
+                                    <td className="px-3 py-2.5 text-right">
+                                        <span className={cn('rounded px-2 py-0.5 text-[11px] font-bold', tone.chip)}>{meta.label}</span>
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
 
 /** One index card: grade, score gauge, day move, sub-signals, levels, outlook. */
 export function SignalCard({ s }: { s: IndexSignal }) {
@@ -66,9 +151,12 @@ export function SignalCard({ s }: { s: IndexSignal }) {
                         style={{ left: `${Math.min(96, Math.max(4, s.score))}%` }}
                     />
                 </div>
-                <p className="mt-1 text-right text-[11px] tabular-nums text-gray-500">
-                    Signal score <span className={cn('font-bold', tone.text)}>{s.score}</span>/100
-                </p>
+                <div className="mt-1 flex items-center justify-between">
+                    <TrendChip trend={s.trend} delta={s.scorePrev != null ? s.score - s.scorePrev : null} />
+                    <p className="text-[11px] tabular-nums text-gray-500">
+                        Signal score <span className={cn('font-bold', tone.text)}>{s.score}</span>/100
+                    </p>
+                </div>
             </div>
 
             {/* Sub-signals */}
