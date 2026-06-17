@@ -32,6 +32,10 @@ const CACHE_TTLS: Array<[prefix: string, seconds: number]> = [
   ['/v1/watchlist/digest', 300],
   ['/v1/news/impact', 300],
   ['/v1/divergence', 300],
+  // EOD analysis reports — change at most once per trading day; cache 30min.
+  ['/v1/crash', 1_800],
+  ['/v1/signals', 1_800],
+  ['/v1/bubble', 1_800],
 ];
 
 function cacheTtlFor(path: string): number {

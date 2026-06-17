@@ -13,7 +13,6 @@ import {
     DriversStrip,
 } from '@/components/crash/CrashUi';
 import { runCrashScan } from '@/lib/crash-scan';
-import { CRASH_SOURCES } from '@/lib/crash';
 
 export const metadata: Metadata = {
     title: 'Crash Detector',
@@ -23,6 +22,7 @@ export const metadata: Metadata = {
 
 async function Report() {
     const r = await runCrashScan();
+    if (!r) return <ReportUnavailable />;
 
     return (
         <>
@@ -78,6 +78,35 @@ function ReportSkeleton() {
         <div className="flex items-center gap-3 rounded-2xl border border-gray-800 bg-gray-900/40 p-10 text-sm text-gray-500">
             <Loader2 className="h-4 w-4 animate-spin text-teal-400" />
             Running the cycle-risk model — pulling the curve, credit, breadth and froth signals…
+        </div>
+    );
+}
+
+function ReportUnavailable() {
+    return (
+        <div className="rounded-2xl border border-gray-800 bg-gray-900/40 p-10 text-sm text-gray-500">
+            The cycle-risk model is temporarily unavailable. Please try again shortly.
+        </div>
+    );
+}
+
+/** Framework & data-source links — served by the engine alongside the report. */
+async function CrashSources() {
+    const r = await runCrashScan();
+    if (!r?.sources?.length) return null;
+    return (
+        <div className="mt-4 border-t border-gray-800 pt-3">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-gray-500">Framework & data sources</p>
+            <ul className="flex flex-col gap-1.5">
+                {r.sources.map((s) => (
+                    <li key={s.url}>
+                        <a href={s.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-teal-400 hover:underline">
+                            {s.label}
+                            <ExternalLink size={11} />
+                        </a>
+                    </li>
+                ))}
+            </ul>
         </div>
     );
 }
@@ -143,19 +172,9 @@ export default function CrashDetectorPage() {
                     safety, not a prediction that a crash is imminent. Where a number is an analyst read
                     rather than a live measurement, it is labelled as such.
                 </p>
-                <div className="mt-4 border-t border-gray-800 pt-3">
-                    <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-gray-500">Framework & data sources</p>
-                    <ul className="flex flex-col gap-1.5">
-                        {CRASH_SOURCES.map((s) => (
-                            <li key={s.url}>
-                                <a href={s.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-teal-400 hover:underline">
-                                    {s.label}
-                                    <ExternalLink size={11} />
-                                </a>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
+                <Suspense fallback={null}>
+                    <CrashSources />
+                </Suspense>
             </section>
         </div>
     );

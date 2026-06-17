@@ -4,7 +4,6 @@ import { Loader2, Signal } from 'lucide-react';
 import DataDisclaimer from '@/components/DataDisclaimer';
 import { SignalCard, MacroStrip, SectorBoard, RecoveryStats, WhyMarketsRise } from '@/components/signals/SignalsUi';
 import { getSignalsReport } from '@/lib/signals-scan';
-import { CORRECTION_STATS, WHY_MARKETS_RISE } from '@/lib/market-history';
 import { cn, formatEodDate } from '@/lib/utils';
 
 export const metadata: Metadata = {
@@ -14,15 +13,17 @@ export const metadata: Metadata = {
 const TONE_TEXT = { pos: 'text-emerald-400', neutral: 'text-amber-400', neg: 'text-red-400' } as const;
 
 async function Signals() {
-    const { indices, sectors, macro, tone, asOf, dataDate } = await getSignalsReport();
+    const r = await getSignalsReport();
 
-    if (indices.length === 0) {
+    if (!r || r.indices.length === 0) {
         return (
             <div className="rounded-xl border border-gray-800 bg-gray-900/40 p-6 text-sm text-gray-500">
                 Signal data is unavailable right now — please check back shortly.
             </div>
         );
     }
+
+    const { indices, sectors, macro, tone, asOf, dataDate } = r;
 
     return (
         <>
@@ -59,6 +60,18 @@ function Skeleton() {
     );
 }
 
+/** Curated market-history context — served by the engine alongside the report. */
+async function SignalsContext() {
+    const r = await getSignalsReport();
+    if (!r) return null;
+    return (
+        <>
+            <RecoveryStats stats={r.correctionStats} />
+            <WhyMarketsRise reasons={r.whyMarketsRise} />
+        </>
+    );
+}
+
 export default function BuySellSignalsPage() {
     return (
         <div className="flex min-h-screen w-full flex-col gap-6 p-4 md:p-8">
@@ -82,9 +95,9 @@ export default function BuySellSignalsPage() {
                 <Signals />
             </Suspense>
 
-            <RecoveryStats stats={CORRECTION_STATS} />
-
-            <WhyMarketsRise reasons={WHY_MARKETS_RISE} />
+            <Suspense fallback={null}>
+                <SignalsContext />
+            </Suspense>
 
             <section className="rounded-xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
                 <h2 className="mb-2 text-base font-semibold text-gray-100">How the grade is built</h2>
