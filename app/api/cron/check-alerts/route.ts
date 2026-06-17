@@ -19,7 +19,7 @@ async function rebuildValuationIfNeeded(): Promise<number> {
         const screen = await getValuationScreen();
         if (screen && screen.session === session && screen.complete) return -1;
         const next = await runValuationScan();
-        return next.scanned;
+        return next?.scanned ?? -1;
     } catch (err) {
         console.error('check-alerts: valuation rebuild failed', err);
         return -1;

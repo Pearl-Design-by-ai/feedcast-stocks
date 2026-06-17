@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { GraduationCap } from 'lucide-react';
 import ArticleCard from '@/components/learn/ArticleCard';
-import { ARTICLES, CATEGORIES, getCategory, type CategoryId } from '@/lib/learn';
+import { CATEGORIES, getCategory, type CategoryId } from '@/lib/learn';
+import { getLearnArticles } from '@/lib/actions/learn.actions';
 import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = {
@@ -21,7 +22,8 @@ export default async function LearnPage({
     const { category } = await searchParams;
     const active = category && VALID.has(category) ? (category as CategoryId) : null;
 
-    const list = active ? ARTICLES.filter((a) => a.category === active) : ARTICLES;
+    const all = await getLearnArticles();
+    const list = active ? all.filter((a) => a.category === active) : all;
     const [featured, ...rest] = list;
 
     return (

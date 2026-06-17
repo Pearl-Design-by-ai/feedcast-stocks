@@ -7,8 +7,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { buildPortfolio, entryPlan, type PortfolioInputs, type PortfolioPlan, type Holding } from '@/lib/portfolio/engine';
-import { priceBasket, getPortfolioReturns, type BacktestRow } from '@/lib/actions/portfolio.actions';
+import type { PortfolioInputs, PortfolioPlan, Holding, EntryPlan } from '@/lib/portfolio/engine';
+import { buildPortfolioPlan, priceBasket, getPortfolioReturns, type BacktestRow } from '@/lib/actions/portfolio.actions';
 import { createGroup, addSymbolsToGroup } from '@/lib/actions/watchlist-groups.actions';
 
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'AED', 'TRY'];
@@ -77,6 +77,8 @@ export default function PortfolioLab() {
         universe: 'us', sectorCap: 35, singleNameMax: 10, vehicle: 'mixed', concentration: 'balanced',
     });
     const [plan, setPlan] = useState<PortfolioPlan | null>(null);
+    const [entry, setEntry] = useState<EntryPlan | null>(null);
+    const [building, setBuilding] = useState(false);
     const [builtInp, setBuiltInp] = useState<PortfolioInputs | null>(null);
     const [prices, setPrices] = useState<Record<string, number | null> | null>(null);
     const [pricing, setPricing] = useState(false);
@@ -87,11 +89,22 @@ export default function PortfolioLab() {
 
     const set = <K extends keyof PortfolioInputs>(k: K, v: PortfolioInputs[K]) => setInp((p) => ({ ...p, [k]: v }));
 
-    const build = () => {
+    const build = async () => {
+        setBuilding(true);
         setPrices(null);
         setBacktest(null);
-        setBuiltInp(inp);
-        setPlan(buildPortfolio(inp));
+        try {
+            const res = await buildPortfolioPlan(inp);
+            if (!res) {
+                toast.error('Portfolio builder is unavailable right now — please try again shortly.');
+                return;
+            }
+            setBuiltInp(inp);
+            setPlan(res.plan);
+            setEntry(res.entry);
+        } finally {
+            setBuilding(false);
+        }
     };
 
     const runBacktest = async () => {
@@ -224,9 +237,9 @@ export default function PortfolioLab() {
                         <input type="range" min={15} max={100} step={5} value={inp.sectorCap} onChange={(e) => set('sectorCap', Number(e.target.value))} className="accent-teal-400" />
                     </Field>
                 </div>
-                <button type="button" onClick={build}
-                    className="mt-5 flex items-center gap-2 rounded-lg bg-teal-500 px-4 py-2 text-sm font-bold text-black transition-colors hover:bg-teal-400">
-                    <ArchIcon size={16} /> Build portfolio
+                <button type="button" onClick={build} disabled={building}
+                    className="mt-5 flex items-center gap-2 rounded-lg bg-teal-500 px-4 py-2 text-sm font-bold text-black transition-colors hover:bg-teal-400 disabled:opacity-60">
+                    {building ? <Loader2 size={16} className="animate-spin" /> : <ArchIcon size={16} />} Build portfolio
                 </button>
             </section>
 
@@ -345,31 +358,28 @@ export default function PortfolioLab() {
                     </section>
 
                     {/* Market-entry plan */}
-                    {(() => {
-                        const ep = entryPlan(used, plan);
-                        return (
-                            <section className="rounded-2xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
-                                <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-gray-500">Market-entry plan</h3>
-                                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                                    <Stat label="Approach" value={ep.approach} />
-                                    <Stat label="Cadence" value={ep.cadence} />
-                                    <Stat label="Tranches" value={ep.tranches <= 1 ? '1' : `${ep.tranches}`} />
-                                    <Stat label="Per buy" value={fmtMoney(ep.perTranche, used.currency)} />
-                                </div>
-                                <p className="mt-3 text-sm text-gray-300">
-                                    {ep.tranches <= 1
-                                        ? `Deploy the full ${fmtMoney(used.capital, used.currency)} in one go.`
-                                        : `Deploy ${fmtMoney(used.capital, used.currency)} as ${ep.tranches} ${ep.cadence.toLowerCase()} buys of ~${fmtMoney(ep.perTranche, used.currency)} over ${ep.durationLabel}.`}{' '}
-                                    {ep.rebalance}
-                                </p>
-                                <ul className="mt-3 space-y-1.5 text-[13px] text-gray-400">
-                                    {ep.notes.map((n, i) => (
-                                        <li key={i} className="flex gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-600" />{n}</li>
-                                    ))}
-                                </ul>
-                            </section>
-                        );
-                    })()}
+                    {entry && (
+                        <section className="rounded-2xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
+                            <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-gray-500">Market-entry plan</h3>
+                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                                <Stat label="Approach" value={entry.approach} />
+                                <Stat label="Cadence" value={entry.cadence} />
+                                <Stat label="Tranches" value={entry.tranches <= 1 ? '1' : `${entry.tranches}`} />
+                                <Stat label="Per buy" value={fmtMoney(entry.perTranche, used.currency)} />
+                            </div>
+                            <p className="mt-3 text-sm text-gray-300">
+                                {entry.tranches <= 1
+                                    ? `Deploy the full ${fmtMoney(used.capital, used.currency)} in one go.`
+                                    : `Deploy ${fmtMoney(used.capital, used.currency)} as ${entry.tranches} ${entry.cadence.toLowerCase()} buys of ~${fmtMoney(entry.perTranche, used.currency)} over ${entry.durationLabel}.`}{' '}
+                                {entry.rebalance}
+                            </p>
+                            <ul className="mt-3 space-y-1.5 text-[13px] text-gray-400">
+                                {entry.notes.map((n, i) => (
+                                    <li key={i} className="flex gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-600" />{n}</li>
+                                ))}
+                            </ul>
+                        </section>
+                    )}
 
                     {/* Risk / return */}
                     <section className="rounded-2xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">

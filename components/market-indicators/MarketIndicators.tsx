@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { INDICATOR_CATEGORIES } from '@/lib/market-indicators';
+import type { IndicatorCategory } from '@/lib/market-indicators';
 import IndicatorCard from '@/components/market-indicators/IndicatorCard';
 import { cn } from '@/lib/utils';
 
@@ -11,14 +11,17 @@ import { cn } from '@/lib/utils';
  * collapsible accordion. Tapping a category header expands its indicators below
  * it (one open at a time), which is easier to navigate on mobile and keeps only
  * the open category's charts mounted (cards also lazy-load on scroll).
+ *
+ * The curated catalog is served by the PRIVATE markets-engine and passed in by
+ * the (server) page.
  */
-export default function MarketIndicators() {
+export default function MarketIndicators({ categories }: { categories: IndicatorCategory[] }) {
     // Start fully collapsed; one category opens at a time.
     const [openId, setOpenId] = useState<string>('');
 
     return (
         <div className="flex w-full flex-col gap-3">
-            {INDICATOR_CATEGORIES.map((cat) => {
+            {categories.map((cat) => {
                 const isOpen = openId === cat.id;
                 const panelId = `indicator-panel-${cat.id}`;
 

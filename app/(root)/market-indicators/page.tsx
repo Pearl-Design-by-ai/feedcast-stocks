@@ -4,6 +4,7 @@ import DataDisclaimer from '@/components/DataDisclaimer';
 import MarketIndicators from '@/components/market-indicators/MarketIndicators';
 import MarketMood from '@/components/market-indicators/MarketMood';
 import { getCryptoFearGreed } from '@/lib/actions/market-mood.actions';
+import { getIndicatorCatalog } from '@/lib/actions/indicators.actions';
 
 export const metadata: Metadata = {
     title: 'Market Indicators',
@@ -12,7 +13,7 @@ export const metadata: Metadata = {
 };
 
 export default async function MarketIndicatorsPage() {
-    const fng = await getCryptoFearGreed();
+    const [fng, categories] = await Promise.all([getCryptoFearGreed(), getIndicatorCatalog()]);
 
     return (
         <div className="flex min-h-screen w-full flex-col gap-6 p-4 md:p-8">
@@ -34,7 +35,7 @@ export default async function MarketIndicatorsPage() {
                 <MarketMood fng={fng} />
             </section>
 
-            <MarketIndicators />
+            <MarketIndicators categories={categories} />
         </div>
     );
 }

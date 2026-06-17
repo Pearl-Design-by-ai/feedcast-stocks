@@ -27,6 +27,9 @@ async function handle(request: NextRequest) {
     }
     try {
         const screen = await runValuationScan();
+        if (!screen) {
+            return NextResponse.json({ error: 'Engine unavailable' }, { status: 503 });
+        }
         return NextResponse.json({
             scanned: screen.scanned,
             universe: screen.universe,

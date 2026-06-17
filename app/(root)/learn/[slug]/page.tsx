@@ -5,11 +5,13 @@ import { ArrowLeft, Clock, Lightbulb, ArrowRight, Compass } from 'lucide-react';
 import DataDisclaimer from '@/components/DataDisclaimer';
 import ArticleCard from '@/components/learn/ArticleCard';
 import LearnArt from '@/components/learn/LearnArt';
-import { ARTICLES, getArticle, getCategory, articlesByCategory, type Block } from '@/lib/learn';
+import { getArticle, getCategory, articlesByCategory, type Block } from '@/lib/learn';
+import { getLearnArticles } from '@/lib/actions/learn.actions';
 import { cn } from '@/lib/utils';
 
-export function generateStaticParams() {
-    return ARTICLES.map((a) => ({ slug: a.slug }));
+export async function generateStaticParams() {
+    const articles = await getLearnArticles();
+    return articles.map((a) => ({ slug: a.slug }));
 }
 
 export async function generateMetadata({
@@ -18,7 +20,7 @@ export async function generateMetadata({
     params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
     const { slug } = await params;
-    const a = getArticle(slug);
+    const a = getArticle(await getLearnArticles(), slug);
     if (!a) return { title: 'Learn' };
     return { title: `${a.title} — Learn`, description: a.excerpt };
 }
@@ -49,11 +51,12 @@ function Content({ block }: { block: Block }) {
 
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params;
-    const article = getArticle(slug);
+    const articles = await getLearnArticles();
+    const article = getArticle(articles, slug);
     if (!article) notFound();
 
     const cat = getCategory(article.category);
-    const related = articlesByCategory(article.category).filter((a) => a.slug !== article.slug).slice(0, 3);
+    const related = articlesByCategory(articles, article.category).filter((a) => a.slug !== article.slug).slice(0, 3);
 
     return (
         <div className="flex min-h-screen w-full flex-col gap-6 p-4 md:p-8">

@@ -26,6 +26,11 @@ jobs:
           OPENNEXT_TARGET: cloudflare
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          # Build-time fetch of the Learn article library (SSG) from the private
+          # markets-engine. Without these, generateStaticParams() gets [] and the
+          # /learn/[slug] pages would not be pre-rendered.
+          MARKETS_ENGINE_URL: ${{ secrets.MARKETS_ENGINE_URL }}
+          MARKETS_ENGINE_TOKEN: ${{ secrets.MARKETS_ENGINE_TOKEN }}
       - name: Deploy main worker
         run: npx wrangler deploy
         env:

@@ -1,13 +1,11 @@
 /**
- * Daily valuation screen for the Bubble Detector.
+ * Valuation — public type contract + the shared trading-session helper.
  *
- * multpl.com/shiller-pe shows the *market-wide* Shiller CAPE — it isn't
- * computable per single stock from free data, so this screen ranks individual
- * names by trailing P/E (the accessible valuation proxy) to surface the
- * cheapest and most expensive large-caps. Built as a daily batch: a background
- * scan fetches one Finnhub metric call per symbol (rate-limit-paced, cached
- * 24h), folds the universe into two ranked lists, and stores the result in KV
- * for the page to read. See lib/actions/valuation.actions.ts.
+ * The curated universe, the P/E ranking and the KV-backed daily scan now run in
+ * the PRIVATE markets-engine (driven by its own cron); the public app reads the
+ * finished screen via lib/actions/valuation.actions.ts. `currentSession()`
+ * stays here because many public modules (crons, AI commentary, stock-AI) share
+ * it — it is a plain market-calendar utility, not proprietary.
  */
 
 export interface ValuationEntry {
@@ -60,8 +58,7 @@ export interface ValuationScreen {
 /**
  * The most recent completed US trading session as an ET date string
  * (YYYY-MM-DD). Before 16:00 ET it's the prior session; weekends roll back to
- * Friday. Used to refresh the screen once after each market close rather than
- * on a rolling clock.
+ * Friday. Shared by the alert cron, AI commentary and stock-AI shims.
  */
 function etParts(d: Date) {
     const f = new Intl.DateTimeFormat('en-US', {
@@ -89,60 +86,3 @@ export function currentSession(now: Date = new Date()): string {
     const p = etParts(d);
     return `${p.y}-${String(p.mo).padStart(2, '0')}-${String(p.d).padStart(2, '0')}`;
 }
-
-/** How many names each ranked list holds. */
-export const VALUATION_TOP_N = 100;
-
-/** KV keys (versioned so a shape change can't read stale data). v2 adds the
- *  enriched per-symbol fields (price, mkt cap, P/B, ROE, net margin, revenue
- *  growth, 1Y return, beta, 52-week range) — bumping the version discards the
- *  old v1 records that only carried P/E / P/S / dividend yield so the next scan
- *  refetches the full metric set. */
-export const VAL_METRICS_KEY = 'val:metrics:v2';
-export const VAL_SCREEN_KEY = 'val:screen:v2';
-export const VAL_LOCK_KEY = 'val:scan:lock:v2';
-
-/**
- * Curated universe of liquid US large-caps across every sector, so the
- * cheapest/priciest extremes are meaningful. ~190 names — large enough to fill
- * two lists of up to 100, small enough that the paced daily scan stays within
- * the Finnhub free-tier budget. Dotted tickers (BRK.B etc.) are omitted to
- * avoid symbol-format issues.
- */
-export const VALUATION_UNIVERSE: string[] = [
-    // Mega-cap tech, semis & software
-    'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'NVDA', 'AVGO', 'ORCL', 'CRM', 'ADBE',
-    'CSCO', 'ACN', 'IBM', 'INTC', 'AMD', 'QCOM', 'TXN', 'INTU', 'NOW', 'AMAT',
-    'MU', 'ADI', 'LRCX', 'KLAC', 'SNPS', 'CDNS', 'PANW', 'CRWD', 'FTNT', 'PLTR',
-    'SNOW', 'NET', 'DDOG', 'ZS', 'WDAY', 'DELL', 'HPQ', 'MRVL', 'ON', 'MCHP',
-    'ANET', 'SMCI', 'UBER', 'ABNB', 'SHOP', 'SPOT', 'COIN', 'PYPL', 'ROKU', 'NFLX',
-    // Communication & media
-    'DIS', 'CMCSA', 'T', 'VZ', 'TMUS', 'WBD', 'CHTR', 'EA', 'TTWO',
-    // Consumer discretionary & retail
-    'HD', 'LOW', 'MCD', 'SBUX', 'NKE', 'TJX', 'BKNG', 'MAR', 'HLT', 'CMG',
-    'ORLY', 'AZO', 'ROST', 'YUM', 'LULU', 'GM', 'F', 'TSLA', 'RIVN', 'APTV',
-    // Consumer staples
-    'WMT', 'COST', 'PG', 'KO', 'PEP', 'PM', 'MO', 'MDLZ', 'CL', 'KMB',
-    'GIS', 'KHC', 'HSY', 'STZ', 'KDP', 'MNST', 'TGT', 'KR', 'DG', 'DLTR',
-    // Healthcare, pharma, biotech & devices
-    'UNH', 'JNJ', 'LLY', 'ABBV', 'MRK', 'PFE', 'TMO', 'ABT', 'DHR', 'BMY',
-    'AMGN', 'GILD', 'VRTX', 'REGN', 'ISRG', 'MDT', 'SYK', 'BSX', 'CI', 'CVS',
-    'ELV', 'HCA', 'ZTS', 'BDX', 'MRNA', 'BIIB',
-    // Financials, banks, insurance & payments
-    'JPM', 'BAC', 'WFC', 'C', 'GS', 'MS', 'SCHW', 'BLK', 'SPGI', 'AXP',
-    'V', 'MA', 'USB', 'PNC', 'TFC', 'COF', 'BK', 'CB', 'PGR', 'MET',
-    'PRU', 'AIG', 'MMC', 'ICE', 'CME', 'AON', 'TRV', 'ALL',
-    // Industrials
-    'CAT', 'DE', 'BA', 'HON', 'GE', 'UNP', 'UPS', 'FDX', 'LMT', 'RTX',
-    'NOC', 'GD', 'MMM', 'EMR', 'ETN', 'ITW', 'CSX', 'NSC', 'WM', 'RSG',
-    'PH', 'ROP', 'CARR', 'PCAR', 'CPRT', 'FAST', 'PAYX', 'ADP',
-    // Energy
-    'XOM', 'CVX', 'COP', 'SLB', 'EOG', 'MPC', 'PSX', 'VLO', 'OXY', 'WMB',
-    'KMI', 'OKE', 'HES', 'DVN', 'HAL', 'BKR', 'FANG',
-    // Materials
-    'LIN', 'APD', 'SHW', 'ECL', 'FCX', 'NEM', 'NUE', 'DOW', 'CTVA', 'VMC', 'MLM',
-    // Utilities
-    'NEE', 'DUK', 'SO', 'D', 'AEP', 'EXC', 'SRE', 'XEL', 'PEG', 'ED', 'VST', 'CEG',
-    // REITs
-    'PLD', 'AMT', 'EQIX', 'CCI', 'PSA', 'O', 'SPG', 'WELL', 'DLR', 'VICI',
-];
