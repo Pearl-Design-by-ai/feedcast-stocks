@@ -7,10 +7,12 @@
 
 import { ArrowUp, ArrowDown, Minus, Rocket, ShieldCheck, TrendingUp, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { LeveragePair, LevAction, SubState } from '@/lib/leverage';
+import type { LeveragePair, LevAction, SubState, LeverageBacktest, PairBacktest, BtLeg, BtPoint } from '@/lib/leverage';
 
 const fmtNum = (v: number | null) =>
     v == null ? '—' : v.toLocaleString('en-US', { maximumFractionDigits: v >= 1000 ? 0 : 2 });
+
+const fmtUSD = (v: number) => `$${Math.round(v).toLocaleString('en-US')}`;
 
 const SUB_TONE: Record<SubState, string> = {
     bull: 'bg-emerald-400/10 text-emerald-400',
@@ -182,4 +184,108 @@ export function MiniTrend({ up }: { up: boolean }) {
     return up
         ? <span className="inline-flex items-center gap-0.5 text-[11px] text-emerald-400"><TrendingUp size={12} />up</span>
         : <span className="inline-flex items-center gap-0.5 text-[11px] text-red-400"><TrendingDown size={12} />down</span>;
+}
+
+// ── YTD backtest ────────────────────────────────────────────────────────────
+
+/** Dual-axis-free equity sparkline: strategy (violet) vs plain 1x (teal) vs naked 3x (faint). */
+function Sparkline({ curve }: { curve: BtPoint[] }) {
+    const n = curve.length;
+    if (n < 2) return null;
+    const all = curve.flatMap((p) => [p.strat, p.flat, p.lev3x]);
+    const min = Math.min(...all);
+    const max = Math.max(...all);
+    const span = max - min || 1;
+    const x = (i: number) => (i / (n - 1)) * 100;
+    const y = (v: number) => 100 - ((v - min) / span) * 100;
+    const line = (key: 'strat' | 'flat' | 'lev3x') => curve.map((p, i) => `${x(i).toFixed(2)},${y(p[key]).toFixed(2)}`).join(' ');
+    const yBase = y(curve[0].strat); // the $100k start line
+
+    return (
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-24 w-full" aria-hidden>
+            <line x1="0" x2="100" y1={yBase} y2={yBase} stroke="#374151" strokeWidth={1} strokeDasharray="2 2" vectorEffect="non-scaling-stroke" />
+            <polyline points={line('lev3x')} fill="none" stroke="#4b5563" strokeWidth={1} vectorEffect="non-scaling-stroke" />
+            <polyline points={line('flat')} fill="none" stroke="#2dd4bf" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
+            <polyline points={line('strat')} fill="none" stroke="#a78bfa" strokeWidth={1.75} vectorEffect="non-scaling-stroke" />
+        </svg>
+    );
+}
+
+function LegRow({ label, color, leg, highlight }: { label: string; color: string; leg: BtLeg; highlight?: boolean }) {
+    const pos = leg.retPct >= 0;
+    return (
+        <div className={cn('flex items-center justify-between gap-3 rounded-lg px-3 py-2', highlight ? 'bg-violet-400/[0.06] ring-1 ring-inset ring-violet-400/20' : 'bg-gray-900/60')}>
+            <div className="flex min-w-0 items-center gap-2">
+                <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+                <span className={cn('truncate text-xs', highlight ? 'font-semibold text-gray-100' : 'text-gray-300')}>{label}</span>
+            </div>
+            <div className="flex shrink-0 items-baseline gap-3 text-right tabular-nums">
+                <span className="text-sm font-bold text-gray-100">{fmtUSD(leg.value)}</span>
+                <span className={cn('w-16 text-xs font-semibold', pos ? 'text-emerald-400' : 'text-red-400')}>{pos ? '+' : ''}{leg.retPct.toFixed(1)}%</span>
+                <span className="hidden w-20 text-[11px] text-gray-500 sm:inline" title="Worst peak-to-trough drawdown over the window">dd {leg.maxDdPct.toFixed(1)}%</span>
+            </div>
+        </div>
+    );
+}
+
+/** One pair's YTD backtest: rotation strategy vs plain 1x vs naked 3x, from $100k. */
+export function PairBacktestCard({ p }: { p: PairBacktest }) {
+    const beatFlat = p.strategy.value - p.flat.value;
+    return (
+        <div className="flex flex-col rounded-2xl border border-gray-800 bg-gray-900/40 p-5">
+            <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                    <h3 className="text-lg font-bold text-gray-100">{p.market} <span className="font-mono text-xs font-normal text-gray-500">{p.baseSymbol}/{p.leveragedSymbol}</span></h3>
+                    <p className="text-[11px] text-gray-500">{p.startDate} → {p.endDate} · {p.days} trading days · avg {p.avgLeveragedPct}% in {p.leveragedSymbol}</p>
+                </div>
+                <span className="shrink-0 rounded-lg bg-gray-800/70 px-2.5 py-1 text-[11px] font-semibold text-gray-300">from {fmtUSD(p.startValue)}</span>
+            </div>
+
+            <div className="mt-4">
+                <Sparkline curve={p.curve} />
+            </div>
+
+            <div className="mt-3 flex flex-col gap-1.5">
+                <LegRow label={`Rotation strategy (${p.leveragedSymbol}↔${p.baseSymbol})`} color="#a78bfa" leg={p.strategy} highlight />
+                <LegRow label={`Plain ${p.baseSymbol} (1x buy & hold)`} color="#2dd4bf" leg={p.flat} />
+                <LegRow label={`Buy & hold ${p.leveragedSymbol} (3x, no timing)`} color="#4b5563" leg={p.lev3x} />
+            </div>
+
+            <p className="mt-3 text-[11px] leading-relaxed text-gray-400">
+                The rotation ended at <span className="font-semibold text-violet-300">{fmtUSD(p.strategy.value)}</span> —{' '}
+                <span className={cn('font-semibold', beatFlat >= 0 ? 'text-emerald-400' : 'text-red-400')}>
+                    {beatFlat >= 0 ? '+' : '−'}{fmtUSD(Math.abs(beatFlat))} {beatFlat >= 0 ? 'ahead of' : 'behind'}
+                </span>{' '}
+                plain {p.baseSymbol}, at a worst drawdown of {p.strategy.maxDdPct.toFixed(1)}% vs {p.lev3x.maxDdPct.toFixed(1)}% for naked {p.leveragedSymbol}.
+            </p>
+        </div>
+    );
+}
+
+/** The full YTD backtest section. */
+export function BacktestSection({ bt }: { bt: LeverageBacktest }) {
+    if (bt.pairs.length === 0) return null;
+    return (
+        <section className="flex flex-col gap-4">
+            <div>
+                <h2 className="text-xl font-bold text-gray-100">{bt.year} YTD backtest — $100k each</h2>
+                <p className="mt-1 max-w-3xl text-sm text-gray-400">
+                    What <span className="text-gray-200">$100,000</span> would be worth today if, every day since the start of {bt.year}, you had held the
+                    mix this screen recommended off the <em>prior</em> close (no lookahead, daily rebalance, on the real {`${bt.pairs[0]?.leveragedSymbol}/${bt.pairs.at(-1)?.leveragedSymbol}`} prices) —
+                    versus simply buying and holding the plain 1x, and versus holding the 3x with no timing at all. Gross of costs and taxes.
+                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-gray-500">
+                    <span className="inline-flex items-center gap-1.5"><span className="h-2 w-3 rounded-full" style={{ backgroundColor: '#a78bfa' }} /> Rotation strategy</span>
+                    <span className="inline-flex items-center gap-1.5"><span className="h-2 w-3 rounded-full" style={{ backgroundColor: '#2dd4bf' }} /> Plain 1x</span>
+                    <span className="inline-flex items-center gap-1.5"><span className="h-2 w-3 rounded-full" style={{ backgroundColor: '#4b5563' }} /> Buy & hold 3x</span>
+                    <span className="inline-flex items-center gap-1.5"><span className="h-0 w-3 border-t border-dashed border-gray-600" /> $100k start</span>
+                </div>
+            </div>
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                {bt.pairs.map((p) => (
+                    <PairBacktestCard key={p.key} p={p} />
+                ))}
+            </div>
+        </section>
+    );
 }

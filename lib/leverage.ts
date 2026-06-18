@@ -45,11 +45,47 @@ export interface LeveragePair {
     limited: boolean;
 }
 
+export interface BtLeg {
+    value: number;
+    retPct: number;
+    maxDdPct: number;
+}
+
+export interface BtPoint {
+    date: string;
+    strat: number;
+    flat: number;
+    lev3x: number;
+}
+
+export interface PairBacktest {
+    key: string;
+    market: string;
+    baseSymbol: string;
+    leveragedSymbol: string;
+    leverageX: number;
+    startValue: number;
+    startDate: string;
+    endDate: string;
+    days: number;
+    avgLeveragedPct: number;
+    strategy: BtLeg;
+    flat: BtLeg;
+    lev3x: BtLeg;
+    curve: BtPoint[];
+}
+
+export interface LeverageBacktest {
+    year: number;
+    pairs: PairBacktest[];
+}
+
 export interface LeverageReport {
     asOf: string;
     dataDate: string;
     vix: number | null;
     vixNote: string;
     pairs: LeveragePair[];
+    backtest: LeverageBacktest | null;
     disclaimer: string;
 }
