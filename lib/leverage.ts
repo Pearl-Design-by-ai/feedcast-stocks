@@ -77,6 +77,9 @@ export interface PairBacktest {
 
 export interface LeverageBacktest {
     year: number;
+    range: string;
+    label: string;
+    costBps: number;
     pairs: PairBacktest[];
 }
 

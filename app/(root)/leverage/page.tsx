@@ -3,7 +3,8 @@ import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { Loader2, Rocket } from 'lucide-react';
 import DataDisclaimer from '@/components/DataDisclaimer';
-import { LeveragePairCard, BacktestSection } from '@/components/leverage/LeverageUi';
+import { LeveragePairCard } from '@/components/leverage/LeverageUi';
+import BacktestExplorer from '@/components/leverage/BacktestExplorer';
 import { getLeverageReport } from '@/lib/actions/leverage.actions';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { isPowerUserEmail } from '@/lib/constants';
@@ -47,7 +48,7 @@ async function Leverage() {
                 ))}
             </div>
 
-            {r.backtest && <BacktestSection bt={r.backtest} />}
+            {r.backtest && <BacktestExplorer initial={r.backtest} />}
 
             <p className="text-[10px] leading-relaxed text-gray-600">{r.disclaimer}</p>
         </>

@@ -11,6 +11,8 @@
 import { engineGet } from '@/lib/engine-client';
 import type { LeverageReport } from '@/lib/leverage';
 
-export async function getLeverageReport(): Promise<LeverageReport | null> {
-    return engineGet<LeverageReport | null>('/v1/leverage', {}, null);
+export type LevRange = '6m' | 'ytd' | '1y' | 'max';
+
+export async function getLeverageReport(range: LevRange = 'ytd'): Promise<LeverageReport | null> {
+    return engineGet<LeverageReport | null>('/v1/leverage', { range }, null);
 }

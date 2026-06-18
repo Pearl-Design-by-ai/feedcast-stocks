@@ -268,11 +268,11 @@ export function BacktestSection({ bt }: { bt: LeverageBacktest }) {
     return (
         <section className="flex flex-col gap-4">
             <div>
-                <h2 className="text-xl font-bold text-gray-100">{bt.year} YTD backtest — $100k each</h2>
+                <h2 className="text-xl font-bold text-gray-100">{bt.label} backtest — $100k each</h2>
                 <p className="mt-1 max-w-3xl text-sm text-gray-400">
-                    What <span className="text-gray-200">$100,000</span> would be worth today if, every day since the start of {bt.year}, you had held the
+                    What <span className="text-gray-200">$100,000</span> would be worth today if, every day over this window, you had held the
                     mix this screen recommended off the <em>prior</em> close (no lookahead, daily rebalance, on the real {`${bt.pairs[0]?.leveragedSymbol}/${bt.pairs.at(-1)?.leveragedSymbol}`} prices) —
-                    versus simply buying and holding the plain 1x, and versus holding the 3x with no timing at all. Gross of costs and taxes.
+                    versus simply buying and holding the plain 1x, and versus holding the 3x with no timing at all. Net of ~{bt.costBps} bps per rebalance; gross of taxes.
                 </p>
                 <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-gray-500">
                     <span className="inline-flex items-center gap-1.5"><span className="h-2 w-3 rounded-full" style={{ backgroundColor: '#a78bfa' }} /> Rotation strategy</span>
