@@ -228,6 +228,113 @@ export function SignalCard({ s }: { s: IndexSignal }) {
     );
 }
 
+const TONE_TEXT: Record<'pos' | 'neutral' | 'neg', string> = {
+    pos: 'text-emerald-400',
+    neutral: 'text-gray-300',
+    neg: 'text-red-400',
+};
+
+/** Per-action styling for the ladder badges. add=green, hold=gray, trim=amber, de-risk=red. */
+const ACTION_TONE: Record<import('@/lib/signals-scan').AllocAction, { chip: string; dot: string }> = {
+    add: { chip: 'bg-emerald-500/10 text-emerald-400 ring-1 ring-inset ring-emerald-400/30', dot: 'bg-emerald-400' },
+    hold: { chip: 'bg-gray-700/60 text-gray-300', dot: 'bg-gray-500' },
+    trim: { chip: 'bg-amber-500/10 text-amber-400 ring-1 ring-inset ring-amber-400/30', dot: 'bg-amber-400' },
+    'de-risk': { chip: 'bg-red-500/10 text-red-400 ring-1 ring-inset ring-red-400/30', dot: 'bg-red-400' },
+};
+
+const ACTION_LABEL: Record<import('@/lib/signals-scan').AllocAction, string> = {
+    add: 'Add',
+    hold: 'Hold',
+    trim: 'Trim',
+    'de-risk': 'De-risk',
+};
+
+/** Tactical equity/cash tilt with a scenario ladder — sits under the market tone summary. */
+export function TacticalCard({ t }: { t: import('@/lib/signals-scan').TacticalAllocation }) {
+    const equity = Math.min(100, Math.max(0, t.equityPct));
+    const cash = Math.min(100, Math.max(0, t.cashPct));
+
+    return (
+        <div className="rounded-xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
+            <div className="flex flex-wrap items-end justify-between gap-2">
+                <div>
+                    <h2 className="text-base font-semibold text-gray-100">Tactical allocation</h2>
+                    <p className="mt-0.5 text-xs text-gray-500">
+                        Suggested equity/cash tilt around <span className="text-gray-300">{t.anchor}</span>
+                        {t.anchorLevel != null && <span className="tabular-nums text-gray-400"> · {fmtNum(t.anchorLevel)}</span>}
+                    </p>
+                </div>
+                <span className={cn('text-sm font-bold', TONE_TEXT[t.tone])}>{t.stance}</span>
+            </div>
+
+            {/* Equity vs cash bar */}
+            <div className="mt-4">
+                <div className="flex items-center justify-between text-[11px] font-semibold tabular-nums">
+                    <span className="text-teal-300">Equity {equity}%</span>
+                    <span className="text-gray-400">Cash {cash}%</span>
+                </div>
+                <div className="mt-1 flex h-2.5 w-full overflow-hidden rounded-full bg-gray-800">
+                    <div className="h-full bg-teal-400" style={{ width: `${equity}%` }} />
+                    <div className="h-full bg-gray-600" style={{ width: `${cash}%` }} />
+                </div>
+            </div>
+
+            {/* Reads */}
+            <p className="mt-4 text-sm leading-relaxed text-gray-300">{t.rationale}</p>
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <div className="rounded-lg border border-gray-800 bg-gray-900/60 p-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Volatility</p>
+                    <p className="mt-1 text-[11px] leading-relaxed text-gray-400">{t.volNote}</p>
+                </div>
+                <div className="rounded-lg border border-gray-800 bg-gray-900/60 p-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Trend</p>
+                    <p className="mt-1 text-[11px] leading-relaxed text-gray-400">{t.trendNote}</p>
+                </div>
+            </div>
+
+            {/* Scenario ladder */}
+            {t.ladder.length > 0 && (
+                <div className="mt-4">
+                    <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-gray-500">If the market moves — the ladder</p>
+                    <ul className="flex flex-col gap-2">
+                        {t.ladder.map((step, i) => {
+                            const tone = ACTION_TONE[step.action];
+                            return (
+                                <li key={i} className="rounded-lg border border-gray-800 bg-gray-900/60 p-3">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <span className={cn('inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold', tone.chip)}>
+                                                    <span className={cn('h-1.5 w-1.5 rounded-full', tone.dot)} />
+                                                    {ACTION_LABEL[step.action]}
+                                                </span>
+                                                <span className="truncate text-xs font-semibold text-gray-200">{step.scenario}</span>
+                                            </div>
+                                            {(step.movePct != null || step.level != null) && (
+                                                <p className="mt-1 text-[11px] tabular-nums text-gray-500">
+                                                    {step.movePct != null && <span>{step.movePct > 0 ? '+' : ''}{step.movePct.toFixed(1)}%</span>}
+                                                    {step.movePct != null && step.level != null && <span> · </span>}
+                                                    {step.level != null && <span>{fmtNum(step.level)}</span>}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <span className="shrink-0 text-right text-[11px] font-semibold tabular-nums text-gray-400">
+                                            <span className="text-teal-300">{step.equityPct}%</span> / {step.cashPct}%
+                                        </span>
+                                    </div>
+                                    <p className="mt-1.5 text-[11px] leading-relaxed text-gray-400">{step.note}</p>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </div>
+            )}
+
+            <p className="mt-4 text-[10px] leading-relaxed text-gray-600">{t.disclaimer}</p>
+        </div>
+    );
+}
+
 const DD_TONE: Record<'pos' | 'neutral' | 'warn' | 'neg', string> = {
     pos: 'text-emerald-400',
     neutral: 'text-gray-300',

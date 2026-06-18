@@ -11,6 +11,32 @@ import { engineGet } from '@/lib/engine-client';
 import type { IndexSignal, MacroRead, MarketTone } from '@/lib/signals';
 import type { DrawdownStat, WhyUp } from '@/lib/market-history';
 
+export type AllocAction = 'add' | 'hold' | 'trim' | 'de-risk';
+
+export interface AllocationStep {
+    scenario: string;
+    movePct: number | null;
+    level: number | null;
+    action: AllocAction;
+    equityPct: number;
+    cashPct: number;
+    note: string;
+}
+
+export interface TacticalAllocation {
+    anchor: string;
+    anchorLevel: number | null;
+    equityPct: number;
+    cashPct: number;
+    stance: string;
+    tone: 'pos' | 'neutral' | 'neg';
+    rationale: string;
+    volNote: string;
+    trendNote: string;
+    ladder: AllocationStep[];
+    disclaimer: string;
+}
+
 export interface SignalsReport {
     asOf: string;
     /** The most recent close date in the underlying EOD data (YYYY-MM-DD). */
@@ -22,6 +48,8 @@ export interface SignalsReport {
     /** Curated context served by the engine. */
     correctionStats: DrawdownStat[];
     whyMarketsRise: WhyUp[];
+    /** Engine-derived equity/cash tilt with a scenario ladder. */
+    tactical: TacticalAllocation | null;
 }
 
 export async function getSignalsReport(): Promise<SignalsReport | null> {

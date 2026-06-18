@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { Loader2, Signal } from 'lucide-react';
 import DataDisclaimer from '@/components/DataDisclaimer';
-import { SignalCard, MacroStrip, SectorBoard, RecoveryStats, WhyMarketsRise } from '@/components/signals/SignalsUi';
+import { SignalCard, MacroStrip, SectorBoard, RecoveryStats, WhyMarketsRise, TacticalCard } from '@/components/signals/SignalsUi';
 import { getSignalsReport } from '@/lib/signals-scan';
 import { cn, formatEodDate } from '@/lib/utils';
 
@@ -23,7 +23,7 @@ async function Signals() {
         );
     }
 
-    const { indices, sectors, macro, tone, asOf, dataDate } = r;
+    const { indices, sectors, macro, tone, asOf, dataDate, tactical } = r;
 
     return (
         <>
@@ -37,6 +37,8 @@ async function Signals() {
                 </div>
                 <p className="mt-1 text-sm text-gray-400">{tone.note}</p>
             </div>
+
+            {tactical && <TacticalCard t={tactical} />}
 
             <MacroStrip macro={macro} />
 
