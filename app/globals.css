@@ -608,3 +608,10 @@
 .scrollbar-hide-default::-webkit-scrollbar-thumb:hover {
     background-color: #9095A1;
 }
+
+/* Hide Google Translate default toolbar & banner (ported from feedcast.news) */
+.goog-te-banner-frame, #goog-gt-tt, .goog-te-balloon-frame {
+    display: none !important;
+}
+body { top: 0 !important; }
+.skiptranslate { display: none !important; }

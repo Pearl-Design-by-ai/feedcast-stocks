@@ -1,6 +1,7 @@
 import Link from "next/link";
 import UserDropdown from "@/components/UserDropdown";
 import MobileDrawer from "@/components/MobileDrawer";
+import { LanguageSelector } from "@/components/LanguageSelector";
 import { FeedcastLogo } from "@/components/FeedcastLogo";
 
 const Header = ({ user, initialStocks, isPowerUser = false }: { user: User; initialStocks: StockWithWatchlistStatus[]; isPowerUser?: boolean }) => {
@@ -21,6 +22,7 @@ const Header = ({ user, initialStocks, isPowerUser = false }: { user: User; init
                 </div>
 
                 <div className="flex items-center gap-2">
+                    <LanguageSelector />
                     <UserDropdown user={user} />
                 </div>
             </div>
