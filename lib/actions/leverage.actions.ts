@@ -12,7 +12,12 @@ import { engineGet } from '@/lib/engine-client';
 import type { LeverageReport } from '@/lib/leverage';
 
 export type LevRange = '6m' | 'ytd' | '1y' | 'max';
+export type LevRebal = 'daily' | 'weekly';
 
-export async function getLeverageReport(range: LevRange = 'ytd'): Promise<LeverageReport | null> {
-    return engineGet<LeverageReport | null>('/v1/leverage', { range }, null);
+export async function getLeverageReport(
+    range: LevRange = 'ytd',
+    rebal: LevRebal = 'daily',
+    costBps = 3,
+): Promise<LeverageReport | null> {
+    return engineGet<LeverageReport | null>('/v1/leverage', { range, rebal, cost: String(costBps) }, null);
 }
