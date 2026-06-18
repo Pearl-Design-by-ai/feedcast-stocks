@@ -5,6 +5,7 @@ import { Loader2, Rocket } from 'lucide-react';
 import DataDisclaimer from '@/components/DataDisclaimer';
 import { LeveragePairCard } from '@/components/leverage/LeverageUi';
 import BacktestExplorer from '@/components/leverage/BacktestExplorer';
+import StressTester from '@/components/leverage/StressTester';
 import { getLeverageReport } from '@/lib/actions/leverage.actions';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { isPowerUserEmail } from '@/lib/constants';
@@ -49,6 +50,8 @@ async function Leverage() {
             </div>
 
             {r.backtest && <BacktestExplorer initial={r.backtest} />}
+
+            <StressTester />
 
             <p className="text-[10px] leading-relaxed text-gray-600">{r.disclaimer}</p>
         </>

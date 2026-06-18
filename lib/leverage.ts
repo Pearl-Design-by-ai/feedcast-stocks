@@ -93,3 +93,44 @@ export interface LeverageReport {
     backtest: LeverageBacktest | null;
     disclaimer: string;
 }
+
+export interface StressScenario {
+    key: string;
+    label: string;
+    desc: string;
+    dropPct: number;
+    dropDays: number;
+    recoverPct: number;
+    recoverDays: number;
+    vix: number;
+}
+
+export interface PairStress {
+    key: string;
+    market: string;
+    baseSymbol: string;
+    leveragedSymbol: string;
+    startValue: number;
+    shockStartIdx: number;
+    peakStrat: number;
+    peakFlat: number;
+    peakLev3x: number;
+    strategy: BtLeg;
+    flat: BtLeg;
+    lev3x: BtLeg;
+    shockStratPct: number;
+    shockFlatPct: number;
+    shockLev3xPct: number;
+    minLeveragedPct: number;
+    curve: BtPoint[];
+}
+
+export interface StressReport {
+    range: string;
+    label: string;
+    rebal: string;
+    costBps: number;
+    scenario: StressScenario;
+    pairs: PairStress[];
+    disclaimer: string;
+}

@@ -5,9 +5,9 @@
  * accents flag the 3x sleeve, teal the 1x ballast.
  */
 
-import { ArrowUp, ArrowDown, Minus, Rocket, ShieldCheck, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowUp, ArrowDown, Minus, Rocket, ShieldCheck, TrendingUp, TrendingDown, ShieldAlert, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { LeveragePair, LevAction, SubState, LeverageBacktest, PairBacktest, BtLeg, BtPoint } from '@/lib/leverage';
+import type { LeveragePair, LevAction, SubState, LeverageBacktest, PairBacktest, BtLeg, BtPoint, StressReport, PairStress } from '@/lib/leverage';
 
 const fmtNum = (v: number | null) =>
     v == null ? '—' : v.toLocaleString('en-US', { maximumFractionDigits: v >= 1000 ? 0 : 2 });
@@ -287,5 +287,114 @@ export function BacktestSection({ bt }: { bt: LeverageBacktest }) {
                 ))}
             </div>
         </section>
+    );
+}
+
+// ── Stress test ─────────────────────────────────────────────────────────────
+
+/** Equity sparkline that shades the shock region (everything past shockStartIdx). */
+function StressSparkline({ curve, shockStartIdx }: { curve: BtPoint[]; shockStartIdx: number }) {
+    const n = curve.length;
+    if (n < 2) return null;
+    const all = curve.flatMap((p) => [p.strat, p.flat, p.lev3x]);
+    const min = Math.min(...all);
+    const max = Math.max(...all);
+    const span = max - min || 1;
+    const x = (i: number) => (i / (n - 1)) * 100;
+    const y = (v: number) => 100 - ((v - min) / span) * 100;
+    const line = (key: 'strat' | 'flat' | 'lev3x') => curve.map((p, i) => `${x(i).toFixed(2)},${y(p[key]).toFixed(2)}`).join(' ');
+    const shockX = x(shockStartIdx);
+
+    return (
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-28 w-full" aria-hidden>
+            <rect x={shockX} y="0" width={100 - shockX} height="100" fill="#ef4444" opacity="0.06" />
+            <line x1={shockX} x2={shockX} y1="0" y2="100" stroke="#ef4444" strokeWidth={1} strokeDasharray="2 2" vectorEffect="non-scaling-stroke" />
+            <polyline points={line('lev3x')} fill="none" stroke="#4b5563" strokeWidth={1} vectorEffect="non-scaling-stroke" />
+            <polyline points={line('flat')} fill="none" stroke="#2dd4bf" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
+            <polyline points={line('strat')} fill="none" stroke="#a78bfa" strokeWidth={1.75} vectorEffect="non-scaling-stroke" />
+        </svg>
+    );
+}
+
+function StressLegRow({ label, color, leg, shockPct, peak, highlight }: { label: string; color: string; leg: BtLeg; shockPct: number; peak: number; highlight?: boolean }) {
+    return (
+        <div className={cn('grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 rounded-lg px-3 py-2 sm:grid-cols-[1fr_auto_auto_auto]', highlight ? 'bg-violet-400/[0.06] ring-1 ring-inset ring-violet-400/20' : 'bg-gray-900/60')}>
+            <div className="flex min-w-0 items-center gap-2">
+                <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+                <span className={cn('truncate text-xs', highlight ? 'font-semibold text-gray-100' : 'text-gray-300')}>{label}</span>
+            </div>
+            <div className="text-right text-[11px] tabular-nums text-gray-500" title="Value at the moment the shock hits">
+                <span className="hidden sm:inline">peak </span>{fmtUSD(peak)}
+            </div>
+            <div className={cn('text-right text-sm font-bold tabular-nums', shockPct < 0 ? 'text-red-400' : 'text-emerald-400')} title="Shock-only change from the pre-shock peak">
+                {shockPct >= 0 ? '+' : ''}{shockPct.toFixed(1)}%
+            </div>
+            <div className="text-right text-xs font-semibold tabular-nums text-gray-200" title="Value after the shock">{fmtUSD(leg.value)}</div>
+        </div>
+    );
+}
+
+/** One pair's stress outcome: real run-up then the synthetic shock. */
+export function StressPairCard({ p }: { p: PairStress }) {
+    const keep = p.strategy.value - p.lev3x.value;
+    return (
+        <div className="flex flex-col rounded-2xl border border-gray-800 bg-gray-900/40 p-5">
+            <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                    <h3 className="text-lg font-bold text-gray-100">{p.market} <span className="font-mono text-xs font-normal text-gray-500">{p.baseSymbol}/{p.leveragedSymbol}</span></h3>
+                    <p className="text-[11px] text-gray-500">Red zone = the shock. Rotation cut leverage to a low of <span className="font-semibold text-violet-300">{p.minLeveragedPct}%</span> {p.leveragedSymbol} as it hit.</p>
+                </div>
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-red-500/10 px-2.5 py-1 text-[11px] font-semibold text-red-300 ring-1 ring-inset ring-red-400/30">
+                    <ShieldAlert size={12} /> stress
+                </span>
+            </div>
+
+            <div className="mt-4">
+                <StressSparkline curve={p.curve} shockStartIdx={p.shockStartIdx} />
+            </div>
+
+            <div className="mt-1 mb-2 grid grid-cols-[1fr_auto_auto_auto] gap-x-3 px-3 text-[9px] font-bold uppercase tracking-wider text-gray-600">
+                <span>Strategy</span><span className="hidden text-right sm:block">At shock</span><span className="text-right">Shock Δ</span><span className="text-right">After</span>
+            </div>
+            <div className="flex flex-col gap-1.5">
+                <StressLegRow label={`Rotation (${p.leveragedSymbol}↔${p.baseSymbol})`} color="#a78bfa" leg={p.strategy} shockPct={p.shockStratPct} peak={p.peakStrat} highlight />
+                <StressLegRow label={`Plain ${p.baseSymbol} (1x)`} color="#2dd4bf" leg={p.flat} shockPct={p.shockFlatPct} peak={p.peakFlat} />
+                <StressLegRow label={`Buy & hold ${p.leveragedSymbol} (3x)`} color="#4b5563" leg={p.lev3x} shockPct={p.shockLev3xPct} peak={p.peakLev3x} />
+            </div>
+
+            <p className="mt-3 text-[11px] leading-relaxed text-gray-400">
+                Through the shock the rotation lost <span className="font-semibold text-red-400">{p.shockStratPct.toFixed(1)}%</span> vs{' '}
+                <span className="font-semibold text-red-400">{p.shockLev3xPct.toFixed(1)}%</span> for naked {p.leveragedSymbol} —
+                ending <span className={cn('font-semibold', keep >= 0 ? 'text-emerald-400' : 'text-red-400')}>{fmtUSD(Math.abs(keep))} {keep >= 0 ? 'more' : 'less'}</span> in hand
+                by de-levering as the trend broke.
+            </p>
+        </div>
+    );
+}
+
+/** The full stress section: scenario summary + a card per pair. */
+export function StressSection({ report }: { report: StressReport }) {
+    if (report.pairs.length === 0) return null;
+    const s = report.scenario;
+    return (
+        <div className="flex flex-col gap-4">
+            <div className="rounded-xl border border-red-400/20 bg-red-400/[0.03] p-4 md:p-5">
+                <h3 className="flex items-center gap-2 text-base font-semibold text-gray-100"><Zap size={16} className="text-red-400" /> {s.label}</h3>
+                {s.desc && <p className="mt-0.5 text-xs text-gray-400">{s.desc}</p>}
+                <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
+                    <span className="rounded-md bg-gray-900/60 px-2 py-1 text-gray-300">Drop <span className="font-bold text-red-300">−{s.dropPct}%</span> over {s.dropDays}d</span>
+                    <span className="rounded-md bg-gray-900/60 px-2 py-1 text-gray-300">Recover <span className="font-bold text-emerald-300">{s.recoverPct}%</span>{s.recoverDays ? ` over ${s.recoverDays}d` : ''}</span>
+                    <span className="rounded-md bg-gray-900/60 px-2 py-1 text-gray-300">VIX <span className="font-bold text-amber-300">{s.vix}</span></span>
+                    <span className="rounded-md bg-gray-900/60 px-2 py-1 text-gray-300">Run-up: {report.label}, {report.rebal}, {report.costBps}bps</span>
+                </div>
+                <p className="mt-2 text-[11px] text-gray-500">$100k grows over the real {report.label.toLowerCase()} window, then the synthetic shock hits — the 3x leg runs real daily-reset math (with decay), and the rotation de-levers as the 200-day breaks.</p>
+            </div>
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                {report.pairs.map((p) => (
+                    <StressPairCard key={p.key} p={p} />
+                ))}
+            </div>
+            <p className="text-[10px] leading-relaxed text-gray-600">{report.disclaimer}</p>
+        </div>
     );
 }
