@@ -35,6 +35,7 @@ import {
     Lightbulb,
     Settings2,
     Briefcase,
+    Rocket,
     type LucideIcon,
 } from 'lucide-react';
 
@@ -46,6 +47,7 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
     '/bubble-detector': Radar,
     '/crash-detector': Siren,
     '/buy-sell-signals': Signal,
+    '/leverage': Rocket,
     '/valuation': Scale,
     '/portfolio-lab': Briefcase,
     '/ask': Sparkles,

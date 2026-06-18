@@ -116,8 +116,10 @@ export function isPowerUserEmail(email: string | null | undefined): boolean {
     return !!email && POWER_USER_EMAILS.includes(email.trim().toLowerCase());
 }
 
-/** Nav items injected only for power users, by section id. Empty for now. */
-const POWER_NAV_ITEMS: Record<string, { href: string; label: string }[]> = {};
+/** Nav items injected only for power users, by section id. */
+const POWER_NAV_ITEMS: Record<string, { href: string; label: string }[]> = {
+    research: [{ href: '/leverage', label: 'Leverage Rotation' }],
+};
 
 /**
  * The nav sections for a given user — the base NAV_SECTIONS plus any

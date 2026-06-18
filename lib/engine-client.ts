@@ -35,6 +35,7 @@ const CACHE_TTLS: Array<[prefix: string, seconds: number]> = [
   // EOD analysis reports — change at most once per trading day; cache 30min.
   ['/v1/crash', 1_800],
   ['/v1/signals', 1_800],
+  ['/v1/leverage', 1_800],
   ['/v1/bubble', 1_800],
   // Curated indicator catalog — static editorial.
   ['/v1/indicators/catalog', 86_400],
