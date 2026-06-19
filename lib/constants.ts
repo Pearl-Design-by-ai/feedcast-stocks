@@ -119,6 +119,7 @@ export function isPowerUserEmail(email: string | null | undefined): boolean {
 /** Nav items injected only for power users, by section id. */
 const POWER_NAV_ITEMS: Record<string, { href: string; label: string }[]> = {
     research: [{ href: '/leverage', label: 'Leverage Rotation' }],
+    more: [{ href: '/admin', label: 'Admin Console' }],
 };
 
 /**

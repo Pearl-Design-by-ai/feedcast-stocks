@@ -36,6 +36,7 @@ import {
     Settings2,
     Briefcase,
     Rocket,
+    ShieldCheck,
     type LucideIcon,
 } from 'lucide-react';
 
@@ -68,6 +69,7 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
     '/about': Info,
     '/help': LifeBuoy,
     '/api-docs': Code,
+    '/admin': ShieldCheck,
 };
 
 export const SECTION_ICONS: Record<string, LucideIcon> = {
