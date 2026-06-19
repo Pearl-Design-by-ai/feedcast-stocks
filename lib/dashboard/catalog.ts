@@ -47,19 +47,19 @@ export interface ModuleMeta {
 export const CATALOG: ModuleMeta[] = [
   // TradingView
   { id: 'market-quotes', title: 'Market Quotes', description: 'Live quote table across key stocks.', category: 'TradingView', defaultSpan: 'full' },
-  { id: 'top-stories', title: 'Top Stories', description: 'Latest market news headlines.', category: 'TradingView', defaultSpan: 'half' },
+  { id: 'top-stories', title: 'Top Stories', description: 'Latest market news headlines.', category: 'TradingView', defaultSpan: 'full' },
   { id: 'screener', title: 'Stock Screener', description: 'Most-capitalized stock screener.', category: 'TradingView', defaultSpan: 'full' },
-  { id: 'economic-calendar', title: 'Economic Calendar', description: 'Upcoming macro events.', category: 'TradingView', defaultSpan: 'half' },
-  { id: 'forex-heatmap', title: 'Forex Heatmap', description: 'Relative strength of major currencies.', category: 'TradingView', defaultSpan: 'half' },
-  { id: 'crypto-heatmap', title: 'Crypto Heatmap', description: 'Market-cap weighted crypto heatmap.', category: 'TradingView', defaultSpan: 'half' },
+  { id: 'economic-calendar', title: 'Economic Calendar', description: 'Upcoming macro events.', category: 'TradingView', defaultSpan: 'full' },
+  { id: 'forex-heatmap', title: 'Forex Heatmap', description: 'Relative strength of major currencies.', category: 'TradingView', defaultSpan: 'full' },
+  { id: 'crypto-heatmap', title: 'Crypto Heatmap', description: 'Market-cap weighted crypto heatmap.', category: 'TradingView', defaultSpan: 'full' },
   // AI
   { id: 'market-brief', title: 'AI Market Brief', description: 'Today’s headlines summarized by AI.', category: 'AI', defaultSpan: 'full' },
   { id: 'ai-commentary', title: 'AI Commentary', description: 'Live AI read on the market regime.', category: 'AI', defaultSpan: 'full' },
-  { id: 'ask-shortcut', title: 'Ask the Markets', description: 'Quick link into the grounded AI chat.', category: 'AI', defaultSpan: 'half' },
+  { id: 'ask-shortcut', title: 'Ask the Markets', description: 'Quick link into the grounded AI chat.', category: 'AI', defaultSpan: 'full' },
   // Personal
-  { id: 'watchlist', title: 'Watchlist', description: 'Your saved tickers at a glance.', category: 'Personal', defaultSpan: 'half' },
+  { id: 'watchlist', title: 'Watchlist', description: 'Your saved tickers at a glance.', category: 'Personal', defaultSpan: 'full' },
   // Markets
-  { id: 'market-regime', title: 'Market Regime', description: 'Risk-on/off score and signals.', category: 'Markets', defaultSpan: 'half' },
+  { id: 'market-regime', title: 'Market Regime', description: 'Risk-on/off score and signals.', category: 'Markets', defaultSpan: 'full' },
   { id: 'world-indices', title: 'World Indices', description: 'Global equity ETFs by region.', category: 'Markets', defaultSpan: 'full' },
 ];
 
@@ -77,8 +77,8 @@ const VALID_IDS = new Set(CATALOG.map((m) => m.id));
 export const DEFAULT_LAYOUT: DashboardLayout = {
   tiles: [
     { id: 'market-brief', span: 'full' },
-    { id: 'watchlist', span: 'half' },
-    { id: 'market-regime', span: 'half' },
+    { id: 'watchlist', span: 'full' },
+    { id: 'market-regime', span: 'full' },
     { id: 'market-quotes', span: 'full' },
     { id: 'top-stories', span: 'full' },
   ],
