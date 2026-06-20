@@ -5,7 +5,7 @@ import SideNav from "@/components/SideNav";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { searchStocks } from "@/lib/actions/finnhub.actions";
 import { accentHex } from "@/lib/accent";
-import { buildThemeCss, type ThemeMode } from "@/lib/appearance";
+import { buildThemeCss, DEFAULT_THEME, type ThemeMode } from "@/lib/appearance";
 import { isPowerUserEmail } from "@/lib/constants";
 import ThemeProvider from "@/components/ThemeProvider";
 
@@ -65,7 +65,7 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
     ]);
 
     const brand = accentHex(prefs.accentColor);
-    const mode = (['dark', 'light', 'auto'].includes(prefs.marketsTheme ?? '') ? prefs.marketsTheme : 'dark') as ThemeMode;
+    const mode = (['dark', 'light', 'auto'].includes(prefs.marketsTheme ?? '') ? prefs.marketsTheme : DEFAULT_THEME) as ThemeMode;
     const powerUser = isPowerUserEmail(sessionUser.email);
 
     // Injected as a :root override (rather than inline on <main>) so portaled
