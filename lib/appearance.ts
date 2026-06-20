@@ -85,7 +85,9 @@ export function backgroundTone(id: string | null | undefined): BackgroundTone {
 // ---------------------------------------------------------------------------
 
 export type ThemeMode = 'dark' | 'light' | 'auto';
-export const DEFAULT_THEME: ThemeMode = 'dark';
+// Zero-state default follows the device (prefers-color-scheme). A member's
+// stored marketsTheme overrides this; only brand-new users hit 'auto'.
+export const DEFAULT_THEME: ThemeMode = 'auto';
 
 export type LightToneId = 'pearl' | 'snow' | 'linen' | 'nardo' | 'sage' | 'blush';
 
