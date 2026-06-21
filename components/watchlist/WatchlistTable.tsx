@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUp, ArrowDown, Bell } from "lucide-react";
+import { ArrowUp, ArrowDown, Bell, ChevronsUpDown } from "lucide-react";
 import CreateAlertModal from "./CreateAlertModal";
 import WatchlistButton from "@/components/WatchlistButton";
 import { formatCurrency, formatNumber } from "@/lib/utils";
@@ -72,6 +72,122 @@ function PortfolioSummary({ stocks }: { stocks: WatchlistStockData[] }) {
         </div>
     );
 }
+
+// --- Sorting -----------------------------------------------------------------
+
+type SortKey =
+    | "name"
+    | "symbol"
+    | "price"
+    | "changePercent"
+    | "w1"
+    | "m1"
+    | "ytd"
+    | "offHigh52"
+    | "marketCap";
+type SortDir = "asc" | "desc";
+type Sort = { key: SortKey; dir: SortDir };
+
+// Pull out the comparable value for each sortable column. Returning null marks
+// the row as "no data" so it always sinks to the bottom regardless of direction.
+const SORT_ACCESSORS: Record<SortKey, (s: WatchlistStockData) => number | string | null> = {
+    name: (s) => s.name?.toLowerCase() ?? "",
+    symbol: (s) => s.symbol?.toLowerCase() ?? "",
+    price: (s) => s.price,
+    // A null price means no live quote — sort those with the other "no data" rows.
+    changePercent: (s) => (s.price != null ? s.changePercent : null),
+    w1: (s) => s.w1,
+    m1: (s) => s.m1,
+    ytd: (s) => s.ytd,
+    offHigh52: (s) => s.offHigh52,
+    marketCap: (s) => s.marketCap ?? null,
+};
+
+// Text columns read most naturally A→Z; numbers most naturally biggest-first.
+const DEFAULT_DIR: Record<SortKey, SortDir> = {
+    name: "asc",
+    symbol: "asc",
+    price: "desc",
+    changePercent: "desc",
+    w1: "desc",
+    m1: "desc",
+    ytd: "desc",
+    offHigh52: "desc",
+    marketCap: "desc",
+};
+
+function sortStocks(stocks: WatchlistStockData[], sort: Sort | null): WatchlistStockData[] {
+    if (!sort) return stocks;
+    const accessor = SORT_ACCESSORS[sort.key];
+    const dir = sort.dir === "asc" ? 1 : -1;
+    return [...stocks].sort((a, b) => {
+        const va = accessor(a);
+        const vb = accessor(b);
+        const aMissing = va == null;
+        const bMissing = vb == null;
+        if (aMissing && bMissing) return 0;
+        if (aMissing) return 1; // missing data always last
+        if (bMissing) return -1;
+        if (typeof va === "string" && typeof vb === "string") return va.localeCompare(vb) * dir;
+        return ((va as number) - (vb as number)) * dir;
+    });
+}
+
+/** Header label that toggles sorting for its column. */
+function SortHeader({
+    label,
+    sortKey,
+    sort,
+    onSort,
+    className = "",
+    align = "left",
+}: {
+    label: React.ReactNode;
+    sortKey: SortKey;
+    sort: Sort | null;
+    onSort: (key: SortKey) => void;
+    className?: string;
+    align?: "left" | "right";
+}) {
+    const active = sort?.key === sortKey;
+    return (
+        <th className={`font-semibold tracking-wide ${align === "right" ? "text-right" : ""} ${className}`}>
+            <button
+                type="button"
+                onClick={() => onSort(sortKey)}
+                aria-sort={active ? (sort!.dir === "asc" ? "ascending" : "descending") : "none"}
+                className={`inline-flex items-center gap-1 transition-colors hover:text-white ${
+                    align === "right" ? "flex-row-reverse" : ""
+                } ${active ? "text-white" : ""}`}
+                title={`Sort by ${typeof label === "string" ? label : sortKey}`}
+            >
+                <span>{label}</span>
+                {active ? (
+                    sort!.dir === "asc" ? (
+                        <ArrowUp className="h-3.5 w-3.5 text-teal-400" />
+                    ) : (
+                        <ArrowDown className="h-3.5 w-3.5 text-teal-400" />
+                    )
+                ) : (
+                    <ChevronsUpDown className="h-3.5 w-3.5 text-gray-600" />
+                )}
+            </button>
+        </th>
+    );
+}
+
+/** Options offered by the mobile sort dropdown, in display order. */
+const MOBILE_SORT_OPTIONS: { key: SortKey; label: string }[] = [
+    { key: "name", label: "Company" },
+    { key: "symbol", label: "Symbol" },
+    { key: "price", label: "Price" },
+    { key: "changePercent", label: "Today" },
+    { key: "w1", label: "1W" },
+    { key: "m1", label: "1M" },
+    { key: "ytd", label: "YTD" },
+    { key: "offHigh52", label: "52W high" },
+    { key: "marketCap", label: "Market cap" },
+];
 
 /** One stock as a phone-width card — same data and actions as the table row. */
 function MobileCard({
@@ -196,6 +312,17 @@ export default function WatchlistTable({ data, onRefresh, groupId }: WatchlistTa
         symbolsRef.current = stocks.map((s) => s.symbol);
     }, [stocks]);
 
+    // null = natural order (as the server returned it). Clicking a header sets a
+    // column; clicking the active one again flips direction.
+    const [sort, setSort] = useState<Sort | null>(null);
+    const toggleSort = (key: SortKey) =>
+        setSort((curr) =>
+            curr?.key === key
+                ? { key, dir: curr.dir === "asc" ? "desc" : "asc" }
+                : { key, dir: DEFAULT_DIR[key] }
+        );
+    const sortedStocks = useMemo(() => sortStocks(stocks, sort), [stocks, sort]);
+
     // Keyed on membership (not just length) so swapping one symbol for another
     // re-subscribes immediately instead of polling the removed symbol once more.
     const symbolsKey = stocks.map((s) => s.symbol).join(",");
@@ -251,7 +378,37 @@ export default function WatchlistTable({ data, onRefresh, groupId }: WatchlistTa
 
         {/* Mobile: stacked cards — the 10-column table can't work on a phone. */}
         <div className="flex flex-col gap-3 md:hidden">
-            {stocks.map((stock) => (
+            <div className="flex items-center gap-2">
+                <label htmlFor="watchlist-sort" className="text-xs font-medium text-gray-400">
+                    Sort
+                </label>
+                <select
+                    id="watchlist-sort"
+                    value={sort?.key ?? ""}
+                    onChange={(e) =>
+                        setSort(e.target.value ? { key: e.target.value as SortKey, dir: DEFAULT_DIR[e.target.value as SortKey] } : null)
+                    }
+                    className="flex-1 rounded-lg border border-white/10 bg-gray-900/60 px-3 py-2 text-sm text-gray-200 focus:border-teal-400/40 focus:outline-none"
+                >
+                    <option value="">Default order</option>
+                    {MOBILE_SORT_OPTIONS.map((o) => (
+                        <option key={o.key} value={o.key}>
+                            {o.label}
+                        </option>
+                    ))}
+                </select>
+                {sort && (
+                    <button
+                        type="button"
+                        onClick={() => setSort({ key: sort.key, dir: sort.dir === "asc" ? "desc" : "asc" })}
+                        className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-gray-900/60 px-3 py-2 text-sm text-gray-200 transition-colors hover:text-white"
+                        title={sort.dir === "asc" ? "Ascending" : "Descending"}
+                    >
+                        {sort.dir === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+                    </button>
+                )}
+            </div>
+            {sortedStocks.map((stock) => (
                 <MobileCard key={stock.symbol} stock={stock} onRefresh={onRefresh} onRemove={handleRemove} />
             ))}
         </div>
@@ -261,20 +418,20 @@ export default function WatchlistTable({ data, onRefresh, groupId }: WatchlistTa
             <table className="w-full min-w-[1080px] text-left text-sm border-collapse">
                 <thead className="bg-white/5 text-gray-400 font-medium border-b border-white/10">
                     <tr>
-                        <th className="px-5 py-4 font-semibold tracking-wide">Company</th>
-                        <th className="px-4 py-4 font-semibold tracking-wide">Symbol</th>
-                        <th className="px-4 py-4 font-semibold tracking-wide">Price</th>
-                        <th className="px-4 py-4 font-semibold tracking-wide">Today</th>
-                        <th className="px-4 py-4 font-semibold tracking-wide">1W</th>
-                        <th className="px-4 py-4 font-semibold tracking-wide">1M</th>
-                        <th className="px-4 py-4 font-semibold tracking-wide">YTD</th>
-                        <th className="px-4 py-4 font-semibold tracking-wide">52W / Trend</th>
-                        <th className="px-4 py-4 font-semibold tracking-wide">Cap · P/E</th>
+                        <SortHeader label="Company" sortKey="name" sort={sort} onSort={toggleSort} className="px-5 py-4" />
+                        <SortHeader label="Symbol" sortKey="symbol" sort={sort} onSort={toggleSort} className="px-4 py-4" />
+                        <SortHeader label="Price" sortKey="price" sort={sort} onSort={toggleSort} className="px-4 py-4" />
+                        <SortHeader label="Today" sortKey="changePercent" sort={sort} onSort={toggleSort} className="px-4 py-4" />
+                        <SortHeader label="1W" sortKey="w1" sort={sort} onSort={toggleSort} className="px-4 py-4" />
+                        <SortHeader label="1M" sortKey="m1" sort={sort} onSort={toggleSort} className="px-4 py-4" />
+                        <SortHeader label="YTD" sortKey="ytd" sort={sort} onSort={toggleSort} className="px-4 py-4" />
+                        <SortHeader label="52W / Trend" sortKey="offHigh52" sort={sort} onSort={toggleSort} className="px-4 py-4" />
+                        <SortHeader label="Cap · P/E" sortKey="marketCap" sort={sort} onSort={toggleSort} className="px-4 py-4" />
                         <th className="px-4 py-4 text-right font-semibold tracking-wide">Actions</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-white/10">
-                    {stocks.map((stock) => {
+                    {sortedStocks.map((stock) => {
                         const isPositive = stock.change >= 0;
                         return (
                             <tr key={stock.symbol} className="hover:bg-white/5 transition-colors group">
