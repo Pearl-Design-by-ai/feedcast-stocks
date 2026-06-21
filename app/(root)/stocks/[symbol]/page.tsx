@@ -1,6 +1,5 @@
 import TradingViewWidget from "@/components/TradingViewWidget";
 import { Suspense } from "react";
-import WatchlistButton from "@/components/WatchlistButton";
 import StockSentimentCard from "@/components/stocks/StockSentimentCard";
 import AnalystRatings from "@/components/stocks/AnalystRatings";
 import CompanyBrief from "@/components/stocks/CompanyBrief";
@@ -16,8 +15,6 @@ import {
     COMPANY_FINANCIALS_WIDGET_CONFIG,
 } from "@/lib/constants";
 
-import { getSupabaseServerClient } from '@/lib/supabase/server';
-import { isStockInWatchlist } from '@/lib/actions/watchlist.actions';
 import { getStockSentimentInsights } from '@/lib/actions/adanos.actions';
 import { getCompanyProfile } from '@/lib/actions/finnhub.actions';
 import { getRecommendationTrends } from '@/lib/actions/stock-insights.actions';
@@ -36,13 +33,7 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
     const tvSymbol = formatSymbolForTradingView(symbol);
     const scriptUrl = `https://s3.tradingview.com/external-embedding/embed-widget-`;
 
-    const supabase = await getSupabaseServerClient();
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
-    const userId = user?.id;
-    const [isInWatchlist, sentimentInsights, profile, recommendationTrends] = await Promise.all([
-        userId ? isStockInWatchlist(userId, symbol) : Promise.resolve(false),
+    const [sentimentInsights, profile, recommendationTrends] = await Promise.all([
         getStockSentimentInsights(symbol),
         getCompanyProfile(symbol),
         getRecommendationTrends(symbol),
@@ -88,15 +79,6 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
 
                 {/* Right column */}
                 <div className="flex flex-col gap-6">
-                    <div className="flex items-center justify-between">
-                        <WatchlistButton
-                            symbol={symbol.toUpperCase()}
-                            company={companyName}
-                            isInWatchlist={isInWatchlist}
-                            userId={userId}
-                        />
-                    </div>
-
                     <Suspense fallback={null}>
                         <CompanyBrief symbol={symbol.toUpperCase()} name={companyName} />
                     </Suspense>
