@@ -18,6 +18,9 @@ import {
 import { getStockSentimentInsights } from '@/lib/actions/adanos.actions';
 import { getCompanyProfile } from '@/lib/actions/finnhub.actions';
 import { getRecommendationTrends } from '@/lib/actions/stock-insights.actions';
+import { getGroupsWithMembership } from '@/lib/actions/watchlist-groups.actions';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
+import WatchlistStar from '@/components/stocks/WatchlistStar';
 import {
     KeyStats,
     EarningsPanel,
@@ -33,15 +36,35 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
     const tvSymbol = formatSymbolForTradingView(symbol);
     const scriptUrl = `https://s3.tradingview.com/external-embedding/embed-widget-`;
 
-    const [sentimentInsights, profile, recommendationTrends] = await Promise.all([
+    const supabase = await getSupabaseServerClient();
+    const {
+        data: { user },
+    } = await supabase.auth.getUser();
+
+    const [sentimentInsights, profile, recommendationTrends, membership] = await Promise.all([
         getStockSentimentInsights(symbol),
         getCompanyProfile(symbol),
         getRecommendationTrends(symbol),
+        user ? getGroupsWithMembership(symbol) : Promise.resolve({ groups: [], memberOf: [] }),
     ]);
     const companyName = profile?.name || symbol.toUpperCase();
 
     return (
         <div className="flex flex-col min-h-screen p-4 md:p-6 lg:p-8">
+            <div className="mb-6 flex items-start justify-between gap-4">
+                <div className="flex flex-col">
+                    <h1 className="text-2xl font-bold text-white">{symbol.toUpperCase()}</h1>
+                    {companyName !== symbol.toUpperCase() && (
+                        <span className="text-sm text-gray-400">{companyName}</span>
+                    )}
+                </div>
+                <WatchlistStar
+                    symbol={symbol.toUpperCase()}
+                    initialGroups={membership.groups}
+                    initialMemberOf={membership.memberOf}
+                    signedIn={!!user}
+                />
+            </div>
             <DataDisclaimer className="mb-6 w-fit" />
             <section className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
                 {/* Left column */}

@@ -102,6 +102,50 @@ export async function getGroupsPortfolio(): Promise<Record<number, GroupPortfoli
     }
 }
 
+/**
+ * The user's groups together with which of them already hold `symbol`. Powers
+ * the per-list star popover on a stock page: one round trip gives both the list
+ * of watchlists and the membership set, so the star can render filled/empty and
+ * the popover can show a check next to each list the symbol is in. Auto-creates
+ * the default list (same as {@link listGroups}) so there is always a target.
+ */
+export async function getGroupsWithMembership(
+    symbol: string
+): Promise<{ groups: WatchlistGroup[]; memberOf: number[] }> {
+    try {
+        const sym = symbol.trim().toUpperCase();
+        const { supabase, user } = await sessionUser();
+
+        const [groupsRes, itemsRes] = await Promise.all([
+            supabase
+                .from(GROUPS)
+                .select('id, name, position')
+                .eq('user_id', user.id)
+                .order('position', { ascending: true })
+                .order('id', { ascending: true }),
+            supabase.from(ITEMS).select('group_id').eq('user_id', user.id).eq('symbol', sym),
+        ]);
+        if (groupsRes.error) throw groupsRes.error;
+
+        let groups = (groupsRes.data ?? []) as WatchlistGroup[];
+        if (groups.length === 0) {
+            const { data: created, error: cErr } = await supabase
+                .from(GROUPS)
+                .insert({ user_id: user.id, name: 'My Watchlist', position: 0 })
+                .select('id, name, position')
+                .single();
+            if (cErr) throw cErr;
+            groups = created ? [created as WatchlistGroup] : [];
+        }
+
+        const memberOf = (itemsRes.data ?? []).map((r: { group_id: number }) => r.group_id);
+        return { groups, memberOf };
+    } catch (error) {
+        console.error('getGroupsWithMembership error:', error);
+        return { groups: [], memberOf: [] };
+    }
+}
+
 export async function createGroup(name: string): Promise<{ ok: boolean; error?: string; id?: number }> {
     try {
         const trimmed = name.trim().slice(0, 40);
