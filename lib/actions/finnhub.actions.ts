@@ -3,7 +3,7 @@
 import { getDateRange, validateArticle, formatArticle } from '@/lib/utils';
 import { POPULAR_STOCK_SYMBOLS } from '@/lib/constants';
 import { getMarketKV } from '@/lib/market-cache';
-import { fetchDailyCloses } from '@/lib/actions/returns.actions';
+import { fetchDailyClosesMap } from '@/lib/actions/returns.actions';
 import { cache } from 'react';
 
 const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
@@ -312,15 +312,24 @@ async function mapWithLimit<T, R>(items: T[], limit: number, fn: (item: T) => Pr
 export async function getWatchlistData(symbols: string[]): Promise<WatchlistStockData[]> {
     if (!symbols || symbols.length === 0) return [];
 
-    // Cap to 4 symbols in flight (≤12 Finnhub calls at once) so a larger
+    // 2y closes for the whole list in one engine round-trip (KV-cached, Yahoo
+    // fallback) instead of one Yahoo fetch per symbol per isolate — the burst
+    // that used to 429 and blank the enrichment columns.
+    const closesMap = await fetchDailyClosesMap(symbols).catch(
+        () => new Map<string, Array<{ date: string; close: number }>>()
+    );
+    const closesOf = (sym: string) =>
+        closesMap.get((sym.split(':').pop() ?? sym).trim().toUpperCase()) ?? [];
+
+    // Cap to 4 symbols in flight (≤9 Finnhub calls at once) so a larger
     // watchlist can't burst past the free-tier rate limit and 429.
     return mapWithLimit(symbols, 4, async (sym) => {
-        const [quote, profile, peRatio, closes] = await Promise.all([
+        const [quote, profile, peRatio] = await Promise.all([
             getQuote(sym),
             getCompanyProfile(sym),
             getPeRatio(sym),
-            fetchDailyCloses(sym).catch(() => []),
         ]);
+        const closes = closesOf(sym);
 
         return {
             symbol: sym,

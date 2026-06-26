@@ -1,14 +1,32 @@
 'use server';
 
 import { kvCachedJSON } from '@/lib/market-cache';
+import { enginePost } from '@/lib/engine-client';
 
 /**
- * Multi-period total-return approximations from Yahoo Finance's free chart API.
- * (We used to read Stooq's CSV, but stooq.com now serves a JS proof-of-work
- * anti-bot wall that server-side fetch can't clear.) We strip the exchange
- * prefix, request 2y of adjusted daily closes, and compute returns from them.
- * Cached 6h (EOD data). Best-effort — any failure yields nulls.
+ * Multi-period total-return approximations from 2y of adjusted daily closes.
+ *
+ * Source of truth is the private markets-engine's `/v1/closes` seam: it fetches
+ * Yahoo once per symbol behind a shared KV cache (and retries across Yahoo's two
+ * edge hosts), so a 20-symbol watchlist no longer makes every public-app isolate
+ * burst Yahoo directly and 429 — the symptom that left the enrichment columns
+ * blank ("—"). Direct Yahoo stays only as a last-resort fallback when the engine
+ * is unconfigured/unreachable. We strip the exchange prefix and cache 6h (EOD).
+ * Best-effort — any failure yields nulls.
  */
+
+type CloseSeries = Array<{ date: string; close: number }>;
+
+/** One round-trip to the engine for many symbols' 2y closes; {} on any miss. */
+async function fetchClosesFromEngine(symbols: string[]): Promise<Record<string, CloseSeries>> {
+    if (symbols.length === 0) return {};
+    const res = await enginePost<{ closes?: Record<string, CloseSeries> }>(
+        '/v1/closes',
+        { symbols },
+        {}
+    );
+    return res?.closes ?? {};
+}
 
 export interface SymbolReturns {
     symbol: string;
@@ -30,16 +48,53 @@ export async function fetchDailyCloses(
     // Cross-isolate KV cache — fetch revalidate hints are per-isolate no-ops on
     // Workers, so without this every fresh isolate re-downloads 2y of history
     // per symbol (the main cost of the enriched watchlist). Empty results are
-    // returned as null inside the cache helper so a Yahoo blip isn't cached.
+    // returned as null inside the cache helper so a Yahoo/engine blip isn't cached.
     const cached = await kvCachedJSON<Array<{ date: string; close: number }> | null>(
         `yh:${t}`,
         21600,
         async () => {
+            // Engine seam first (its own cache + Yahoo retry); direct Yahoo only
+            // if the engine returned nothing.
+            const fromEngine = (await fetchClosesFromEngine([t]))[t];
+            if (fromEngine && fromEngine.length > 0) return fromEngine;
             const out = await fetchDailyClosesUncached(t);
             return out.length > 0 ? out : null;
         }
     );
     return cached ?? [];
+}
+
+/**
+ * Batch 2y closes for a watchlist in a single engine round-trip, falling back to
+ * the per-symbol path (public KV → engine[1] → Yahoo) for anything the batch
+ * missed. Keyed by the stripped ticker. Used by the enriched watchlist so it
+ * doesn't fire one engine call per symbol on a cold public-KV isolate.
+ */
+export async function fetchDailyClosesMap(
+    symbols: string[]
+): Promise<Map<string, CloseSeries>> {
+    const out = new Map<string, CloseSeries>();
+    const tickers = [...new Set(symbols.map(tickerOf).filter(Boolean))];
+    if (tickers.length === 0) return out;
+
+    const batch = await fetchClosesFromEngine(tickers);
+    const misses: string[] = [];
+    for (const t of tickers) {
+        const series = batch[t];
+        if (series && series.length > 0) out.set(t, series);
+        else misses.push(t);
+    }
+
+    // Anything the engine batch didn't cover: resolve individually (this also
+    // warms the per-symbol public KV cache for later single-symbol reads).
+    await Promise.all(
+        misses.map(async (t) => {
+            const series = await fetchDailyCloses(t);
+            if (series.length > 0) out.set(t, series);
+        })
+    );
+
+    return out;
 }
 
 /**
