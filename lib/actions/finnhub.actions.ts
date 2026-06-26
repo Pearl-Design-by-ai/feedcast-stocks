@@ -18,6 +18,7 @@ type FinnhubQuote = {
     l?: number; // day low
     o?: number; // day open
     pc?: number; // previous close
+    t?: number; // quote timestamp (unix seconds)
 };
 
 type FinnhubCompanyProfile = {
@@ -256,7 +257,10 @@ export type WatchlistStockData = {
 // EOD enrichment computed from the same daily-closes series the returns
 // table uses — one extra (6h-cached) Yahoo call per symbol inside the
 // existing 4-worker pool.
-function computeEnrichment(closes: Array<{ date: string; close: number }>) {
+function computeEnrichment(
+    closes: Array<{ date: string; close: number }>,
+    live?: { price: number; date: string }
+) {
     const empty = { w1: null, m1: null, ytd: null, offHigh52: null, above200: null } as {
         w1: number | null;
         m1: number | null;
@@ -264,23 +268,41 @@ function computeEnrichment(closes: Array<{ date: string; close: number }>) {
         offHigh52: number | null;
         above200: boolean | null;
     };
-    const n = closes.length;
+
+    // Anchor every return to the SAME number shown in the Price column (the live
+    // Finnhub quote) rather than Yahoo's last EOD close, so the periods and the
+    // price can never disagree. The live bar is dated by the quote's own
+    // timestamp — not wall-clock — so pre-market, when the "live" price already
+    // IS the last session's close, it replaces that bar instead of shifting
+    // every lookback by a session. Intraday it's appended as today's bar.
+    const series = [...closes];
+    if (live && Number.isFinite(live.price) && live.price > 0 && series.length > 0) {
+        const lastBar = series[series.length - 1];
+        if (live.date === lastBar.date) {
+            series[series.length - 1] = { date: live.date, close: live.price };
+        } else if (live.date > lastBar.date) {
+            series.push({ date: live.date, close: live.price });
+        }
+        // live.date < lastBar.date → stale quote; keep the EOD series as-is.
+    }
+
+    const n = series.length;
     if (n < 2) return empty;
-    const last = closes[n - 1].close;
-    const at = (back: number) => (n - 1 - back >= 0 ? closes[n - 1 - back].close : undefined);
+    const last = series[n - 1].close;
+    const at = (back: number) => (n - 1 - back >= 0 ? series[n - 1 - back].close : undefined);
     const pctFrom = (past: number | undefined) =>
         past && past > 0 ? (last / past - 1) * 100 : null;
 
     const year = new Date().getFullYear();
-    const firstOfYear = closes.find((c) => c.date.startsWith(`${year}-`))?.close;
+    const firstOfYear = series.find((c) => c.date.startsWith(`${year}-`))?.close;
 
-    const window52 = closes.slice(-252);
+    const window52 = series.slice(-252);
     const high52 = Math.max(...window52.map((c) => c.close));
 
     let above200: boolean | null = null;
     if (n >= 200) {
         let sum = 0;
-        for (let i = n - 200; i < n; i++) sum += closes[i].close;
+        for (let i = n - 200; i < n; i++) sum += series[i].close;
         above200 = last > sum / 200;
     }
 
@@ -330,6 +352,17 @@ export async function getWatchlistData(symbols: string[]): Promise<WatchlistStoc
             getPeRatio(sym),
         ]);
         const closes = closesOf(sym);
+        // Date the live bar by the quote's own timestamp so the return bases line
+        // up with the displayed price in every session phase (see computeEnrichment).
+        const live =
+            quote?.c && quote.c > 0
+                ? {
+                      price: quote.c,
+                      date: quote.t
+                          ? new Date(quote.t * 1000).toISOString().slice(0, 10)
+                          : closes[closes.length - 1]?.date ?? '',
+                  }
+                : undefined;
 
         return {
             symbol: sym,
@@ -346,7 +379,7 @@ export async function getWatchlistData(symbols: string[]): Promise<WatchlistStoc
             logo: profile?.logo,
             marketCap: profile?.marketCapitalization,
             peRatio,
-            ...computeEnrichment(closes),
+            ...computeEnrichment(closes, live),
         };
     });
 }
