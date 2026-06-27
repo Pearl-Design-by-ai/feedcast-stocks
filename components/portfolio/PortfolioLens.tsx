@@ -10,11 +10,12 @@
  * engine; this is the presentation + interaction layer. Educational only.
  */
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
     Gauge, Plus, X, Loader2, Sparkles, AlertTriangle, Shuffle, Download,
     GraduationCap, ChevronDown, Layers, Target, ShieldCheck, Scale, Rocket, Wand2, ArrowDown,
+    Save, FolderOpen, Trash2, ListPlus, Bookmark,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn, isTickerLike } from '@/lib/utils';
@@ -27,10 +28,42 @@ import {
     type Horizon,
     type EtfSuggestion,
 } from '@/lib/actions/portfolio.actions';
+import { createGroup, addSymbolsToGroup } from '@/lib/actions/watchlist-groups.actions';
 
 interface Holding {
     symbol: string;
     weight: number;
+}
+
+interface SavedBasket {
+    id: string;
+    name: string;
+    holdings: Holding[];
+    savedAt: number;
+}
+
+const BASKETS_KEY = 'feedcast.portfolioLens.baskets.v1';
+
+function loadBaskets(): SavedBasket[] {
+    try {
+        const raw = localStorage.getItem(BASKETS_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return [];
+        return parsed
+            .filter((b): b is SavedBasket => b && typeof b.id === 'string' && Array.isArray(b.holdings))
+            .map((b) => ({ ...b, holdings: b.holdings.filter((h: Holding) => h?.symbol) }));
+    } catch {
+        return [];
+    }
+}
+
+function persistBaskets(baskets: SavedBasket[]) {
+    try {
+        localStorage.setItem(BASKETS_KEY, JSON.stringify(baskets));
+    } catch {
+        /* storage full / unavailable — non-fatal */
+    }
 }
 
 const RISK_OPTS: { v: RiskProfile; label: string; icon: typeof ShieldCheck }[] = [
@@ -103,7 +136,67 @@ export default function PortfolioLens() {
     const [suggesting, setSuggesting] = useState(false);
     const [suggestion, setSuggestion] = useState<EtfSuggestion | null>(null);
 
+    // Saved baskets (localStorage) + watchlist promotion
+    const [baskets, setBaskets] = useState<SavedBasket[]>([]);
+    const [naming, setNaming] = useState(false);
+    const [nameDraft, setNameDraft] = useState('');
+    const [creatingWl, setCreatingWl] = useState<string | null>(null);
+
+    useEffect(() => { setBaskets(loadBaskets()); }, []);
+
     const total = useMemo(() => holdings.reduce((s, h) => s + (Number(h.weight) || 0), 0), [holdings]);
+
+    const suggestName = () => {
+        const syms = holdings.map((h) => h.symbol);
+        if (syms.length === 0) return 'My basket';
+        return syms.length <= 3 ? syms.join(', ') : `${syms.slice(0, 2).join(', ')} +${syms.length - 2}`;
+    };
+
+    const saveBasket = () => {
+        const name = nameDraft.trim() || suggestName();
+        if (holdings.length === 0) { toast.error('Add some tickers first'); return; }
+        const basket: SavedBasket = {
+            id: `${Date.now()}-${Math.round(Math.random() * 1e6)}`,
+            name,
+            holdings: holdings.map((h) => ({ symbol: h.symbol, weight: h.weight })),
+            savedAt: Date.now(),
+        };
+        const next = [basket, ...baskets].slice(0, 30);
+        setBaskets(next);
+        persistBaskets(next);
+        setNaming(false);
+        setNameDraft('');
+        toast.success(`Saved “${name}”`);
+    };
+
+    const deleteBasket = (id: string) => {
+        const next = baskets.filter((b) => b.id !== id);
+        setBaskets(next);
+        persistBaskets(next);
+    };
+
+    const loadBasket = (b: SavedBasket) => {
+        setHoldings(b.holdings.map((h) => ({ symbol: h.symbol, weight: h.weight })));
+        setResult(null);
+        toast.success(`Loaded “${b.name}” into the basket`);
+    };
+
+    const createWatchlistFrom = async (b: SavedBasket) => {
+        const tickers = b.holdings.map((h) => h.symbol).filter(Boolean);
+        if (tickers.length === 0) { toast.error('This basket has no tickers'); return; }
+        setCreatingWl(b.id);
+        try {
+            const res = await createGroup(b.name);
+            if (!res.ok || !res.id) { toast.error(res.error ?? 'Could not create the watchlist'); return; }
+            const add = await addSymbolsToGroup(res.id, tickers.join(','));
+            if (!add.ok) { toast.error(add.error ?? 'Watchlist created, but adding tickers failed'); return; }
+            toast.success(`Created watchlist “${b.name}” with ${add.added} tickers`);
+        } catch {
+            toast.error('Could not create the watchlist.');
+        } finally {
+            setCreatingWl(null);
+        }
+    };
 
     const addSymbol = (raw: string) => {
         const sym = raw.toUpperCase().trim().replace(/[^A-Z0-9.\-:]/g, '');
@@ -363,15 +456,88 @@ export default function PortfolioLens() {
                                     </button>
                                 )}
                             </div>
-                            <button type="button" onClick={analyze} disabled={loading}
-                                className="flex items-center gap-2 rounded-lg bg-teal-500 px-4 py-2 text-sm font-bold text-black transition-colors hover:bg-teal-400 disabled:opacity-60">
-                                {loading ? <Loader2 size={16} className="animate-spin" /> : <Gauge size={16} />}
-                                {loading ? 'Analyzing…' : 'Analyze portfolio'}
-                            </button>
+                            <div className="flex items-center gap-2">
+                                {naming ? (
+                                    <div className="flex items-stretch overflow-hidden rounded-lg border border-gray-700">
+                                        <input
+                                            value={nameDraft}
+                                            onChange={(e) => setNameDraft(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') { e.preventDefault(); saveBasket(); }
+                                                if (e.key === 'Escape') { setNaming(false); setNameDraft(''); }
+                                            }}
+                                            placeholder={suggestName()}
+                                            autoFocus
+                                            maxLength={40}
+                                            className="w-40 bg-gray-800 px-3 py-2 text-sm text-gray-100 placeholder:text-gray-600 focus:outline-none"
+                                            aria-label="Basket name"
+                                        />
+                                        <button type="button" onClick={saveBasket}
+                                            className="bg-teal-500/15 px-3 text-sm font-semibold text-teal-300 hover:bg-teal-500/25">Save</button>
+                                    </div>
+                                ) : (
+                                    <button type="button" onClick={() => { setNameDraft(suggestName()); setNaming(true); }}
+                                        className="flex items-center gap-1.5 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-200 hover:border-teal-400/40 hover:text-teal-300">
+                                        <Save size={15} /> Save basket
+                                    </button>
+                                )}
+                                <button type="button" onClick={analyze} disabled={loading}
+                                    className="flex items-center gap-2 rounded-lg bg-teal-500 px-4 py-2 text-sm font-bold text-black transition-colors hover:bg-teal-400 disabled:opacity-60">
+                                    {loading ? <Loader2 size={16} className="animate-spin" /> : <Gauge size={16} />}
+                                    {loading ? 'Analyzing…' : 'Analyze portfolio'}
+                                </button>
+                            </div>
                         </div>
                     </>
                 )}
             </section>
+
+            {/* ---- Saved baskets ---- */}
+            {baskets.length > 0 && (
+                <section className="rounded-2xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
+                    <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-gray-100">
+                        <Bookmark size={16} className="text-teal-400" /> Saved baskets
+                        <span className="text-xs font-normal text-gray-500">{baskets.length}</span>
+                    </h2>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        {baskets.map((b) => (
+                            <div key={b.id} className="rounded-xl border border-gray-800 bg-gray-950/40 p-3">
+                                <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0">
+                                        <p className="truncate font-semibold text-gray-100">{b.name}</p>
+                                        <p className="text-xs text-gray-500">{b.holdings.length} ticker{b.holdings.length === 1 ? '' : 's'}</p>
+                                    </div>
+                                    <button type="button" onClick={() => deleteBasket(b.id)} className="shrink-0 text-gray-600 hover:text-red-400" aria-label={`Delete ${b.name}`}>
+                                        <Trash2 size={15} />
+                                    </button>
+                                </div>
+                                <div className="mt-2 flex flex-wrap gap-1">
+                                    {b.holdings.slice(0, 8).map((h) => (
+                                        <span key={h.symbol} className="rounded bg-gray-800 px-1.5 py-0.5 text-[11px] tabular-nums text-gray-300">
+                                            {h.symbol} {Math.round(h.weight)}%
+                                        </span>
+                                    ))}
+                                    {b.holdings.length > 8 && <span className="px-1 text-[11px] text-gray-500">+{b.holdings.length - 8}</span>}
+                                </div>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    <button type="button" onClick={() => loadBasket(b)}
+                                        className="flex items-center gap-1.5 rounded-md border border-gray-700 bg-gray-800 px-2.5 py-1.5 text-xs text-gray-200 hover:border-teal-400/40 hover:text-teal-300">
+                                        <FolderOpen size={13} /> Load
+                                    </button>
+                                    <button type="button" onClick={() => createWatchlistFrom(b)} disabled={creatingWl === b.id}
+                                        className="flex items-center gap-1.5 rounded-md bg-teal-500/15 px-2.5 py-1.5 text-xs font-semibold text-teal-300 ring-1 ring-inset ring-teal-400/30 hover:bg-teal-500/25 disabled:opacity-50">
+                                        {creatingWl === b.id ? <Loader2 size={13} className="animate-spin" /> : <ListPlus size={13} />} Create watchlist
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <p className="mt-3 text-[11px] text-gray-600">
+                        Saved in this browser. “Create watchlist” saves the basket to your account so it appears under{' '}
+                        <Link href="/watchlist" className="underline hover:text-gray-400">Watchlists</Link>.
+                    </p>
+                </section>
+            )}
 
             {/* ---- Results ---- */}
             {result && (
