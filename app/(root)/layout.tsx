@@ -1,6 +1,7 @@
 import Header from "@/components/Header";
 import { redirect } from "next/navigation";
 import HomeOnlyFooter from "@/components/HomeOnlyFooter";
+import DisclaimerFooter from "@/components/DisclaimerFooter";
 import SideNav from "@/components/SideNav";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { searchStocks } from "@/lib/actions/finnhub.actions";
@@ -95,6 +96,7 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
                 </div>
 
                 <HomeOnlyFooter />
+                <DisclaimerFooter />
             </ThemeProvider>
         </main>
     )

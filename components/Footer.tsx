@@ -62,10 +62,14 @@ const Footer = () => {
 
                 {/* Divider */}
                 <div className="border-t border-gray-800 mt-8 pt-8">
-                    {/* Delayed-data disclaimer — shown site-wide */}
+                    {/* The full delayed-data / not-advice disclaimer lives site-wide in
+                        <DisclaimerFooter/>; link to it here rather than duplicating the text. */}
                     <p className="text-gray-500 text-xs mb-6 text-center md:text-left">
-                        Market data is delayed (typically ~15 minutes) and provided for
-                        informational purposes only — not real-time, and not financial advice.
+                        Market data is delayed and provided for informational purposes only.{" "}
+                        <a href="#disclaimer" className="underline hover:text-gray-300">
+                            Read the full disclaimer
+                        </a>
+                        .
                     </p>
                     <div className="flex flex-col md:flex-row justify-between items-center">
                         {/* Copyright — AGPL-3.0; no "all rights reserved" */}
