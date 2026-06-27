@@ -27,6 +27,7 @@ const CACHE_TTLS: Array<[prefix: string, seconds: number]> = [
   ['/v1/company/brief', 3_600],
   ['/v1/company/bullbear', 1_800],
   ['/v1/company/consensus', 21_600], // heavy multi-section analysis; changes slowly
+  ['/v1/portfolio/lens', 1_800], // portfolio-level value-cycle read; basket-keyed
   ['/v1/market/brief', 300],
   ['/v1/market/regime', 300],
   ['/v1/commentary', 300],

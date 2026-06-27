@@ -1,14 +1,14 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { Briefcase } from 'lucide-react';
+import { Gauge } from 'lucide-react';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import DataDisclaimer from '@/components/DataDisclaimer';
-import PortfolioLab from '@/components/portfolio/PortfolioLab';
+import PortfolioLens from '@/components/portfolio/PortfolioLens';
 
 export const metadata: Metadata = {
-    title: 'Portfolio Lab',
+    title: 'Portfolio Lens',
     description:
-        'Construct a biased, mandate-driven portfolio — growth, income, conservative or thematic — with transparent allocation logic, risk notes and deployable code.',
+        'A cycle-aware, value-oriented portfolio builder. Assemble your tickers and weights, then get a per-stock 5-step analysis (position, thesis, key risk, cycle & valuation, judgment) plus a portfolio-level Health Score, cycle exposure and concentration risks.',
 };
 
 export default async function PortfolioLabPage() {
@@ -22,20 +22,20 @@ export default async function PortfolioLabPage() {
         <div className="min-h-screen bg-gray-900 text-gray-100 p-6 md:p-8">
             <header className="mb-6">
                 <h1 className="flex items-center gap-2 text-3xl font-bold text-gray-100">
-                    <Briefcase className="text-teal-400" /> Portfolio Lab
+                    <Gauge className="text-teal-400" /> Portfolio Lens
                 </h1>
                 <p className="mt-1 max-w-3xl text-sm leading-relaxed text-gray-400">
-                    A transparent, mandate-driven portfolio builder. Pick a bias (growth, income,
-                    conservative or thematic), set your constraints, and it constructs a biased
-                    allocation — holdings with rationale, sector/region breakdown, a capital-deployment
-                    plan from live prices, risk notes and the allocation code. Hypothetical and
-                    educational — not investment advice, no performance claims.
+                    A disciplined, cycle-aware portfolio builder. Assemble your tickers and weights, and it
+                    runs each name through a 5-step value framework — current position, growth thesis, the one
+                    thing holding it back (capex/FCF/ROIC), cycle &amp; valuation, and an overall judgment —
+                    then reads the basket as a whole: a Health Score, cycle exposure, concentration and
+                    diversification ideas. Hypothetical and educational — not investment advice.
                 </p>
             </header>
 
             <DataDisclaimer className="mb-6 max-w-2xl" />
 
-            <PortfolioLab />
+            <PortfolioLens />
         </div>
     );
 }
