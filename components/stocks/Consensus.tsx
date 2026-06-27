@@ -16,7 +16,6 @@ export default async function Consensus({ symbol, name }: { symbol: string; name
             <div className="mb-3 flex items-center gap-2">
                 <Gauge className="h-4 w-4 text-teal-400" />
                 <h3 className="text-sm font-semibold text-gray-100">Consensus</h3>
-                <span className="text-xs text-gray-500">DeepSeek</span>
             </div>
             <div className="flex flex-col gap-3">
                 {consensus.sections.map((s, i) => (
