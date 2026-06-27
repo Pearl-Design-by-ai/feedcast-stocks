@@ -157,30 +157,25 @@ export default function PortfolioLens() {
     const [nameDraft, setNameDraft] = useState('');
     const [creatingWl, setCreatingWl] = useState<string | null>(null);
 
-    // Import from watchlist
+    // Import from watchlist — loaded once on mount so the option is always visible.
     const [watchlists, setWatchlists] = useState<WatchlistOption[] | null>(null);
-    const [loadingWatchlists, setLoadingWatchlists] = useState(false);
-    const [showImport, setShowImport] = useState(false);
+    const [loadingWatchlists, setLoadingWatchlists] = useState(true);
 
-    useEffect(() => { setBaskets(loadBaskets()); }, []);
-
-    const toggleImport = async () => {
-        const next = !showImport;
-        setShowImport(next);
-        if (next && watchlists === null && !loadingWatchlists) {
-            setLoadingWatchlists(true);
-            try { setWatchlists(await listGroupsWithSymbols()); }
-            catch { toast.error('Could not load your watchlists.'); }
-            finally { setLoadingWatchlists(false); }
-        }
-    };
+    useEffect(() => {
+        setBaskets(loadBaskets());
+        let alive = true;
+        listGroupsWithSymbols()
+            .then((g) => { if (alive) setWatchlists(g); })
+            .catch(() => { if (alive) setWatchlists([]); })
+            .finally(() => { if (alive) setLoadingWatchlists(false); });
+        return () => { alive = false; };
+    }, []);
 
     const importFromWatchlist = (w: WatchlistOption) => {
         const syms = [...new Set(w.symbols.map((s) => s.toUpperCase()).filter(isTickerLike))].slice(0, 25);
         if (syms.length === 0) { toast.error(`“${w.name}” has no tickers to import`); return; }
         setHoldings(equalWeights(syms));
         setResult(null);
-        setShowImport(false);
         toast.success(`Imported ${syms.length} ticker${syms.length === 1 ? '' : 's'} from “${w.name}”`);
     };
 
@@ -409,6 +404,38 @@ export default function PortfolioLens() {
                 )}
             </section>
 
+            {/* ---- Import from a watchlist ---- */}
+            {(loadingWatchlists || (watchlists && watchlists.length > 0)) && (
+                <section className="rounded-2xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
+                    <h2 className="flex items-center gap-2 text-base font-semibold text-gray-100">
+                        <ImportIcon size={16} className="text-teal-400" /> Import from your watchlist
+                    </h2>
+                    <p className="mt-1 text-sm text-gray-400">
+                        Turn any of your watchlists into an equal-weighted basket — then analyze, save or re-allocate it.
+                    </p>
+                    {loadingWatchlists ? (
+                        <div className="mt-4 flex items-center gap-2 text-sm text-gray-500">
+                            <Loader2 size={14} className="animate-spin" /> Loading your watchlists…
+                        </div>
+                    ) : (
+                        <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            {watchlists!.map((w) => (
+                                <div key={w.id} className="flex items-center justify-between gap-3 rounded-lg border border-gray-800 bg-gray-950/40 px-3 py-2.5">
+                                    <div className="min-w-0">
+                                        <p className="truncate font-semibold text-gray-100">{w.name}</p>
+                                        <p className="text-xs text-gray-500">{w.symbols.length} ticker{w.symbols.length === 1 ? '' : 's'}</p>
+                                    </div>
+                                    <button type="button" onClick={() => importFromWatchlist(w)} disabled={w.symbols.length === 0}
+                                        className="flex shrink-0 items-center gap-1.5 rounded-md bg-teal-500/15 px-3 py-1.5 text-xs font-semibold text-teal-300 ring-1 ring-inset ring-teal-400/30 hover:bg-teal-500/25 disabled:opacity-40 disabled:hover:bg-teal-500/15">
+                                        <ArrowDown size={13} /> Import
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </section>
+            )}
+
             {/* ---- Basket builder ---- */}
             <section className="rounded-2xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
                 <h2 className="mb-1 flex items-center gap-2 text-base font-semibold text-gray-100">
@@ -439,36 +466,6 @@ export default function PortfolioLens() {
                                 + {s}
                             </button>
                         ))}
-                    </div>
-
-                    {/* Import from a saved watchlist */}
-                    <div className="relative ml-auto">
-                        <button type="button" onClick={toggleImport}
-                            className="flex items-center gap-1.5 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-200 hover:border-teal-400/40 hover:text-teal-300">
-                            <ImportIcon size={14} /> Import from watchlist
-                            <ChevronDown size={14} className={cn('text-gray-500 transition-transform', showImport && 'rotate-180')} />
-                        </button>
-                        {showImport && (
-                            <>
-                                <button type="button" aria-hidden className="fixed inset-0 z-10 cursor-default" onClick={() => setShowImport(false)} tabIndex={-1} />
-                                <div className="absolute right-0 z-20 mt-1 max-h-72 w-64 overflow-auto rounded-lg border border-gray-700 bg-gray-900 p-1 shadow-xl">
-                                    {loadingWatchlists ? (
-                                        <div className="flex items-center gap-2 p-3 text-sm text-gray-500"><Loader2 size={14} className="animate-spin" /> Loading…</div>
-                                    ) : watchlists && watchlists.length > 0 ? (
-                                        watchlists.map((w) => (
-                                            <button key={w.id} type="button" onClick={() => importFromWatchlist(w)}
-                                                disabled={w.symbols.length === 0}
-                                                className="flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-sm text-gray-200 hover:bg-gray-800 disabled:opacity-40 disabled:hover:bg-transparent">
-                                                <span className="truncate">{w.name}</span>
-                                                <span className="shrink-0 text-xs text-gray-500">{w.symbols.length}</span>
-                                            </button>
-                                        ))
-                                    ) : (
-                                        <div className="p-3 text-sm text-gray-500">No watchlists yet. Add symbols to a watchlist first.</div>
-                                    )}
-                                </div>
-                            </>
-                        )}
                     </div>
                 </div>
 
