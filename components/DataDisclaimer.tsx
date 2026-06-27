@@ -21,8 +21,11 @@ export default function DataDisclaimer({ className = "" }: { className?: string 
         >
             <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color: 'var(--warn)' }} aria-hidden="true" />
             <span>
-                Prices are <strong>delayed</strong> and shown for
-                informational purposes only — not real-time, and not investment advice.
+                Prices are <strong>delayed</strong> and shown for informational purposes
+                only — not real-time. Nothing on this site constitutes investment, financial,
+                legal, or tax advice, or a recommendation to buy or sell any security. All
+                content is provided “as is” without warranty; do your own research and consult
+                a licensed advisor before making any investment decision.
             </span>
         </div>
     );
