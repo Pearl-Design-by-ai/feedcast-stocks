@@ -36,6 +36,15 @@ export interface BullBear {
     bear: string[];
 }
 
+export interface ConsensusSection {
+    title: string;
+    body: string;
+}
+
+export interface Consensus {
+    sections: ConsensusSection[];
+}
+
 
 export interface NewsImpactItem {
     headline: string;
@@ -76,6 +85,11 @@ export async function getBullBear(symbol: string, name: string): Promise<BullBea
     return engineGet<BullBear | null>('/v1/company/bullbear', { symbol, name }, null);
 }
 
+
+export async function getConsensus(symbol: string, name: string): Promise<Consensus | null> {
+    if (!isTickerLike(symbol)) return null;
+    return engineGet<Consensus | null>('/v1/company/consensus', { symbol, name }, null);
+}
 
 export async function getNewsImpact(symbols: string[]): Promise<NewsImpactItem[] | null> {
     const clean = sanitizeSymbols(symbols);

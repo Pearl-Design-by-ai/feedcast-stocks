@@ -4,6 +4,7 @@ import StockSentimentCard from "@/components/stocks/StockSentimentCard";
 import AnalystRatings from "@/components/stocks/AnalystRatings";
 import CompanyBrief from "@/components/stocks/CompanyBrief";
 import PerformanceNote from "@/components/stocks/PerformanceNote";
+import Consensus from "@/components/stocks/Consensus";
 import BullBear from "@/components/stocks/BullBear";
 import DataDisclaimer from "@/components/DataDisclaimer";
 import {
@@ -108,6 +109,10 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
 
                     <Suspense fallback={null}>
                         <PerformanceNote symbol={symbol.toUpperCase()} name={companyName} />
+                    </Suspense>
+
+                    <Suspense fallback={null}>
+                        <Consensus symbol={symbol.toUpperCase()} name={companyName} />
                     </Suspense>
 
                     <Suspense fallback={null}>
