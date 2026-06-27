@@ -60,6 +60,24 @@ export async function suggestEtfPortfolio(
     return enginePost<EtfSuggestion | null>('/v1/portfolio/suggest', { risk, horizon }, null);
 }
 
+export interface SmartAllocation {
+    weights: Record<string, number>;
+    basis: string;
+    riskOn: boolean;
+    items: Array<{ symbol: string; momentum: number; weight: number }>;
+}
+
+/**
+ * Momentum-tilted weights for the current basket, scaled by market conditions
+ * (S&P 500 vs its 200-DMA). Higher-momentum names get more weight; risk-off
+ * flattens the tilt. The scoring runs in the private engine; this is a shim.
+ */
+export async function smartAllocate(symbols: string[]): Promise<SmartAllocation | null> {
+    const clean = sanitizeSymbols(symbols);
+    if (clean.length === 0) return null;
+    return enginePost<SmartAllocation | null>('/v1/portfolio/allocate', { symbols: clean }, null);
+}
+
 /** Weighted historical total-return backtest of a built portfolio. */
 export async function getPortfolioReturns(
     holdings: Array<{ ticker: string; weight: number; sleeve?: string }>

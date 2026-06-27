@@ -15,13 +15,14 @@ import Link from 'next/link';
 import {
     Gauge, Plus, X, Loader2, Sparkles, AlertTriangle, Shuffle, Download,
     GraduationCap, ChevronDown, Layers, Target, ShieldCheck, Scale, Rocket, Wand2, ArrowDown,
-    Save, FolderOpen, Trash2, ListPlus, Bookmark, Import as ImportIcon,
+    Save, FolderOpen, Trash2, ListPlus, Bookmark, Import as ImportIcon, Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn, isTickerLike } from '@/lib/utils';
 import {
     analyzePortfolio,
     suggestEtfPortfolio,
+    smartAllocate,
     type PortfolioAnalysis,
     type PortfolioHoldingAnalysis,
     type RiskProfile,
@@ -161,6 +162,10 @@ export default function PortfolioLens() {
     const [watchlists, setWatchlists] = useState<WatchlistOption[] | null>(null);
     const [loadingWatchlists, setLoadingWatchlists] = useState(true);
 
+    // Smart (momentum + market-condition) allocation
+    const [allocating, setAllocating] = useState(false);
+    const [allocBasis, setAllocBasis] = useState<string | null>(null);
+
     useEffect(() => {
         setBaskets(loadBaskets());
         let alive = true;
@@ -245,10 +250,28 @@ export default function PortfolioLens() {
         setDraft('');
     };
 
-    const setWeight = (sym: string, w: number) =>
+    const setWeight = (sym: string, w: number) => {
+        setAllocBasis(null); // manual edit supersedes the smart-allocation note
         setHoldings((h) => h.map((x) => (x.symbol === sym ? { ...x, weight: Math.max(0, Math.min(100, w)) } : x)));
+    };
 
     const remove = (sym: string) => setHoldings((h) => h.filter((x) => x.symbol !== sym));
+
+    const smartAllocateNow = async () => {
+        if (holdings.length < 2) { toast.error('Add at least two tickers to allocate'); return; }
+        setAllocating(true);
+        try {
+            const res = await smartAllocate(holdings.map((h) => h.symbol));
+            if (!res) { toast.error('Smart allocation is unavailable right now — please try again shortly.'); return; }
+            setHoldings((h) => h.map((x) => ({ ...x, weight: res.weights[x.symbol.toUpperCase()] ?? x.weight })));
+            setAllocBasis(res.basis);
+            toast.success('Weights set by momentum & market conditions');
+        } catch {
+            toast.error('Something went wrong setting the allocation.');
+        } finally {
+            setAllocating(false);
+        }
+    };
 
     const normalize = () => {
         if (total <= 0) return;
@@ -511,7 +534,7 @@ export default function PortfolioLens() {
                             ))}
                         </div>
                         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                            <div className="flex items-center gap-2 text-sm">
+                            <div className="flex flex-wrap items-center gap-2 text-sm">
                                 <span className="text-gray-500">Total allocation</span>
                                 <span className={cn('font-semibold tabular-nums', Math.round(total) === 100 ? 'text-emerald-400' : 'text-amber-400')}>
                                     {Math.round(total)}%
@@ -520,6 +543,12 @@ export default function PortfolioLens() {
                                     <button type="button" onClick={normalize}
                                         className="flex items-center gap-1 rounded-md border border-gray-700 bg-gray-800 px-2 py-1 text-xs text-gray-300 hover:border-teal-400/40 hover:text-teal-300">
                                         <Shuffle size={12} /> Normalize to 100%
+                                    </button>
+                                )}
+                                {holdings.length >= 2 && (
+                                    <button type="button" onClick={smartAllocateNow} disabled={allocating}
+                                        className="flex items-center gap-1 rounded-md border border-teal-500/30 bg-teal-500/10 px-2 py-1 text-xs font-medium text-teal-300 hover:bg-teal-500/20 disabled:opacity-50">
+                                        {allocating ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />} Smart allocation
                                     </button>
                                 )}
                             </div>
@@ -555,6 +584,11 @@ export default function PortfolioLens() {
                                 </button>
                             </div>
                         </div>
+                        {allocBasis && (
+                            <p className="mt-2 flex items-start gap-1.5 text-xs text-teal-300/80">
+                                <Zap size={13} className="mt-0.5 shrink-0" /> {allocBasis}
+                            </p>
+                        )}
                     </>
                 )}
             </section>
