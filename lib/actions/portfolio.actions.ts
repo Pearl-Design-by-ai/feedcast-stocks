@@ -29,6 +29,37 @@ export async function buildPortfolioPlan(
     return enginePost<{ plan: PortfolioPlan; entry: EntryPlan } | null>('/v1/portfolio/build', inputs, null);
 }
 
+export type RiskProfile = 'conservative' | 'balanced' | 'aggressive';
+export type Horizon = 'short' | 'medium' | 'long';
+
+export interface EtfHolding {
+    ticker: string;
+    name: string;
+    weight: number;
+    role: string;
+}
+
+export interface EtfSuggestion {
+    risk: RiskProfile;
+    horizon: Horizon;
+    strategy: string;
+    cycleNote: string;
+    holdings: EtfHolding[];
+}
+
+/**
+ * AI-driven, ready-to-use ETF portfolio for a risk profile + holding period.
+ * DeepSeek constructs a cycle-aware, value-disciplined allocation from a curated
+ * real-ETF universe in the private engine; this is a thin proxy. The Portfolio
+ * Lens offers it as a one-click starting basket the user can then analyze.
+ */
+export async function suggestEtfPortfolio(
+    risk: RiskProfile,
+    horizon: Horizon
+): Promise<EtfSuggestion | null> {
+    return enginePost<EtfSuggestion | null>('/v1/portfolio/suggest', { risk, horizon }, null);
+}
+
 /** Weighted historical total-return backtest of a built portfolio. */
 export async function getPortfolioReturns(
     holdings: Array<{ ticker: string; weight: number; sleeve?: string }>

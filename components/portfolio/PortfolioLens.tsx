@@ -14,19 +14,49 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
     Gauge, Plus, X, Loader2, Sparkles, AlertTriangle, Shuffle, Download,
-    GraduationCap, ChevronDown, Layers, Target,
+    GraduationCap, ChevronDown, Layers, Target, ShieldCheck, Scale, Rocket, Wand2, ArrowDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn, isTickerLike } from '@/lib/utils';
 import {
     analyzePortfolio,
+    suggestEtfPortfolio,
     type PortfolioAnalysis,
     type PortfolioHoldingAnalysis,
+    type RiskProfile,
+    type Horizon,
+    type EtfSuggestion,
 } from '@/lib/actions/portfolio.actions';
 
 interface Holding {
     symbol: string;
     weight: number;
+}
+
+const RISK_OPTS: { v: RiskProfile; label: string; icon: typeof ShieldCheck }[] = [
+    { v: 'conservative', label: 'Conservative', icon: ShieldCheck },
+    { v: 'balanced', label: 'Balanced', icon: Scale },
+    { v: 'aggressive', label: 'Aggressive', icon: Rocket },
+];
+
+const HORIZON_OPTS: { v: Horizon; label: string }[] = [
+    { v: 'short', label: '< 3 yrs' },
+    { v: 'medium', label: '3–7 yrs' },
+    { v: 'long', label: '> 7 yrs' },
+];
+
+function Seg<T extends string>({ value, opts, onChange }: { value: T; opts: { v: T; label: string }[]; onChange: (v: T) => void }) {
+    return (
+        <div className="inline-flex flex-wrap overflow-hidden rounded-lg border border-gray-700">
+            {opts.map((o, i) => (
+                <button key={o.v} type="button" onClick={() => onChange(o.v)}
+                    className={cn('px-3 py-1.5 text-sm font-medium transition-colors', i > 0 && 'border-l border-gray-700',
+                        value === o.v ? 'bg-teal-500/15 text-teal-300' : 'bg-gray-800 text-gray-400 hover:text-gray-200')}>
+                    {o.label}
+                </button>
+            ))}
+        </div>
+    );
 }
 
 const STARTER: Holding[] = [
@@ -67,6 +97,12 @@ export default function PortfolioLens() {
     const [result, setResult] = useState<PortfolioAnalysis | null>(null);
     const [showFramework, setShowFramework] = useState(false);
 
+    // Ready-made AI ETF starter
+    const [risk, setRisk] = useState<RiskProfile>('balanced');
+    const [horizon, setHorizon] = useState<Horizon>('long');
+    const [suggesting, setSuggesting] = useState(false);
+    const [suggestion, setSuggestion] = useState<EtfSuggestion | null>(null);
+
     const total = useMemo(() => holdings.reduce((s, h) => s + (Number(h.weight) || 0), 0), [holdings]);
 
     const addSymbol = (raw: string) => {
@@ -101,11 +137,11 @@ export default function PortfolioLens() {
         });
     };
 
-    const analyze = async () => {
-        if (holdings.length === 0) { toast.error('Add at least one ticker'); return; }
+    const runAnalyze = async (list: Holding[]) => {
+        if (list.length === 0) { toast.error('Add at least one ticker'); return; }
         setLoading(true);
         try {
-            const res = await analyzePortfolio(holdings);
+            const res = await analyzePortfolio(list);
             setResult(res);
             if (!res.lens && res.holdings.every((h) => !h.consensus)) {
                 toast.error('Analysis is unavailable right now — please try again shortly.');
@@ -115,6 +151,32 @@ export default function PortfolioLens() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const analyze = () => runAnalyze(holdings);
+
+    const generateSuggestion = async () => {
+        setSuggesting(true);
+        try {
+            const res = await suggestEtfPortfolio(risk, horizon);
+            if (!res || res.holdings.length === 0) {
+                toast.error('Couldn’t generate a portfolio right now — please try again shortly.');
+                return;
+            }
+            setSuggestion(res);
+        } catch {
+            toast.error('Something went wrong generating the portfolio.');
+        } finally {
+            setSuggesting(false);
+        }
+    };
+
+    const loadSuggestion = (analyzeNow: boolean) => {
+        if (!suggestion) return;
+        const list: Holding[] = suggestion.holdings.map((h) => ({ symbol: h.ticker, weight: h.weight }));
+        setHoldings(list);
+        toast.success(`Loaded ${list.length} ETFs into your basket`);
+        if (analyzeNow) void runAnalyze(list);
     };
 
     const exportJSON = () => {
@@ -132,11 +194,94 @@ export default function PortfolioLens() {
 
     return (
         <div className="space-y-6">
+            {/* ---- Ready-made AI ETF portfolio ---- */}
+            <section className="rounded-2xl border border-teal-500/20 bg-teal-500/[0.04] p-4 md:p-5">
+                <h2 className="flex items-center gap-2 text-base font-semibold text-gray-100">
+                    <Wand2 size={16} className="text-teal-400" /> Ready-made ETF portfolio
+                    <span className="text-xs font-normal text-gray-500">AI-generated</span>
+                </h2>
+                <p className="mt-1 text-sm text-gray-400">
+                    Pick a risk profile and how long you plan to hold — get a cycle-aware, value-disciplined
+                    ETF starter portfolio you can load and analyze in one click.
+                </p>
+
+                <div className="mt-4 flex flex-wrap items-end gap-x-6 gap-y-4">
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Risk profile</label>
+                        <Seg value={risk} onChange={setRisk} opts={RISK_OPTS} />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Holding period</label>
+                        <Seg value={horizon} onChange={setHorizon} opts={HORIZON_OPTS} />
+                    </div>
+                    <button type="button" onClick={generateSuggestion} disabled={suggesting}
+                        className="flex items-center gap-2 rounded-lg bg-teal-500 px-4 py-2 text-sm font-bold text-black transition-colors hover:bg-teal-400 disabled:opacity-60">
+                        {suggesting ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={16} />}
+                        {suggesting ? 'Generating…' : suggestion ? 'Regenerate' : 'Generate portfolio'}
+                    </button>
+                </div>
+
+                {suggestion && (
+                    <div className="mt-5 rounded-xl border border-gray-800 bg-gray-950/40 p-4">
+                        <div className="mb-3 flex flex-wrap items-center gap-2">
+                            <span className="rounded-md bg-teal-500/10 px-2 py-0.5 text-xs font-semibold capitalize text-teal-300">{suggestion.risk}</span>
+                            <span className="rounded-md bg-gray-800 px-2 py-0.5 text-xs font-medium text-gray-300">
+                                {HORIZON_OPTS.find((h) => h.v === suggestion.horizon)?.label} horizon
+                            </span>
+                            <span className="text-xs text-gray-500">{suggestion.holdings.length} ETFs</span>
+                        </div>
+                        {suggestion.strategy && <p className="text-sm leading-relaxed text-gray-300">{suggestion.strategy}</p>}
+                        {suggestion.cycleNote && (
+                            <p className="mt-2 text-[13px] leading-relaxed text-gray-400">
+                                <span className="font-semibold text-gray-300">Cycle: </span>{suggestion.cycleNote}
+                            </p>
+                        )}
+
+                        {/* Allocation bar */}
+                        <div className="mt-4 flex h-2.5 overflow-hidden rounded-full bg-gray-800">
+                            {suggestion.holdings.map((h, i) => (
+                                <div key={h.ticker} title={`${h.ticker} ${h.weight}%`}
+                                    style={{ width: `${h.weight}%`, backgroundColor: PALETTE[i % PALETTE.length] }} />
+                            ))}
+                        </div>
+
+                        {/* ETF list */}
+                        <ul className="mt-3 divide-y divide-gray-800/70">
+                            {suggestion.holdings.map((h, i) => (
+                                <li key={h.ticker} className="flex items-center gap-3 py-2">
+                                    <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: PALETTE[i % PALETTE.length] }} />
+                                    <span className="w-14 shrink-0 font-semibold text-gray-100">{h.ticker}</span>
+                                    <span className="min-w-0 flex-1 truncate text-[13px] text-gray-400">
+                                        {h.name}{h.role && <span className="text-gray-600"> · {h.role}</span>}
+                                    </span>
+                                    <span className="w-12 shrink-0 text-right text-sm font-semibold tabular-nums text-gray-200">{h.weight}%</span>
+                                </li>
+                            ))}
+                        </ul>
+
+                        <div className="mt-4 flex flex-wrap gap-2">
+                            <button type="button" onClick={() => loadSuggestion(true)} disabled={loading}
+                                className="flex items-center gap-2 rounded-lg bg-teal-500 px-4 py-2 text-sm font-bold text-black transition-colors hover:bg-teal-400 disabled:opacity-60">
+                                {loading ? <Loader2 size={15} className="animate-spin" /> : <Gauge size={15} />} Load &amp; analyze
+                            </button>
+                            <button type="button" onClick={() => loadSuggestion(false)}
+                                className="flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-sm font-medium text-gray-200 hover:border-teal-400/40 hover:text-teal-300">
+                                <ArrowDown size={15} /> Load into basket
+                            </button>
+                        </div>
+                        <p className="mt-3 text-[11px] text-gray-600">
+                            AI-generated from a curated list of liquid ETFs — educational only, not investment advice.
+                        </p>
+                    </div>
+                )}
+            </section>
+
             {/* ---- Basket builder ---- */}
             <section className="rounded-2xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
-                <h2 className="mb-4 flex items-center gap-2 text-base font-semibold text-gray-100">
+                <h2 className="mb-1 flex items-center gap-2 text-base font-semibold text-gray-100">
                     <Layers size={16} className="text-teal-400" /> Build your basket
                 </h2>
+                <p className="mb-4 text-sm text-gray-500">Or assemble your own — add tickers and set weights.</p>
 
                 <div className="flex flex-wrap items-center gap-2">
                     <div className="flex items-stretch overflow-hidden rounded-lg border border-gray-700">
