@@ -23,9 +23,12 @@ export default function DataDisclaimer({ className = "" }: { className?: string 
             <span>
                 Prices are <strong>delayed</strong> and shown for informational purposes
                 only — not real-time. Nothing on this site constitutes investment, financial,
-                legal, or tax advice, or a recommendation to buy or sell any security. All
-                content is provided “as is” without warranty; do your own research and consult
-                a licensed advisor before making any investment decision.
+                legal, or tax advice, or a recommendation to buy or sell any security. A large
+                portion of this content is generated with the help of AI, which can produce
+                inaccurate, biased, or hallucinated information. All content is provided “as is”
+                without warranty; always verify important information against your own
+                independent sources, do your own research, and consult a licensed advisor
+                before making any investment decision.
             </span>
         </div>
     );
