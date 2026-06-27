@@ -15,7 +15,7 @@ import Link from 'next/link';
 import {
     Gauge, Plus, X, Loader2, Sparkles, AlertTriangle, Shuffle, Download,
     GraduationCap, ChevronDown, Layers, Target, ShieldCheck, Scale, Rocket, Wand2, ArrowDown,
-    Save, FolderOpen, Trash2, ListPlus, Bookmark,
+    Save, FolderOpen, Trash2, ListPlus, Bookmark, Import as ImportIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn, isTickerLike } from '@/lib/utils';
@@ -28,7 +28,22 @@ import {
     type Horizon,
     type EtfSuggestion,
 } from '@/lib/actions/portfolio.actions';
-import { createGroup, addSymbolsToGroup } from '@/lib/actions/watchlist-groups.actions';
+import { createGroup, addSymbolsToGroup, listGroupsWithSymbols } from '@/lib/actions/watchlist-groups.actions';
+
+interface WatchlistOption {
+    id: number;
+    name: string;
+    symbols: string[];
+}
+
+/** Equal-weight a ticker list into integer weights summing to exactly 100. */
+function equalWeights(symbols: string[]): Holding[] {
+    const n = symbols.length;
+    if (n === 0) return [];
+    const base = Math.floor(100 / n);
+    const rem = 100 - base * n;
+    return symbols.map((s, i) => ({ symbol: s, weight: base + (i < rem ? 1 : 0) }));
+}
 
 interface Holding {
     symbol: string;
@@ -142,7 +157,32 @@ export default function PortfolioLens() {
     const [nameDraft, setNameDraft] = useState('');
     const [creatingWl, setCreatingWl] = useState<string | null>(null);
 
+    // Import from watchlist
+    const [watchlists, setWatchlists] = useState<WatchlistOption[] | null>(null);
+    const [loadingWatchlists, setLoadingWatchlists] = useState(false);
+    const [showImport, setShowImport] = useState(false);
+
     useEffect(() => { setBaskets(loadBaskets()); }, []);
+
+    const toggleImport = async () => {
+        const next = !showImport;
+        setShowImport(next);
+        if (next && watchlists === null && !loadingWatchlists) {
+            setLoadingWatchlists(true);
+            try { setWatchlists(await listGroupsWithSymbols()); }
+            catch { toast.error('Could not load your watchlists.'); }
+            finally { setLoadingWatchlists(false); }
+        }
+    };
+
+    const importFromWatchlist = (w: WatchlistOption) => {
+        const syms = [...new Set(w.symbols.map((s) => s.toUpperCase()).filter(isTickerLike))].slice(0, 25);
+        if (syms.length === 0) { toast.error(`“${w.name}” has no tickers to import`); return; }
+        setHoldings(equalWeights(syms));
+        setResult(null);
+        setShowImport(false);
+        toast.success(`Imported ${syms.length} ticker${syms.length === 1 ? '' : 's'} from “${w.name}”`);
+    };
 
     const total = useMemo(() => holdings.reduce((s, h) => s + (Number(h.weight) || 0), 0), [holdings]);
 
@@ -399,6 +439,36 @@ export default function PortfolioLens() {
                                 + {s}
                             </button>
                         ))}
+                    </div>
+
+                    {/* Import from a saved watchlist */}
+                    <div className="relative ml-auto">
+                        <button type="button" onClick={toggleImport}
+                            className="flex items-center gap-1.5 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-200 hover:border-teal-400/40 hover:text-teal-300">
+                            <ImportIcon size={14} /> Import from watchlist
+                            <ChevronDown size={14} className={cn('text-gray-500 transition-transform', showImport && 'rotate-180')} />
+                        </button>
+                        {showImport && (
+                            <>
+                                <button type="button" aria-hidden className="fixed inset-0 z-10 cursor-default" onClick={() => setShowImport(false)} tabIndex={-1} />
+                                <div className="absolute right-0 z-20 mt-1 max-h-72 w-64 overflow-auto rounded-lg border border-gray-700 bg-gray-900 p-1 shadow-xl">
+                                    {loadingWatchlists ? (
+                                        <div className="flex items-center gap-2 p-3 text-sm text-gray-500"><Loader2 size={14} className="animate-spin" /> Loading…</div>
+                                    ) : watchlists && watchlists.length > 0 ? (
+                                        watchlists.map((w) => (
+                                            <button key={w.id} type="button" onClick={() => importFromWatchlist(w)}
+                                                disabled={w.symbols.length === 0}
+                                                className="flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-sm text-gray-200 hover:bg-gray-800 disabled:opacity-40 disabled:hover:bg-transparent">
+                                                <span className="truncate">{w.name}</span>
+                                                <span className="shrink-0 text-xs text-gray-500">{w.symbols.length}</span>
+                                            </button>
+                                        ))
+                                    ) : (
+                                        <div className="p-3 text-sm text-gray-500">No watchlists yet. Add symbols to a watchlist first.</div>
+                                    )}
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
 

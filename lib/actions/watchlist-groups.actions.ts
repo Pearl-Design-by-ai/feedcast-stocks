@@ -19,6 +19,33 @@ async function sessionUser() {
 }
 
 /**
+ * The user's watchlist groups with their symbols — for importing a watchlist
+ * into the Portfolio Lens. Read-only; does not auto-create a default group.
+ */
+export async function listGroupsWithSymbols(): Promise<Array<{ id: number; name: string; symbols: string[] }>> {
+    try {
+        const { supabase, user } = await sessionUser();
+        const [groupsRes, itemsRes] = await Promise.all([
+            supabase.from(GROUPS).select('id, name, position').eq('user_id', user.id)
+                .order('position', { ascending: true }).order('id', { ascending: true }),
+            supabase.from(ITEMS).select('group_id, symbol').eq('user_id', user.id),
+        ]);
+        const groups = (groupsRes.data ?? []) as WatchlistGroup[];
+        const items = (itemsRes.data ?? []) as { group_id: number; symbol: string }[];
+        const bySym = new Map<number, string[]>();
+        for (const r of items) {
+            const arr = bySym.get(r.group_id) ?? [];
+            arr.push(r.symbol.toUpperCase());
+            bySym.set(r.group_id, arr);
+        }
+        return groups.map((g) => ({ id: g.id, name: g.name, symbols: [...new Set(bySym.get(g.id) ?? [])] }));
+    } catch (error) {
+        console.error('listGroupsWithSymbols error:', error);
+        return [];
+    }
+}
+
+/**
  * The user's watchlist groups, ordered. Auto-creates a default "My Watchlist"
  * the first time a member has none, so the rest of the UI always has a group.
  */
