@@ -53,21 +53,59 @@ function PortfolioSummary({ stocks }: { stocks: WatchlistStockData[] }) {
     const flat = changeAbs === 0;
     const tone = flat ? 'text-gray-300' : up ? 'text-green-400' : 'text-red-400';
 
+    // YTD on the same 1-share-each basis: back out each name's start-of-year
+    // price from its YTD %, then compare basket totals. Only names with a YTD
+    // figure count; note partial coverage so the number stays honest.
+    const ytdable = priced.filter((s) => s.ytd != null && s.price != null);
+    let ytdPct: number | null = null;
+    if (ytdable.length > 0) {
+        let cur = 0;
+        let start = 0;
+        for (const s of ytdable) {
+            const p = s.price as number;
+            const startPrice = p / (1 + (s.ytd as number) / 100);
+            cur += p;
+            start += startPrice;
+        }
+        ytdPct = start > 0 ? ((cur - start) / start) * 100 : null;
+    }
+    const ytdUp = (ytdPct ?? 0) > 0;
+    const ytdFlat = (ytdPct ?? 0) === 0;
+    const ytdTone = ytdFlat ? 'text-gray-300' : ytdUp ? 'text-green-400' : 'text-red-400';
+
     return (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-gray-900/40 px-4 py-3">
             <div className="flex items-baseline gap-2">
-                <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Portfolio today</span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Portfolio</span>
                 <span className="text-[11px] text-gray-500">
                     {priced.length} {priced.length === 1 ? 'holding' : 'holdings'}, 1 share each
                 </span>
             </div>
-            <div className="flex items-center gap-3 tabular-nums">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 tabular-nums">
                 <span className="text-sm text-gray-300">{formatCurrency(value)}</span>
-                <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm font-semibold ${flat ? 'bg-white/5' : up ? 'bg-green-500/10' : 'bg-red-500/10'} ${tone}`}>
-                    {!flat && (up ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />)}
-                    {up ? '+' : ''}{formatCurrency(changeAbs)}
-                    {changePct != null && <span className="opacity-80">({up ? '+' : ''}{changePct.toFixed(2)}%)</span>}
+
+                <span className="flex items-center gap-1.5">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Today</span>
+                    <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm font-semibold ${flat ? 'bg-white/5' : up ? 'bg-green-500/10' : 'bg-red-500/10'} ${tone}`}>
+                        {!flat && (up ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />)}
+                        {up ? '+' : ''}{formatCurrency(changeAbs)}
+                        {changePct != null && <span className="opacity-80">({up ? '+' : ''}{changePct.toFixed(2)}%)</span>}
+                    </span>
                 </span>
+
+                {ytdPct != null && (
+                    <span className="flex items-center gap-1.5">
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">YTD</span>
+                        <span
+                            className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm font-semibold ${ytdFlat ? 'bg-white/5' : ytdUp ? 'bg-green-500/10' : 'bg-red-500/10'} ${ytdTone}`}
+                            title={ytdable.length < priced.length ? `${ytdable.length} of ${priced.length} holdings have YTD data` : undefined}
+                        >
+                            {!ytdFlat && (ytdUp ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />)}
+                            {ytdUp ? '+' : ''}{ytdPct.toFixed(2)}%
+                            {ytdable.length < priced.length && <span className="opacity-60">*</span>}
+                        </span>
+                    </span>
+                )}
             </div>
         </div>
     );
