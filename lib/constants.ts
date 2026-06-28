@@ -54,6 +54,15 @@ export const NAV_SECTIONS: NavSection[] = [
         ],
     },
     {
+        id: 'lists',
+        label: 'My Workflow',
+        items: [
+            { href: '/watchlist', label: 'Watchlists' },
+            { href: '/portfolio-lab', label: 'Portfolio Labs' },
+            { href: '/alerts', label: 'Alerts' },
+        ],
+    },
+    {
         id: 'research',
         label: 'Research',
         items: [
@@ -80,15 +89,6 @@ export const NAV_SECTIONS: NavSection[] = [
             { href: '/calendar', label: 'Earnings & IPO' },
             { href: '/screener', label: 'Screener' },
             { href: '/compare', label: 'Compare' },
-        ],
-    },
-    {
-        id: 'lists',
-        label: 'My Workflow',
-        items: [
-            { href: '/watchlist', label: 'Watchlists' },
-            { href: '/portfolio-lab', label: 'Portfolio Labs' },
-            { href: '/alerts', label: 'Alerts' },
         ],
     },
     {
