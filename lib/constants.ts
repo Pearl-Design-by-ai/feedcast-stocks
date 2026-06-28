@@ -54,6 +54,7 @@ export const NAV_SECTIONS: NavSection[] = [
         label: 'My Lists',
         items: [
             { href: '/watchlist', label: 'Watchlist' },
+            { href: '/portfolio-lab', label: 'Portfolio Lab' },
             { href: '/alerts', label: 'Alerts' },
         ],
     },
@@ -65,7 +66,6 @@ export const NAV_SECTIONS: NavSection[] = [
             { href: '/crash-detector', label: 'Crash Detector' },
             { href: '/buy-sell-signals', label: 'Buy & Sell Signals' },
             { href: '/valuation', label: 'Valuation' },
-            { href: '/portfolio-lab', label: 'Portfolio Lab' },
             { href: '/ask', label: 'Ask the Markets' },
             { href: '/learn', label: 'Learn' },
         ],

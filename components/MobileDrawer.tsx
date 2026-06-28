@@ -14,7 +14,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { X, ChevronDown, ArrowLeft, LogOut } from 'lucide-react';
+import { Menu, X, ChevronDown, ArrowLeft, LogOut } from 'lucide-react';
 import { FeedcastLogo } from '@/components/FeedcastLogo';
 import SearchCommand from '@/components/SearchCommand';
 import { navSectionsForUser, NAV_DEFAULT_OPEN, SEARCH_HREF } from '@/lib/constants';
@@ -136,7 +136,7 @@ export default function MobileDrawer({
 
   return (
     <>
-      {/* Trigger: the logo itself opens the menu. */}
+      {/* Trigger: a hamburger icon on the left, alongside the logo, opens the menu. */}
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -144,6 +144,7 @@ export default function MobileDrawer({
         aria-expanded={open}
         className="flex items-center gap-2"
       >
+        <Menu size={26} className="shrink-0 text-gray-100" />
         <FeedcastLogo size={34} className="text-teal-400" />
         <span className="text-xl font-semibold text-gray-100">
           FeedCast <span className="text-teal-400">Markets</span>
