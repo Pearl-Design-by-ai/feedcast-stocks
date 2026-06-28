@@ -4,6 +4,7 @@ import { Loader2, Siren, ExternalLink, FileText } from 'lucide-react';
 import DataDisclaimer from '@/components/DataDisclaimer';
 import ScoreMethodology from '@/components/common/ScoreMethodology';
 import RelatedLinks from '@/components/common/RelatedLinks';
+import Collapsible from '@/components/common/Collapsible';
 import {
     CrashGauge,
     ProbabilityTable,
@@ -144,11 +145,15 @@ export default function CrashDetectorPage() {
                 <Report />
             </Suspense>
 
-            {/* Methodology */}
-            <section className="rounded-xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
-                <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-gray-100">
-                    <FileText size={16} className="text-teal-400" /> How the score works
-                </h2>
+            {/* Methodology (full detail; the quick version is the strip up top) */}
+            <Collapsible
+                className="rounded-xl border border-gray-800 bg-gray-900/40"
+                header={
+                    <h2 className="flex items-center gap-2 text-base font-semibold text-gray-100">
+                        <FileText size={16} className="text-teal-400" /> How the score works
+                    </h2>
+                }
+            >
                 <div className="grid grid-cols-1 gap-4 text-xs leading-relaxed text-gray-400 md:grid-cols-2">
                     <div>
                         <p className="mb-1 font-semibold text-gray-300">Live market signals</p>
@@ -184,7 +189,7 @@ export default function CrashDetectorPage() {
                 <Suspense fallback={null}>
                     <CrashSources />
                 </Suspense>
-            </section>
+            </Collapsible>
 
             <RelatedLinks
                 items={[

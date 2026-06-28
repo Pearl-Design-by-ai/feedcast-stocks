@@ -5,6 +5,7 @@ import { Loader2, Rocket } from 'lucide-react';
 import DataDisclaimer from '@/components/DataDisclaimer';
 import ScoreMethodology from '@/components/common/ScoreMethodology';
 import RelatedLinks from '@/components/common/RelatedLinks';
+import Collapsible from '@/components/common/Collapsible';
 import { LeveragePairCard } from '@/components/leverage/LeverageUi';
 import BacktestExplorer from '@/components/leverage/BacktestExplorer';
 import StressTester from '@/components/leverage/StressTester';
@@ -105,8 +106,10 @@ export default async function LeveragePage() {
                 <Leverage />
             </Suspense>
 
-            <section className="rounded-xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
-                <h2 className="mb-2 text-base font-semibold text-gray-100">How the split is decided</h2>
+            <Collapsible
+                className="rounded-xl border border-gray-800 bg-gray-900/40"
+                header={<h2 className="text-base font-semibold text-gray-100">How the split is decided</h2>}
+            >
                 <p className="text-xs leading-relaxed text-gray-400">
                     A 0–100 leverage score gates 3x exposure on the primary trend: <strong className="text-gray-200">below the 200-day,
                     leverage is pulled to the floor</strong> (you sit in the 1x), because that&apos;s where leveraged funds bleed worst.
@@ -120,7 +123,7 @@ export default async function LeveragePage() {
                     a level-based playbook, not a price prediction. Leveraged ETFs are high-risk. Heuristic and informational only —{' '}
                     <span className="text-gray-400">not investment advice.</span>
                 </p>
-            </section>
+            </Collapsible>
 
             <RelatedLinks
                 items={[

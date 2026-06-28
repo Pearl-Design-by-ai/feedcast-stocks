@@ -8,6 +8,7 @@ import {
   Github,
   ChevronDown
 } from 'lucide-react';
+import Collapsible from '@/components/common/Collapsible';
 
 export const metadata: Metadata = {
   title: 'Help Center | FeedCast Markets × OpenStock',
@@ -75,17 +76,22 @@ export default function HelpPage() {
       {/* FAQs */}
       <div className="space-y-8">
         <h2 className="text-2xl font-bold text-white border-b border-gray-800 pb-4">Frequently Asked Questions</h2>
-        <div className="grid gap-4">
+        <div className="grid gap-3">
           {faqs.map((faq, idx) => (
-            <div key={idx} className="bg-gray-900/50 border border-gray-800 rounded-xl p-6 hover:bg-gray-800/50 transition-colors">
-              <h3 className="font-semibold text-lg text-gray-200 mb-2 flex items-start gap-3">
-                <Lightbulb size={20} className="text-yellow-500/50 mt-1 shrink-0" />
-                {faq.question}
-              </h3>
+            <Collapsible
+              key={idx}
+              className="bg-gray-900/50 border border-gray-800 rounded-xl"
+              header={
+                <h3 className="font-semibold text-lg text-gray-200 flex items-start gap-3">
+                  <Lightbulb size={20} className="text-yellow-500/50 mt-0.5 shrink-0" />
+                  {faq.question}
+                </h3>
+              }
+            >
               <p className="text-gray-400 leading-relaxed ml-8 pl-1 border-l-2 border-gray-800">
                 {faq.answer}
               </p>
-            </div>
+            </Collapsible>
           ))}
         </div>
       </div>

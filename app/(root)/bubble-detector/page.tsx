@@ -5,6 +5,7 @@ import { Loader2, Radar, TriangleAlert, ExternalLink, Telescope, Eye } from 'luc
 import DataDisclaimer from '@/components/DataDisclaimer';
 import ScoreMethodology from '@/components/common/ScoreMethodology';
 import RelatedLinks from '@/components/common/RelatedLinks';
+import Collapsible from '@/components/common/Collapsible';
 import TradingViewWidget from '@/components/TradingViewWidget';
 import { FrothGauge, ScoreBar, AssetTable } from '@/components/bubble/BubbleUi';
 import { TopPopGrid } from '@/components/bubble/TopPopGrid';
@@ -296,9 +297,11 @@ export default function BubbleDetectorPage() {
                 <HistoricalLessons />
             </Suspense>
 
-            {/* Methodology + sources */}
-            <section className="rounded-xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
-                <h2 className="mb-3 text-base font-semibold text-gray-100">How the scores work</h2>
+            {/* Methodology + sources (full detail; quick version is the strip up top) */}
+            <Collapsible
+                className="rounded-xl border border-gray-800 bg-gray-900/40"
+                header={<h2 className="text-base font-semibold text-gray-100">How the scores work</h2>}
+            >
                 <div className="grid grid-cols-1 gap-4 text-xs leading-relaxed text-gray-400 md:grid-cols-2">
                     <div>
                         <p className="mb-1 font-semibold text-gray-300">Bubble score (0–100)</p>
@@ -333,7 +336,7 @@ export default function BubbleDetectorPage() {
                 <Suspense fallback={null}>
                     <BubbleSources />
                 </Suspense>
-            </section>
+            </Collapsible>
 
             <RelatedLinks
                 items={[

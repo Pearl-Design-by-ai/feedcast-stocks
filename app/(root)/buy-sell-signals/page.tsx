@@ -4,6 +4,7 @@ import { Loader2, Signal } from 'lucide-react';
 import DataDisclaimer from '@/components/DataDisclaimer';
 import ScoreMethodology from '@/components/common/ScoreMethodology';
 import RelatedLinks from '@/components/common/RelatedLinks';
+import Collapsible from '@/components/common/Collapsible';
 import { SignalCard, MacroStrip, SectorBoard, RecoveryStats, WhyMarketsRise, TacticalCard } from '@/components/signals/SignalsUi';
 import { getSignalsReport } from '@/lib/signals-scan';
 import { cn, formatEodDate } from '@/lib/utils';
@@ -110,8 +111,10 @@ export default function BuySellSignalsPage() {
                 <SignalsContext />
             </Suspense>
 
-            <section className="rounded-xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
-                <h2 className="mb-2 text-base font-semibold text-gray-100">How the grade is built</h2>
+            <Collapsible
+                className="rounded-xl border border-gray-800 bg-gray-900/40"
+                header={<h2 className="text-base font-semibold text-gray-100">How the grade is built</h2>}
+            >
                 <p className="text-xs leading-relaxed text-gray-400">
                     A 0–100 signal score starts neutral at 50 and adds/subtracts for: primary trend (price vs the
                     200-day), short-term trend (vs the 50-day), the 50/200 cross, RSI-14 momentum (with an
@@ -126,7 +129,7 @@ export default function BuySellSignalsPage() {
                     prediction. Heuristic and informational only — <span className="text-gray-400">not investment
                     advice.</span>
                 </p>
-            </section>
+            </Collapsible>
 
             <RelatedLinks
                 items={[
