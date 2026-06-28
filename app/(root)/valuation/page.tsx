@@ -7,7 +7,7 @@ import MarketContext from '@/components/valuation/MarketContext';
 import { ensureFreshScreen } from '@/lib/actions/valuation.actions';
 
 export const metadata: Metadata = {
-    title: 'Valuation Screen',
+    title: 'Valuation',
     description:
         'The cheapest and most expensive major US stocks by trailing P/E — a daily valuation screen across ~190 large-caps.',
 };
@@ -31,7 +31,7 @@ export default function ValuationPage() {
         <div className="min-h-screen bg-gray-900 text-gray-100 p-6 md:p-8">
             <header className="mb-6">
                 <h1 className="flex items-center gap-2 text-3xl font-bold text-gray-100">
-                    <Scale className="text-teal-400" /> Valuation Screen
+                    <Scale className="text-teal-400" /> Valuation
                 </h1>
                 <p className="mt-1 max-w-3xl text-sm leading-relaxed text-gray-400">
                     Two views in one place. First the <span className="text-gray-200">whole-market read</span> —

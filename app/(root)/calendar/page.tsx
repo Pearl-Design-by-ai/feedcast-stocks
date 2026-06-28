@@ -5,7 +5,7 @@ import DataDisclaimer from '@/components/DataDisclaimer';
 import { getEarningsCalendar, getIpoCalendar } from '@/lib/actions/calendar.actions';
 
 export const metadata: Metadata = {
-    title: 'Calendar',
+    title: 'Earnings & IPO',
     description: 'Upcoming earnings reports and IPOs.',
 };
 
@@ -29,7 +29,7 @@ export default async function CalendarPage() {
         <div className="flex min-h-screen w-full flex-col gap-6 p-4 md:p-8">
             <header className="flex flex-col gap-3">
                 <div className="flex flex-col gap-1">
-                    <h1 className="text-3xl font-bold text-gray-100">Calendar</h1>
+                    <h1 className="text-3xl font-bold text-gray-100">Earnings &amp; IPO</h1>
                     <p className="max-w-3xl text-sm text-gray-400">
                         Upcoming earnings reports (next 2 weeks, analyst-covered names) and IPOs
                         (recent &amp; upcoming).

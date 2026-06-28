@@ -37,6 +37,7 @@ import {
     Briefcase,
     Rocket,
     ShieldCheck,
+    FileText,
     type LucideIcon,
 } from 'lucide-react';
 
@@ -69,6 +70,7 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
     '/about': Info,
     '/help': LifeBuoy,
     '/api-docs': Code,
+    '/terms': FileText,
     '/admin': ShieldCheck,
 };
 

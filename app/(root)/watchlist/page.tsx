@@ -14,6 +14,11 @@ import NewsGrid from '@/components/watchlist/NewsGrid';
 import DataDisclaimer from '@/components/DataDisclaimer';
 import { Loader2, Bell } from 'lucide-react';
 
+export const metadata = {
+    title: 'Watchlists',
+    description: 'Track up to five separate lists — by theme, conviction, or however you invest.',
+};
+
 type GroupItems = Awaited<ReturnType<typeof getGroupItems>>;
 
 async function TableSection({ items, groupId }: { items: GroupItems; groupId: number }) {

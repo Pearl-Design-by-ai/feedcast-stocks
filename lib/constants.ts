@@ -40,6 +40,10 @@ export interface NavSection {
 
 export const SEARCH_HREF = '/search';
 
+// Three explicit product layers — Research (analytical reads), Market Dashboards
+// (data surfaces) and My Workflow (the user's own names) — plus Home and More.
+// Section ids are stable identifiers (icons + saved open-state key off them); the
+// labels are what users see, so relabeling a layer keeps its id.
 export const NAV_SECTIONS: NavSection[] = [
     {
         id: 'home',
@@ -50,31 +54,22 @@ export const NAV_SECTIONS: NavSection[] = [
         ],
     },
     {
-        id: 'lists',
-        label: 'My Lists',
-        items: [
-            { href: '/watchlist', label: 'Watchlist' },
-            { href: '/portfolio-lab', label: 'Portfolio Labs' },
-            { href: '/alerts', label: 'Alerts' },
-        ],
-    },
-    {
         id: 'research',
         label: 'Research',
         items: [
+            { href: '/market-regime', label: 'Market Regime' },
             { href: '/bubble-detector', label: 'Bubble Detector' },
             { href: '/crash-detector', label: 'Crash Detector' },
             { href: '/buy-sell-signals', label: 'Buy & Sell Signals' },
             { href: '/valuation', label: 'Valuation' },
+            { href: '/market-indicators', label: 'Market Indicators' },
             { href: '/ask', label: 'Ask the Markets' },
         ],
     },
     {
         id: 'markets',
-        label: 'Markets',
+        label: 'Market Dashboards',
         items: [
-            { href: '/market-regime', label: 'Market Regime' },
-            { href: '/market-indicators', label: 'Indicators' },
             { href: '/sectors', label: 'Sectors' },
             { href: '/world-indices', label: 'World Indices' },
             { href: '/currency', label: 'Currency' },
@@ -88,21 +83,31 @@ export const NAV_SECTIONS: NavSection[] = [
         ],
     },
     {
+        id: 'lists',
+        label: 'My Workflow',
+        items: [
+            { href: '/watchlist', label: 'Watchlists' },
+            { href: '/portfolio-lab', label: 'Portfolio Labs' },
+            { href: '/alerts', label: 'Alerts' },
+        ],
+    },
+    {
         id: 'more',
         label: 'More',
         items: [
             { href: '/appearance', label: 'Appearance' },
+            { href: '/learn', label: 'Learn' },
             { href: '/about', label: 'About' },
             { href: '/help', label: 'Help' },
             { href: '/api-docs', label: 'API Docs' },
-            { href: '/learn', label: 'Learn' },
+            { href: '/terms', label: 'Terms' },
         ],
     },
 ];
 
 /** Sections expanded by default; the others start collapsed (and any section
  *  containing the active route auto-opens). */
-export const NAV_DEFAULT_OPEN = ['home', 'lists', 'research'];
+export const NAV_DEFAULT_OPEN = ['home', 'research', 'lists'];
 
 /**
  * Power-user gating. Generic hook for limiting a module to specific accounts —
