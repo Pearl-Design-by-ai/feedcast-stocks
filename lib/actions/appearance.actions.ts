@@ -2,7 +2,15 @@
 
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { ACCENT_COLORS, type AccentColorId } from '@/lib/accent';
-import { BACKGROUND_TONES, LIGHT_TONES, type BackgroundToneId, type LightToneId, type ThemeMode } from '@/lib/appearance';
+import {
+  BACKGROUND_TONES,
+  LIGHT_TONES,
+  themeToMain,
+  lightIdToMain,
+  type BackgroundToneId,
+  type LightToneId,
+  type ThemeMode,
+} from '@/lib/appearance';
 
 export interface AppearanceChoice {
   accentColor?: AccentColorId;
@@ -13,10 +21,13 @@ export interface AppearanceChoice {
 
 /**
  * Persist the member's appearance picks into
- * `user_preferences.reading_preferences` — the same JSONB the main Feedcast
- * app reads/writes (`accentColor` is shared with it; `marketsBackground` is
- * ours). RLS limits the row to the logged-in user. Existing keys are merged,
- * never clobbered.
+ * `user_preferences.reading_preferences` — the SAME JSONB keys the main Feedcast
+ * app (www.feedcast.news) reads/writes: `accentColor`, `theme`, `darkBackground`
+ * and `lightBackground`. So a choice made here also shows up there (and vice
+ * versa). Two value spaces are translated to the main app's naming on the way
+ * out (`auto`→`device`, `nardo`→`nardo_gray`, `blush`→`blush_bg`); see
+ * lib/appearance.ts. RLS limits the row to the logged-in user. Existing keys are
+ * merged, never clobbered.
  */
 export async function saveAppearance(
   choice: AppearanceChoice
@@ -52,9 +63,9 @@ export async function saveAppearance(
 
   const prefs = {
     ...(choice.accentColor !== undefined && { accentColor: choice.accentColor }),
-    ...(choice.background !== undefined && { marketsBackground: choice.background }),
-    ...(choice.lightBackground !== undefined && { marketsLightBackground: choice.lightBackground }),
-    ...(choice.theme !== undefined && { marketsTheme: choice.theme }),
+    ...(choice.background !== undefined && { darkBackground: choice.background }),
+    ...(choice.lightBackground !== undefined && { lightBackground: lightIdToMain(choice.lightBackground) }),
+    ...(choice.theme !== undefined && { theme: themeToMain(choice.theme) }),
   };
 
   // Atomic server-side JSONB merge (see supabase/migrations/005) — a plain

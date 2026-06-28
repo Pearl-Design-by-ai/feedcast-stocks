@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import AppearanceSettings from '@/components/appearance/AppearanceSettings';
 import { ACCENT_COLORS, type AccentColorId } from '@/lib/accent';
-import { backgroundTone, lightTone, DEFAULT_THEME, type ThemeMode } from '@/lib/appearance';
+import { backgroundTone, lightIdFromMain, themeFromMain, type ThemeMode } from '@/lib/appearance';
 
 export const metadata: Metadata = {
     title: 'Appearance',
@@ -24,11 +24,13 @@ export default async function AppearancePage() {
         .select('reading_preferences')
         .eq('id', user.id)
         .maybeSingle();
+    // Same shared keys the main app writes (see lib/appearance.ts) so picks made
+    // on www.feedcast.news pre-fill here and vice versa.
     const prefs = (data?.reading_preferences as {
         accentColor?: string;
-        marketsBackground?: string;
-        marketsLightBackground?: string;
-        marketsTheme?: string;
+        darkBackground?: string;
+        lightBackground?: string;
+        theme?: string;
     } | null) ?? {};
 
     // 'black' (the main app's "no accent") and unknown ids fall back to gold,
@@ -37,11 +39,9 @@ export default async function AppearancePage() {
         prefs.accentColor && prefs.accentColor !== 'black' && prefs.accentColor in ACCENT_COLORS
             ? (prefs.accentColor as AccentColorId)
             : 'gold';
-    const initialBackground = backgroundTone(prefs.marketsBackground).id;
-    const initialLightBackground = lightTone(prefs.marketsLightBackground).id;
-    const initialTheme: ThemeMode = (['dark', 'light', 'auto'].includes(prefs.marketsTheme ?? '')
-        ? prefs.marketsTheme
-        : DEFAULT_THEME) as ThemeMode;
+    const initialBackground = backgroundTone(prefs.darkBackground).id;
+    const initialLightBackground = lightIdFromMain(prefs.lightBackground);
+    const initialTheme: ThemeMode = themeFromMain(prefs.theme);
 
     return (
         <div className="flex min-h-screen w-full flex-col gap-6 p-4 md:p-8">
@@ -49,8 +49,8 @@ export default async function AppearancePage() {
                 <h1 className="text-3xl font-bold text-gray-100">Appearance</h1>
                 <p className="max-w-3xl text-sm text-gray-400">
                     Make Markets yours — pick light or dark (or follow your device), a background
-                    tone and an accent color. Choices save to your Feedcast profile and follow you
-                    across devices.
+                    tone and an accent color. Choices save to your Feedcast profile, so they follow
+                    you across devices and stay in sync with www.feedcast.news.
                 </p>
             </header>
 

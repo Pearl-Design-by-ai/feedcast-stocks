@@ -80,7 +80,7 @@ export default function AppearanceSettings({
       applyTheme(prev, background, lightBackground);
       toast.error('Could not save the theme', { description: res.error });
     } else {
-      toast.success(`Theme set to ${id === 'auto' ? 'Auto (device)' : id}`);
+      toast.success(`Theme set to ${id === 'auto' ? 'Auto (device)' : id} — synced with Feedcast`);
     }
   };
 

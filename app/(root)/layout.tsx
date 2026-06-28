@@ -6,7 +6,7 @@ import SideNav from "@/components/SideNav";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { searchStocks } from "@/lib/actions/finnhub.actions";
 import { accentHex } from "@/lib/accent";
-import { buildThemeCss, DEFAULT_THEME, type ThemeMode } from "@/lib/appearance";
+import { buildThemeCss, themeFromMain, lightIdFromMain } from "@/lib/appearance";
 import { isPowerUserEmail } from "@/lib/constants";
 import ThemeProvider from "@/components/ThemeProvider";
 
@@ -33,11 +33,12 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
         email: user.email ?? '',
     };
 
-    // Pull the member's appearance picks (accent chosen on www.feedcast.news
-    // or on /appearance here; background tone chosen on /appearance) from
-    // user_preferences.reading_preferences. RLS scopes the read to the
-    // logged-in user; falls back to the defaults (gold accent, Obsidian tone).
-    const prefsPromise = (async (): Promise<{ accentColor?: string; marketsBackground?: string; marketsLightBackground?: string; marketsTheme?: string }> => {
+    // Pull the member's appearance picks from user_preferences.reading_preferences.
+    // These are the SAME keys the main app (www.feedcast.news) writes — theme,
+    // accent and background all sync across the two sites (see lib/appearance.ts
+    // SHARED_PREF_KEYS). RLS scopes the read to the logged-in user; missing keys
+    // fall back to the defaults (gold accent, Auto theme, Obsidian/Pearl tones).
+    const prefsPromise = (async (): Promise<{ accentColor?: string; darkBackground?: string; lightBackground?: string; theme?: string }> => {
         try {
             const { data } = await supabase
                 .from('user_preferences')
@@ -46,9 +47,9 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
                 .maybeSingle();
             return (data?.reading_preferences as {
                 accentColor?: string;
-                marketsBackground?: string;
-                marketsLightBackground?: string;
-                marketsTheme?: string;
+                darkBackground?: string;
+                lightBackground?: string;
+                theme?: string;
             } | null) ?? {};
         } catch {
             // Non-fatal — keep the defaults.
@@ -66,7 +67,7 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
     ]);
 
     const brand = accentHex(prefs.accentColor);
-    const mode = (['dark', 'light', 'auto'].includes(prefs.marketsTheme ?? '') ? prefs.marketsTheme : DEFAULT_THEME) as ThemeMode;
+    const mode = themeFromMain(prefs.theme);
     const powerUser = isPowerUserEmail(sessionUser.email);
 
     // Injected as a :root override (rather than inline on <main>) so portaled
@@ -74,7 +75,7 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
     // accent as the page content. Dark/light/auto each set the full gray scale
     // (auto via a prefers-color-scheme media query). The /appearance page
     // mirrors these onto document.documentElement for its instant live preview.
-    const themeCss = buildThemeCss(mode, prefs.marketsBackground, prefs.marketsLightBackground, brand);
+    const themeCss = buildThemeCss(mode, prefs.darkBackground, lightIdFromMain(prefs.lightBackground), brand);
 
     return (
         <main className="min-h-screen text-gray-400">

@@ -9,8 +9,9 @@
  * picks it up. "Obsidian" is the original palette and therefore the default —
  * members who never open the settings see no change.
  *
- * Saved to `user_preferences.reading_preferences.marketsBackground` (same
- * JSONB the main app uses for `accentColor`, so it syncs across devices).
+ * Saved to `user_preferences.reading_preferences.darkBackground` — the same
+ * JSONB key the main app (www.feedcast.news) uses, so the background tone syncs
+ * across devices AND across the two sites (see SHARED_PREF_KEYS below).
  */
 
 export type BackgroundToneId =
@@ -86,7 +87,8 @@ export function backgroundTone(id: string | null | undefined): BackgroundTone {
 
 export type ThemeMode = 'dark' | 'light' | 'auto';
 // Zero-state default follows the device (prefers-color-scheme). A member's
-// stored marketsTheme overrides this; only brand-new users hit 'auto'.
+// stored theme (the main app's `theme` key, 'device' there == 'auto' here)
+// overrides this; only brand-new users hit 'auto'.
 export const DEFAULT_THEME: ThemeMode = 'auto';
 
 export type LightToneId = 'pearl' | 'snow' | 'linen' | 'nardo' | 'sage' | 'blush';
@@ -113,6 +115,55 @@ export const DEFAULT_LIGHT: LightToneId = 'pearl';
 export function lightTone(id: string | null | undefined): LightTone {
   return LIGHT_TONES.find((t) => t.id === id) ?? LIGHT_TONES.find((t) => t.id === DEFAULT_LIGHT)!;
 }
+
+// ---------------------------------------------------------------------------
+// Cross-app sync with the main Feedcast app (www.feedcast.news)
+//
+// The main app stores the member's appearance picks in the SAME
+// `user_preferences.reading_preferences` JSONB, under these keys:
+//   theme:           'light' | 'dark' | 'device'   (default 'device')
+//   darkBackground:  same six ids as BACKGROUND_TONES
+//   lightBackground: 'pearl'|'snow'|'linen'|'nardo_gray'|'sage'|'blush_bg'
+//   accentColor:     same palette as lib/accent.ts (already shared here)
+//
+// Markets reads/writes these very keys so a theme/background/accent picked on
+// either site shows up on the other (accent already worked this way). Two value
+// spaces differ and are translated below; everything else lines up 1:1. Each
+// app still renders its own palette hexes for a given id — only the *choice*
+// is shared, not the literal colors.
+// ---------------------------------------------------------------------------
+
+/** Shared reading_preferences keys, owned by the main app. */
+export const SHARED_PREF_KEYS = {
+  theme: 'theme',
+  dark: 'darkBackground',
+  light: 'lightBackground',
+  accent: 'accentColor',
+} as const;
+
+// Theme: the main app uses 'device' for "follow system"; Markets calls it 'auto'.
+export function themeFromMain(v: string | null | undefined): ThemeMode {
+  if (v === 'light' || v === 'dark') return v;
+  if (v === 'device' || v === 'auto') return 'auto';
+  return DEFAULT_THEME;
+}
+export function themeToMain(v: ThemeMode): 'light' | 'dark' | 'device' {
+  return v === 'auto' ? 'device' : v;
+}
+
+// Light tone: the main app names two ids differently (`nardo_gray`, `blush_bg`).
+const LIGHT_ID_FROM_MAIN: Record<string, LightToneId> = { nardo_gray: 'nardo', blush_bg: 'blush' };
+const LIGHT_ID_TO_MAIN: Record<string, string> = { nardo: 'nardo_gray', blush: 'blush_bg' };
+/** Resolve a main-app lightBackground id to a valid Markets LightToneId. */
+export function lightIdFromMain(v: string | null | undefined): LightToneId {
+  return lightTone(LIGHT_ID_FROM_MAIN[v ?? ''] ?? v).id;
+}
+/** Translate a Markets LightToneId back to the main app's id for saving. */
+export function lightIdToMain(v: LightToneId): string {
+  return LIGHT_ID_TO_MAIN[v] ?? v;
+}
+// Dark tone and accent ids are identical across both apps — no mapping needed
+// (backgroundTone()/accent validation already normalize them).
 
 // Fixed "ink" sets — text grays, deepest/lightest insets, the white→ink lever
 // and the chart theme flag. Surfaces are merged in per chosen tone.

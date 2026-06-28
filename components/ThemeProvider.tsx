@@ -4,7 +4,8 @@
  * Provides the effective UI theme ('light' | 'dark') to client components that
  * can't read it from CSS — notably the TradingView embeds, which need a
  * concrete colorTheme. The mode comes from the server (the member's saved
- * marketsTheme); 'auto' is resolved on the client via prefers-color-scheme.
+ * `theme`, shared with the main app); 'auto' is resolved on the client via
+ * prefers-color-scheme.
  */
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { ThemeMode } from '@/lib/appearance';
