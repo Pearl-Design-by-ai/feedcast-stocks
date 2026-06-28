@@ -336,7 +336,7 @@ export default function PortfolioLens() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `portfolio-lens-${holdings.map((h) => h.symbol).join('-').slice(0, 60) || 'export'}.json`;
+        a.download = `portfolio-labs-${holdings.map((h) => h.symbol).join('-').slice(0, 60) || 'export'}.json`;
         a.click();
         URL.revokeObjectURL(url);
     };
@@ -718,7 +718,7 @@ function PortfolioLensPanel({ lens, onExport }: { lens: NonNullable<PortfolioAna
         <section className="rounded-2xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
             <div className="mb-4 flex items-center justify-between gap-2">
                 <h2 className="flex items-center gap-2 text-base font-semibold text-gray-100">
-                    <Gauge size={16} className="text-teal-400" /> Portfolio Lens
+                    <Gauge size={16} className="text-teal-400" /> Portfolio Labs
                     <span className="text-xs font-normal text-gray-500">value-cycle read</span>
                 </h2>
                 <button type="button" onClick={onExport}

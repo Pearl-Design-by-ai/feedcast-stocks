@@ -6,7 +6,7 @@ import DataDisclaimer from '@/components/DataDisclaimer';
 import PortfolioLens from '@/components/portfolio/PortfolioLens';
 
 export const metadata: Metadata = {
-    title: 'Portfolio Lens',
+    title: 'Portfolio Labs',
     description:
         'A cycle-aware, value-oriented portfolio builder. Assemble your tickers and weights, then get a per-stock 5-step analysis (position, thesis, key risk, cycle & valuation, judgment) plus a portfolio-level Health Score, cycle exposure and concentration risks.',
 };
@@ -22,7 +22,7 @@ export default async function PortfolioLabPage() {
         <div className="min-h-screen bg-gray-900 text-gray-100 p-6 md:p-8">
             <header className="mb-6">
                 <h1 className="flex items-center gap-2 text-3xl font-bold text-gray-100">
-                    <Gauge className="text-teal-400" /> Portfolio Lens
+                    <Gauge className="text-teal-400" /> Portfolio Labs
                 </h1>
                 <p className="mt-1 max-w-3xl text-sm leading-relaxed text-gray-400">
                     A disciplined, cycle-aware portfolio builder. Assemble your tickers and weights, and it
