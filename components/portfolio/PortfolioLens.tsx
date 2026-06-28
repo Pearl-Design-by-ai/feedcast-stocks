@@ -30,6 +30,7 @@ import {
     type EtfSuggestion,
 } from '@/lib/actions/portfolio.actions';
 import { createGroup, addSymbolsToGroup, listGroupsWithSymbols } from '@/lib/actions/watchlist-groups.actions';
+import Collapsible from '@/components/common/Collapsible';
 import {
     listFundManagers,
     getFundManagerPortfolio,
@@ -398,12 +399,16 @@ export default function PortfolioLens() {
     return (
         <div className="space-y-6">
             {/* ---- Ready-made AI ETF portfolio ---- */}
-            <section className="rounded-2xl border border-teal-500/20 bg-teal-500/[0.04] p-4 md:p-5">
-                <h2 className="flex items-center gap-2 text-base font-semibold text-gray-100">
-                    <Wand2 size={16} className="text-teal-400" /> Ready-made ETF portfolio
-                    <span className="text-xs font-normal text-gray-500">AI-generated</span>
-                </h2>
-                <p className="mt-1 text-sm text-gray-400">
+            <Collapsible
+                className="rounded-2xl border border-teal-500/20 bg-teal-500/[0.04]"
+                header={
+                    <h2 className="flex items-center gap-2 text-base font-semibold text-gray-100">
+                        <Wand2 size={16} className="text-teal-400" /> Ready-made ETF portfolio
+                        <span className="text-xs font-normal text-gray-500">AI-generated</span>
+                    </h2>
+                }
+            >
+                <p className="text-sm text-gray-400">
                     Pick a risk profile and how long you plan to hold — get a cycle-aware, value-disciplined
                     ETF starter portfolio you can load and analyze in one click.
                 </p>
@@ -473,16 +478,20 @@ export default function PortfolioLens() {
                         </p>
                     </div>
                 )}
-            </section>
+            </Collapsible>
 
             {/* ---- Browse famous fund managers' portfolios ---- */}
             {(managers === null || managers.length > 0) && (
-                <section className="rounded-2xl border border-indigo-500/20 bg-indigo-500/[0.04] p-4 md:p-5">
-                    <h2 className="flex items-center gap-2 text-base font-semibold text-gray-100">
-                        <Landmark size={16} className="text-indigo-400" /> Browse famous fund managers&apos; portfolios
-                        <span className="text-xs font-normal text-gray-500">SEC 13F</span>
-                    </h2>
-                    <p className="mt-1 text-sm text-gray-400">
+                <Collapsible
+                    className="rounded-2xl border border-indigo-500/20 bg-indigo-500/[0.04]"
+                    header={
+                        <h2 className="flex items-center gap-2 text-base font-semibold text-gray-100">
+                            <Landmark size={16} className="text-indigo-400" /> Browse famous fund managers&apos; portfolios
+                            <span className="text-xs font-normal text-gray-500">SEC 13F</span>
+                        </h2>
+                    }
+                >
+                    <p className="text-sm text-gray-400">
                         Load a well-known investor&apos;s latest public 13F holdings into your basket, then press
                         Analyze to run the per-stock analysis. Weights are the manager&apos;s top positions; data updates
                         automatically as new filings post.
@@ -528,16 +537,20 @@ export default function PortfolioLens() {
                         Source: SEC Form 13F (public, quarterly, reported with a lag). Holdings shown are the manager&apos;s
                         largest reported US-listed equity positions and may omit non-13F assets. Educational only, not advice.
                     </p>
-                </section>
+                </Collapsible>
             )}
 
             {/* ---- Import from a watchlist ---- */}
             {(loadingWatchlists || (watchlists && watchlists.length > 0)) && (
-                <section className="rounded-2xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
-                    <h2 className="flex items-center gap-2 text-base font-semibold text-gray-100">
-                        <ImportIcon size={16} className="text-teal-400" /> Import from your watchlist
-                    </h2>
-                    <p className="mt-1 text-sm text-gray-400">
+                <Collapsible
+                    className="rounded-2xl border border-gray-800 bg-gray-900/40"
+                    header={
+                        <h2 className="flex items-center gap-2 text-base font-semibold text-gray-100">
+                            <ImportIcon size={16} className="text-teal-400" /> Import from your watchlist
+                        </h2>
+                    }
+                >
+                    <p className="text-sm text-gray-400">
                         Turn any of your watchlists into an equal-weighted basket — then analyze, save or re-allocate it.
                     </p>
                     {loadingWatchlists ? (
@@ -560,7 +573,7 @@ export default function PortfolioLens() {
                             ))}
                         </div>
                     )}
-                </section>
+                </Collapsible>
             )}
 
             {/* ---- Basket builder ---- */}
