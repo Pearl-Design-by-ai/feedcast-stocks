@@ -38,6 +38,7 @@ import {
     Rocket,
     ShieldCheck,
     FileText,
+    Layers,
     type LucideIcon,
 } from 'lucide-react';
 
@@ -70,6 +71,7 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
     '/about': Info,
     '/help': LifeBuoy,
     '/api-docs': Code,
+    '/markets/options-strategies': Layers,
     '/terms': FileText,
     '/admin': ShieldCheck,
 };

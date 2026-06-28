@@ -41,6 +41,24 @@ export default async function LearnPage({
                 </p>
             </header>
 
+            {/* Featured hub: Options Strategies */}
+            <Link
+                href="/markets/options-strategies"
+                className="group flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-teal-500/20 bg-gradient-to-br from-teal-500/10 to-gray-900/40 p-5 transition-colors hover:border-teal-400/40"
+            >
+                <div className="min-w-0">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-teal-300">Learning Center</span>
+                    <p className="mt-0.5 text-lg font-bold text-gray-100">Options Strategies</p>
+                    <p className="mt-0.5 max-w-2xl text-sm text-gray-400">
+                        An institutional-quality hub — 25+ strategies with payoff diagrams, a comparison matrix, the Greeks
+                        and an interactive payoff simulator.
+                    </p>
+                </div>
+                <span className="shrink-0 rounded-lg bg-teal-500 px-4 py-2 text-sm font-bold text-black transition-colors group-hover:bg-teal-400">
+                    Open →
+                </span>
+            </Link>
+
             <div className="flex flex-col gap-6 lg:flex-row">
                 {/* Category rail */}
                 <aside className="lg:w-56 lg:shrink-0">
