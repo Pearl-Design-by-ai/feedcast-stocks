@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { Loader2, Signal } from 'lucide-react';
 import DataDisclaimer from '@/components/DataDisclaimer';
+import ScoreMethodology from '@/components/common/ScoreMethodology';
+import RelatedLinks from '@/components/common/RelatedLinks';
 import { SignalCard, MacroStrip, SectorBoard, RecoveryStats, WhyMarketsRise, TacticalCard } from '@/components/signals/SignalsUi';
 import { getSignalsReport } from '@/lib/signals-scan';
 import { cn, formatEodDate } from '@/lib/utils';
@@ -82,6 +84,7 @@ export default function BuySellSignalsPage() {
                     <h1 className="flex items-center gap-2 text-3xl font-bold text-gray-100">
                         <Signal className="text-teal-400" /> Buy &amp; Sell Signals
                     </h1>
+                    <p className="max-w-3xl text-base font-semibold text-gray-200">Buy, hold, or sell the major US indices — right now?</p>
                     <p className="max-w-3xl text-sm text-gray-400">
                         Graded <strong className="text-gray-200">Buy / Hold / Sell</strong> calls for the four major
                         US indices — S&amp;P 500, Nasdaq, Russell 2000 and the Dow — from a transparent blend of trend,
@@ -92,6 +95,12 @@ export default function BuySellSignalsPage() {
                 </div>
                 <DataDisclaimer className="w-fit" />
             </header>
+
+            <ScoreMethodology
+                methodology="A 0–100 signal score per index starts neutral at 50, then adds/subtracts for primary trend (price vs the 200-day), short-term trend (vs the 50-day), the 50/200 cross, RSI-14 momentum (with overbought-fade and oversold-bounce adjustments), 1-/3-month and 1-week returns, and distance from the 52-week high. Full detail in “How the grade is built” below."
+                cadence="Computed from end-of-day closes (cached up to ~6h), so grades move once per trading day after the US close. The “next-session read” is a level-based scenario, not a price prediction."
+                thresholds="Strong Buy ≥72 · Buy 60–72 · Hold 45–60 · Sell 33–45 · Strong Sell <33."
+            />
 
             <Suspense fallback={<Skeleton />}>
                 <Signals />
@@ -118,6 +127,15 @@ export default function BuySellSignalsPage() {
                     advice.</span>
                 </p>
             </section>
+
+            <RelatedLinks
+                items={[
+                    { href: '/market-regime', label: 'Market Regime', desc: 'Confirm the index calls against the overall risk read' },
+                    { href: '/sectors', label: 'Sectors', desc: 'Drill from the index tape into sector leadership' },
+                    { href: '/watchlist', label: 'Watchlists', desc: 'Apply the read to the names you actually hold' },
+                    { href: '/alerts', label: 'Set alerts', desc: 'Get notified when a key level breaks' },
+                ]}
+            />
         </div>
     );
 }

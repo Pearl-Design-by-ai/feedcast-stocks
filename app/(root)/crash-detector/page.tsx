@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { Loader2, Siren, ExternalLink, FileText } from 'lucide-react';
 import DataDisclaimer from '@/components/DataDisclaimer';
+import ScoreMethodology from '@/components/common/ScoreMethodology';
+import RelatedLinks from '@/components/common/RelatedLinks';
 import {
     CrashGauge,
     ProbabilityTable,
@@ -119,6 +121,7 @@ export default function CrashDetectorPage() {
                     <h1 className="flex items-center gap-2 text-3xl font-bold text-gray-100">
                         <Siren className="text-red-400" /> Crash Detector
                     </h1>
+                    <p className="max-w-3xl text-base font-semibold text-gray-200">How vulnerable is the cycle right now?</p>
                     <p className="max-w-3xl text-sm text-gray-400">
                         An investment-committee read on where we are in the cycle — and the odds of a
                         correction, recession or crash. A single <strong className="text-gray-200">Crash
@@ -130,6 +133,12 @@ export default function CrashDetectorPage() {
                 </div>
                 <DataDisclaimer className="w-fit" />
             </header>
+
+            <ScoreMethodology
+                methodology="A 0–100 composite of live market signals — the 10y–3m yield curve, high-yield vs investment-grade credit, sector breadth, the VIX, cap- vs equal-weight concentration, trend, drawdown and a speculative-froth basket — each classified on fixed thresholds and weighted by historical predictive power, then overlaid with slow-moving structural macro and the dated long-cycle clock. See the full breakdown in “How the score works” below."
+                cadence="Live signals recompute from end-of-day data each visit (cached up to ~6h); the structural/cycle overlay is analyst-maintained, current to mid-2026."
+                thresholds="0–24 Low · 25–49 Elevated · 50–74 High · 75–100 Severe. Probabilities are a documented function of the score. A high score argues for a wider margin of safety — not an imminent-crash prediction."
+            />
 
             <Suspense fallback={<ReportSkeleton />}>
                 <Report />
@@ -176,6 +185,15 @@ export default function CrashDetectorPage() {
                     <CrashSources />
                 </Suspense>
             </section>
+
+            <RelatedLinks
+                items={[
+                    { href: '/sectors', label: 'Sectors', desc: 'Rotate toward defensive sectors (staples, utilities, health care)' },
+                    { href: '/compare', label: 'Compare', desc: 'Overlay defensives vs cyclicals to see the lean' },
+                    { href: '/market-regime', label: 'Market Regime', desc: 'Cross-check with the overall risk-on / risk-off read' },
+                    { href: '/watchlist', label: 'Watchlists', desc: 'Stress-test your own names against the cycle' },
+                ]}
+            />
         </div>
     );
 }

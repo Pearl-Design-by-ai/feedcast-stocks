@@ -12,6 +12,7 @@ import NewsImpact from '@/components/watchlist/NewsImpact';
 import DivergenceRadar from '@/components/watchlist/DivergenceRadar';
 import NewsGrid from '@/components/watchlist/NewsGrid';
 import DataDisclaimer from '@/components/DataDisclaimer';
+import RelatedLinks from '@/components/common/RelatedLinks';
 import { Loader2, Bell } from 'lucide-react';
 
 export const metadata = {
@@ -77,6 +78,7 @@ export default async function WatchlistPage({
                     <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-500">
                         Watchlists
                     </h1>
+                    <p className="mt-1 max-w-2xl text-base font-semibold text-gray-200">What changed in my names today?</p>
                     <p className="mt-1 text-gray-500">
                         Track up to five separate lists — by theme, conviction, or whatever fits how you invest.
                     </p>
@@ -119,6 +121,16 @@ export default async function WatchlistPage({
                 <Suspense fallback={<div className="flex justify-center p-12"><Loader2 className="animate-spin text-gray-500" /></div>}>
                     <NewsSection symbols={symbols} />
                 </Suspense>
+
+                <RelatedLinks
+                    title="Run your names through the research stack"
+                    items={[
+                        { href: '/buy-sell-signals', label: 'Buy & Sell Signals', desc: 'Where the broad tape stands for your holdings' },
+                        { href: '/bubble-detector', label: 'Bubble Detector', desc: 'Are any of your names stretched or cracking?' },
+                        { href: '/valuation', label: 'Valuation', desc: 'Check if your names screen rich or cheap' },
+                        { href: '/portfolio-lab', label: 'Portfolio Labs', desc: 'Turn a list into a weighted, scored basket' },
+                    ]}
+                />
             </div>
         </div>
     );

@@ -3,6 +3,8 @@ import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { Loader2, Rocket } from 'lucide-react';
 import DataDisclaimer from '@/components/DataDisclaimer';
+import ScoreMethodology from '@/components/common/ScoreMethodology';
+import RelatedLinks from '@/components/common/RelatedLinks';
 import { LeveragePairCard } from '@/components/leverage/LeverageUi';
 import BacktestExplorer from '@/components/leverage/BacktestExplorer';
 import StressTester from '@/components/leverage/StressTester';
@@ -81,6 +83,7 @@ export default async function LeveragePage() {
                     <h1 className="flex items-center gap-2 text-3xl font-bold text-gray-100">
                         <Rocket className="text-violet-400" /> Leverage Rotation
                     </h1>
+                    <p className="max-w-3xl text-base font-semibold text-gray-200">Lever up, or drop to 1x — where should exposure sit today?</p>
                     <p className="max-w-3xl text-sm text-gray-400">
                         Always fully invested — but rotating between the <strong className="text-gray-200">1x ETF and its 3x sibling</strong>{' '}
                         (QQQ ↔ TQQQ, SPY ↔ SPXL) as the tape changes. Each card gives you a recommended split and the{' '}
@@ -91,6 +94,12 @@ export default async function LeveragePage() {
                 </div>
                 <DataDisclaimer className="w-fit" />
             </header>
+
+            <ScoreMethodology
+                methodology="A 0–100 leverage score gates 3x exposure. Below the 200-day it is pulled to the floor (sit in the 1x), where leveraged funds bleed worst; above it the score scales with the 50/200 structure, RSI and proximity to the highs, then the VIX trims it — calm adds leverage, high volatility cuts it. See “How the split is decided” below."
+                cadence="Computed from end-of-day closes (cached up to ~30min); moves once per trading day after the US close. A level-based playbook, not a price prediction."
+                thresholds="The score maps directly to a 3x weight (0→all 1x, 100→all 3x); the remainder stays in the 1x so you are never in cash. 100% 3x is only reachable in a clean, calm uptrend at new highs. Leveraged ETFs are high-risk."
+            />
 
             <Suspense fallback={<Skeleton />}>
                 <Leverage />
@@ -112,6 +121,14 @@ export default async function LeveragePage() {
                     <span className="text-gray-400">not investment advice.</span>
                 </p>
             </section>
+
+            <RelatedLinks
+                items={[
+                    { href: '/market-regime', label: 'Market Regime', desc: 'The risk-on / risk-off backdrop the rotation keys off' },
+                    { href: '/crash-detector', label: 'Crash Detector', desc: 'Check cycle risk before leaning into 3x' },
+                    { href: '/buy-sell-signals', label: 'Buy & Sell Signals', desc: 'The underlying index trend grades' },
+                ]}
+            />
         </div>
     );
 }

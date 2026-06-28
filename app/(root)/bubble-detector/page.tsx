@@ -3,6 +3,8 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import { Loader2, Radar, TriangleAlert, ExternalLink, Telescope, Eye } from 'lucide-react';
 import DataDisclaimer from '@/components/DataDisclaimer';
+import ScoreMethodology from '@/components/common/ScoreMethodology';
+import RelatedLinks from '@/components/common/RelatedLinks';
 import TradingViewWidget from '@/components/TradingViewWidget';
 import { FrothGauge, ScoreBar, AssetTable } from '@/components/bubble/BubbleUi';
 import { TopPopGrid } from '@/components/bubble/TopPopGrid';
@@ -267,6 +269,7 @@ export default function BubbleDetectorPage() {
                     <h1 className="flex items-center gap-2 text-3xl font-bold text-gray-100">
                         <Radar className="text-teal-400" /> Bubble Detector
                     </h1>
+                    <p className="max-w-3xl text-base font-semibold text-gray-200">Where could the next bubble be — and what is already cracking?</p>
                     <p className="max-w-3xl text-sm text-gray-400">
                         Where could the next bubble be — and what’s already cracking? Each asset gets
                         a live <strong className="text-gray-200">bubble score</strong> (how inflated)
@@ -277,6 +280,12 @@ export default function BubbleDetectorPage() {
                 </div>
                 <DataDisclaimer className="w-fit" />
             </header>
+
+            <ScoreMethodology
+                methodology="Each asset gets a bubble score (how far price sits above its 200-day average, the 1-year run-up, RSI(14) and distance to its 52-week high) and a pop-risk score (the bubble score scaled by active deflation signals — below the 50-day average, a negative month, already down 8%+ from the high, or a volatility spike). Theme “why” is AI research. Full breakdown in “How the scores work” below."
+                cadence="Recomputed each visit from end-of-day closes (cached up to ~6h); inputs are daily closes, so scores move about once per trading day after the US close. Theme/candidate write-ups are editorial, current to mid-2026."
+                thresholds="Bubble & pop-risk are 0–100. Roughly: <40 calm · 40–54 warm · 55–69 stretched · 70+ frothy. “Highest pop risk” = inflated names already showing deflation signals. * = under ~1 year of history."
+            />
 
             <Suspense fallback={<ScanSkeleton />}>
                 <Scan />
@@ -325,6 +334,15 @@ export default function BubbleDetectorPage() {
                     <BubbleSources />
                 </Suspense>
             </section>
+
+            <RelatedLinks
+                items={[
+                    { href: '/watchlist', label: 'Add to a watchlist', desc: 'Track the frothy or cracking names you want to keep an eye on' },
+                    { href: '/alerts', label: 'Set a price alert', desc: 'Get emailed if a stretched name breaks a level' },
+                    { href: '/crash-detector', label: 'Crash Detector', desc: 'Zoom out from single-asset froth to whole-cycle risk' },
+                    { href: '/valuation', label: 'Valuation', desc: 'Cross-check froth against where price is rich or cheap' },
+                ]}
+            />
         </div>
     );
 }

@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { Loader2, Scale } from 'lucide-react';
 import DataDisclaimer from '@/components/DataDisclaimer';
+import ScoreMethodology from '@/components/common/ScoreMethodology';
+import RelatedLinks from '@/components/common/RelatedLinks';
 import { ValuationLists } from '@/components/bubble/ValuationScreen';
 import MarketContext from '@/components/valuation/MarketContext';
 import { ensureFreshScreen } from '@/lib/actions/valuation.actions';
@@ -33,6 +35,7 @@ export default function ValuationPage() {
                 <h1 className="flex items-center gap-2 text-3xl font-bold text-gray-100">
                     <Scale className="text-teal-400" /> Valuation
                 </h1>
+                <p className="mt-1 max-w-3xl text-base font-semibold text-gray-200">Where is price rich, and where is it cheap?</p>
                 <p className="mt-1 max-w-3xl text-sm leading-relaxed text-gray-400">
                     Two views in one place. First the <span className="text-gray-200">whole-market read</span> —
                     broad valuation gauges, which sectors look cheap vs expensive, and where the rotation
@@ -45,6 +48,13 @@ export default function ValuationPage() {
             </header>
 
             <DataDisclaimer className="mb-6 max-w-2xl" />
+
+            <ScoreMethodology
+                className="mb-6"
+                methodology="Two layers. The whole-market read shows broad valuation gauges and relative sector cheapness. The per-stock screen ranks ~230 major US large-caps by trailing P/E (with P/S and dividend yield alongside) to surface the cheapest and most expensive names. Low P/E is not automatically “cheap” — pair it with the quality and cycle context."
+                cadence="The per-stock screen is rebuilt by a daily batch automatically after each US market close; the whole-market gauges refresh on a similar daily cadence."
+                thresholds="Ranking is relative, not absolute: the cheapest 100 and most expensive 100 by trailing P/E within the universe. Names without positive trailing earnings are excluded from the P/E ranking."
+            />
 
             <div className="mb-8">
                 <MarketContext />
@@ -60,6 +70,17 @@ export default function ValuationPage() {
             <Suspense fallback={<ValuationSkeleton />}>
                 <ValuationSection />
             </Suspense>
+
+            <div className="mt-6">
+                <RelatedLinks
+                    items={[
+                        { href: '/screener', label: 'Screener', desc: 'Filter the whole market by valuation, performance & technicals' },
+                        { href: '/compare', label: 'Compare', desc: 'Put cheap vs expensive names side by side' },
+                        { href: '/bubble-detector', label: 'Bubble Detector', desc: 'Check if the expensive names are also frothy' },
+                        { href: '/watchlist', label: 'Watchlists', desc: 'Save the names you want to value over time' },
+                    ]}
+                />
+            </div>
         </div>
     );
 }
