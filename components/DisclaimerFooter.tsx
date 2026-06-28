@@ -26,6 +26,21 @@ export default function DisclaimerFooter() {
                     sources, do your own research, and consult a licensed advisor before making
                     any investment decision.
                 </p>
+                <p className="mt-4 text-xs leading-relaxed text-gray-500">
+                    This product is a blend of two projects: the open-source base — the market
+                    data feeds and every core module we did not build ourselves — comes from{" "}
+                    <a
+                        href="https://github.com/Open-Dev-Society/OpenStock"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline hover:text-gray-300"
+                    >
+                        OpenStock
+                    </a>{" "}
+                    by Open Dev Society (licensed under AGPL-3.0), and FeedCast adds its own
+                    modules on top. Credit for the underlying platform and data belongs to
+                    OpenStock.
+                </p>
             </div>
         </footer>
     );

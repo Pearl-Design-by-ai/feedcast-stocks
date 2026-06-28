@@ -13,7 +13,7 @@ const Footer = () => {
                             <span className="text-lg font-semibold text-white">FeedCast <span className="text-teal-400">Stocks</span></span>
                         </Link>
                         <p className="text-gray-400 mb-6 max-w-md">
-                            FeedCast Markets tracks the markets, sets personalized alerts, and surfaces detailed company insights — part of the FeedCast platform.
+                            FeedCast Markets tracks the markets, sets personalized alerts, and surfaces detailed company insights — part of the FeedCast platform. The data feeds and core modules come from the open-source OpenStock project; FeedCast builds its own modules on top.
                         </p>
                         <div className="mb-8">
                             <Link href="/about" className="text-teal-400 hover:text-teal-300 font-medium inline-flex items-center gap-1 group">
@@ -23,13 +23,13 @@ const Footer = () => {
                         </div>
                         <div className="flex space-x-6">
                             <Link
-                                href="https://github.com/Pearl-Design-by-ai/feedcast-stocks"
+                                href="https://github.com/Open-Dev-Society/OpenStock"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-gray-400 hover:text-white transition-colors duration-200 relative group"
                             >
                                 <span className="relative">
-                                    Source code
+                                    OpenStock on GitHub
                                     <span className="absolute left-0 bottom-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
                                 </span>
                             </Link>

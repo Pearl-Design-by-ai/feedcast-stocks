@@ -10,8 +10,8 @@ import {
 } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Help Center | FeedCast Markets',
-  description: 'Community-driven support for FeedCast Markets. No paywalls, just help.',
+  title: 'Help Center | FeedCast Markets × OpenStock',
+  description: 'Community-driven support for FeedCast Markets — built on the open-source OpenStock platform by Open Dev Society. No paywalls, just help.',
 };
 
 export default function HelpPage() {
@@ -26,11 +26,15 @@ export default function HelpPage() {
     },
     {
       question: "Where does the market data come from?",
-      answer: "We partner with Finnhub and other providers to offer real-time and delayed data. While robust, please use it for analysis rather than high-frequency trading."
+      answer: "The market data feeds and every core module we didn't build ourselves come from OpenStock, the open-source platform by Open Dev Society that FeedCast Markets is built on. FeedCast layers its own modules on top. Please use the data for analysis rather than high-frequency trading."
+    },
+    {
+      question: "Is this FeedCast or OpenStock?",
+      answer: "Both. The underlying platform and data are OpenStock (open-source, by Open Dev Society, AGPL-3.0); FeedCast Markets is the FeedCast-built layer on top. Credit for the foundation belongs to OpenStock — give the project a star: github.com/Open-Dev-Society/OpenStock."
     },
     {
       question: "Can I contribute code or designs?",
-      answer: "Absolutely! Check our GitHub repository. We label issues as 'good first issue' for beginners. We welcome designers, developers, and writers alike."
+      answer: "Absolutely! The core platform is open-source — contribute to OpenStock at github.com/Open-Dev-Society/OpenStock. Issues are labeled 'good first issue' for beginners, and designers, developers, and writers are all welcome."
     },
     {
       question: "My alerts aren't triggering.",
@@ -61,10 +65,10 @@ export default function HelpPage() {
         />
         <HelpCard
           icon={<Github className="text-white" />}
-          title="Report Bugs"
-          desc="Found an issue? Let our developers know."
-          link="https://github.com/Pearl-Design-by-ai/feedcast-stocks/issues"
-          linkText="Open Issue"
+          title="Built on OpenStock"
+          desc="The open-source platform and data powering FeedCast Markets. Star it, report issues, or contribute."
+          link="https://github.com/Open-Dev-Society/OpenStock"
+          linkText="View OpenStock"
         />
       </div>
 

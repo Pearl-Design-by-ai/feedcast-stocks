@@ -64,11 +64,11 @@ export default function AboutPage() {
                         FeedCast Markets is the markets module of the FeedCast platform — built to make powerful financial tools accessible without paywalls.
                     </p>
                     <p className="text-gray-400 leading-relaxed text-lg">
-                        It is open-source and based on <span className="text-teal-400 font-semibold">OpenStock</span> by Open Dev Society, licensed under AGPL-3.0.
+                        It&apos;s a blend of two projects: the open-source base — the market data feeds and every core module we didn&apos;t build ourselves — comes from <span className="text-teal-400 font-semibold">OpenStock</span> by Open Dev Society (licensed under AGPL-3.0), and FeedCast adds its own modules on top. Credit for the underlying platform and data belongs to OpenStock.
                     </p>
                     <div className="pt-4">
-                        <Link href="https://github.com/Pearl-Design-by-ai/feedcast-stocks" target="_blank" className="inline-flex items-center gap-2 text-teal-400 hover:text-teal-300 font-medium transition-colors group">
-                            Visit our GitHub <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                        <Link href="https://github.com/Open-Dev-Society/OpenStock" target="_blank" className="inline-flex items-center gap-2 text-teal-400 hover:text-teal-300 font-medium transition-colors group">
+                            Visit OpenStock on GitHub <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                         </Link>
                     </div>
                 </div>
