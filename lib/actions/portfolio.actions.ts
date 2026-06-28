@@ -57,7 +57,10 @@ export async function suggestEtfPortfolio(
     risk: RiskProfile,
     horizon: Horizon
 ): Promise<EtfSuggestion | null> {
-    return enginePost<EtfSuggestion | null>('/v1/portfolio/suggest', { risk, horizon }, null);
+    // `v` busts the KV cache when the engine's allocation logic changes (v2: risk
+    // profile now drives the equity/cash split, not the holding period). The
+    // engine ignores the extra field.
+    return enginePost<EtfSuggestion | null>('/v1/portfolio/suggest', { risk, horizon, v: 2 }, null);
 }
 
 export interface SmartAllocation {
