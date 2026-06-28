@@ -15,7 +15,7 @@ import Link from 'next/link';
 import {
     Gauge, Plus, X, Loader2, Sparkles, AlertTriangle, Shuffle, Download,
     GraduationCap, ChevronDown, Layers, Target, ShieldCheck, Scale, Rocket, Wand2, ArrowDown,
-    Save, FolderOpen, Trash2, ListPlus, Bookmark, Import as ImportIcon, Zap,
+    Save, FolderOpen, Trash2, ListPlus, Bookmark, Import as ImportIcon, Zap, Landmark,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn, isTickerLike } from '@/lib/utils';
@@ -30,6 +30,11 @@ import {
     type EtfSuggestion,
 } from '@/lib/actions/portfolio.actions';
 import { createGroup, addSymbolsToGroup, listGroupsWithSymbols } from '@/lib/actions/watchlist-groups.actions';
+import {
+    listFundManagers,
+    getFundManagerPortfolio,
+    type FundManagerSummary,
+} from '@/lib/actions/managers.actions';
 
 interface WatchlistOption {
     id: number;
@@ -123,6 +128,14 @@ const PALETTE = ['#2dd4bf', '#818cf8', '#f472b6', '#fbbf24', '#34d399', '#60a5fa
 const pctStr = (v: number | null | undefined) =>
     v == null || !Number.isFinite(v) ? 'n/a' : `${v > 0 ? '+' : ''}${v.toFixed(1)}%`;
 
+/** "2026-03-31" → "Mar 2026" (the 13F report period). Falls back to the raw value. */
+const fmtAsOf = (iso: string | null | undefined): string => {
+    if (!iso) return 'n/a';
+    const d = new Date(`${iso}T00:00:00Z`);
+    if (Number.isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+};
+
 const GLOSSARY: { term: string; def: string }[] = [
     { term: 'FCF (Free Cash Flow)', def: 'Cash a business generates after capital spending — what is actually available to fund dividends, buybacks or debt paydown.' },
     { term: 'Capex', def: 'Capital expenditure: money spent building long-lived assets (e.g. AI data centers). Heavy capex can compress near-term FCF and margins.' },
@@ -166,6 +179,10 @@ export default function PortfolioLens() {
     const [allocating, setAllocating] = useState(false);
     const [allocBasis, setAllocBasis] = useState<string | null>(null);
 
+    // Famous fund-manager portfolios (SEC 13F, refreshed by the engine cron).
+    const [managers, setManagers] = useState<FundManagerSummary[] | null>(null);
+    const [loadingMgr, setLoadingMgr] = useState<string | null>(null);
+
     useEffect(() => {
         setBaskets(loadBaskets());
         let alive = true;
@@ -173,8 +190,43 @@ export default function PortfolioLens() {
             .then((g) => { if (alive) setWatchlists(g); })
             .catch(() => { if (alive) setWatchlists([]); })
             .finally(() => { if (alive) setLoadingWatchlists(false); });
+        listFundManagers()
+            .then((m) => { if (alive) setManagers(m); })
+            .catch(() => { if (alive) setManagers([]); });
         return () => { alive = false; };
     }, []);
+
+    const loadManager = async (m: FundManagerSummary, analyzeNow: boolean) => {
+        setLoadingMgr(m.slug);
+        try {
+            const p = await getFundManagerPortfolio(m.slug);
+            if (!p || p.holdings.length === 0) {
+                toast.error(`${m.name}'s portfolio isn't available right now — please try again shortly.`);
+                return;
+            }
+            // Only holdings we could map to a US ticker can be analyzed.
+            const mapped = p.holdings.filter((h) => h.ticker && isTickerLike(h.ticker)).slice(0, 25);
+            if (mapped.length === 0) {
+                toast.error(`Couldn't map ${m.name}'s holdings to tickers.`);
+                return;
+            }
+            // Rescale the loaded subset's weights to sum to ~100.
+            const sum = mapped.reduce((s, h) => s + (h.weight || 0), 0) || 1;
+            const list: Holding[] = mapped.map((h) => ({
+                symbol: (h.ticker as string).toUpperCase(),
+                weight: Math.round((h.weight / sum) * 100),
+            }));
+            setHoldings(list);
+            setResult(null);
+            setAllocBasis(null);
+            toast.success(`Loaded ${m.name} — top ${list.length} holdings as of ${fmtAsOf(p.asOf)}`);
+            if (analyzeNow) void runAnalyze(list);
+        } catch {
+            toast.error('Something went wrong loading that portfolio.');
+        } finally {
+            setLoadingMgr(null);
+        }
+    };
 
     const importFromWatchlist = (w: WatchlistOption) => {
         const syms = [...new Set(w.symbols.map((s) => s.toUpperCase()).filter(isTickerLike))].slice(0, 25);
@@ -426,6 +478,66 @@ export default function PortfolioLens() {
                     </div>
                 )}
             </section>
+
+            {/* ---- Browse famous fund managers' portfolios ---- */}
+            {(managers === null || managers.length > 0) && (
+                <section className="rounded-2xl border border-indigo-500/20 bg-indigo-500/[0.04] p-4 md:p-5">
+                    <h2 className="flex items-center gap-2 text-base font-semibold text-gray-100">
+                        <Landmark size={16} className="text-indigo-400" /> Browse famous fund managers&apos; portfolios
+                        <span className="text-xs font-normal text-gray-500">SEC 13F</span>
+                    </h2>
+                    <p className="mt-1 text-sm text-gray-400">
+                        Load a well-known investor&apos;s latest public 13F holdings as a basket, then run the same
+                        per-stock analysis on it. Weights are the manager&apos;s top positions; data updates automatically
+                        as new filings post.
+                    </p>
+
+                    {managers === null ? (
+                        <div className="mt-4 flex items-center gap-2 text-sm text-gray-500">
+                            <Loader2 size={14} className="animate-spin" /> Loading portfolios…
+                        </div>
+                    ) : (
+                        <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                            {managers.map((m) => (
+                                <div key={m.slug} className="flex flex-col gap-2 rounded-xl border border-gray-800 bg-gray-950/40 p-3.5">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="min-w-0">
+                                            <p className="truncate font-semibold text-gray-100">{m.name}</p>
+                                            <p className="truncate text-xs text-gray-500">
+                                                {m.manager} · {m.positions} holdings · as of {fmtAsOf(m.asOf)}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {m.topSymbols.length > 0 && (
+                                        <div className="flex flex-wrap gap-1">
+                                            {m.topSymbols.map((s) => (
+                                                <span key={s} className="rounded border border-gray-700/70 bg-gray-800/60 px-1.5 py-0.5 text-[11px] font-medium text-gray-300">
+                                                    {s}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
+                                    <div className="mt-0.5 flex gap-2">
+                                        <button type="button" onClick={() => loadManager(m, true)} disabled={loadingMgr !== null}
+                                            className="flex items-center gap-1.5 rounded-md bg-indigo-500/90 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-indigo-500 disabled:opacity-50">
+                                            {loadingMgr === m.slug ? <Loader2 size={13} className="animate-spin" /> : <Gauge size={13} />}
+                                            Load &amp; analyze
+                                        </button>
+                                        <button type="button" onClick={() => loadManager(m, false)} disabled={loadingMgr !== null}
+                                            className="flex items-center gap-1.5 rounded-md border border-gray-700 bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-200 hover:border-indigo-400/40 hover:text-indigo-300 disabled:opacity-50">
+                                            <ArrowDown size={13} /> Load
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    <p className="mt-3 text-[11px] text-gray-600">
+                        Source: SEC Form 13F (public, quarterly, reported with a lag). Holdings shown are the manager&apos;s
+                        largest reported US-listed equity positions and may omit non-13F assets. Educational only, not advice.
+                    </p>
+                </section>
+            )}
 
             {/* ---- Import from a watchlist ---- */}
             {(loadingWatchlists || (watchlists && watchlists.length > 0)) && (

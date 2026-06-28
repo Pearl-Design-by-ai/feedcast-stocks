@@ -45,6 +45,10 @@ const CACHE_TTLS: Array<[prefix: string, seconds: number]> = [
   ['/v1/indicators/catalog', 86_400],
   // Valuation screen — rebuilt by the engine cron; a short cache is plenty.
   ['/v1/valuation/screen', 300],
+  // Fund-manager 13F portfolios — refreshed by the engine cron at most a few
+  // times a day; quarterly source data, so an hour of caching is plenty.
+  ['/v1/managers', 3_600],
+  ['/v1/manager', 3_600],
 ];
 
 function cacheTtlFor(path: string): number {
