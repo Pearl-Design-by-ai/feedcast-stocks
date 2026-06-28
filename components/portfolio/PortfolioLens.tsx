@@ -463,12 +463,8 @@ export default function PortfolioLens() {
                         </ul>
 
                         <div className="mt-4 flex flex-wrap gap-2">
-                            <button type="button" onClick={() => loadSuggestion(true)} disabled={loading}
-                                className="flex items-center gap-2 rounded-lg bg-teal-500 px-4 py-2 text-sm font-bold text-black transition-colors hover:bg-teal-400 disabled:opacity-60">
-                                {loading ? <Loader2 size={15} className="animate-spin" /> : <Gauge size={15} />} Load &amp; analyze
-                            </button>
                             <button type="button" onClick={() => loadSuggestion(false)}
-                                className="flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-sm font-medium text-gray-200 hover:border-teal-400/40 hover:text-teal-300">
+                                className="flex items-center gap-2 rounded-lg bg-teal-500 px-4 py-2 text-sm font-bold text-black transition-colors hover:bg-teal-400 disabled:opacity-60">
                                 <ArrowDown size={15} /> Load into basket
                             </button>
                         </div>
@@ -487,9 +483,9 @@ export default function PortfolioLens() {
                         <span className="text-xs font-normal text-gray-500">SEC 13F</span>
                     </h2>
                     <p className="mt-1 text-sm text-gray-400">
-                        Load a well-known investor&apos;s latest public 13F holdings as a basket, then run the same
-                        per-stock analysis on it. Weights are the manager&apos;s top positions; data updates automatically
-                        as new filings post.
+                        Load a well-known investor&apos;s latest public 13F holdings into your basket, then press
+                        Analyze to run the per-stock analysis. Weights are the manager&apos;s top positions; data updates
+                        automatically as new filings post.
                     </p>
 
                     {managers === null ? (
@@ -518,14 +514,10 @@ export default function PortfolioLens() {
                                         </div>
                                     )}
                                     <div className="mt-0.5 flex gap-2">
-                                        <button type="button" onClick={() => loadManager(m, true)} disabled={loadingMgr !== null}
-                                            className="flex items-center gap-1.5 rounded-md bg-indigo-500/90 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-indigo-500 disabled:opacity-50">
-                                            {loadingMgr === m.slug ? <Loader2 size={13} className="animate-spin" /> : <Gauge size={13} />}
-                                            Load &amp; analyze
-                                        </button>
                                         <button type="button" onClick={() => loadManager(m, false)} disabled={loadingMgr !== null}
-                                            className="flex items-center gap-1.5 rounded-md border border-gray-700 bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-200 hover:border-indigo-400/40 hover:text-indigo-300 disabled:opacity-50">
-                                            <ArrowDown size={13} /> Load
+                                            className="flex items-center gap-1.5 rounded-md bg-indigo-500/90 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-indigo-500 disabled:opacity-50">
+                                            {loadingMgr === m.slug ? <Loader2 size={13} className="animate-spin" /> : <ArrowDown size={13} />}
+                                            Load into basket
                                         </button>
                                     </div>
                                 </div>
