@@ -8,8 +8,8 @@
  */
 
 import { useMemo, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import Collapsible from '@/components/common/Collapsible';
 import PayoffChart from './PayoffChart';
 import { STRATEGIES, VIEW_LABELS, type Strategy, type View, type Difficulty } from '@/lib/options/strategies';
 import { priceLegs, analyze, type PayoffStats, type Scenario } from '@/lib/options/payoff';
@@ -46,6 +46,23 @@ const DIFF_ORDER: Record<Difficulty, number> = { Beginner: 0, Intermediate: 1, A
 export default function StrategyExplorer() {
     const [view, setView] = useState<View | 'all'>('all');
     const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' }>({ key: 'difficulty', dir: 'asc' });
+    const [open, setOpen] = useState<Set<string>>(new Set());
+
+    const toggleCard = (slug: string) =>
+        setOpen((p) => {
+            const n = new Set(p);
+            if (n.has(slug)) n.delete(slug);
+            else n.add(slug);
+            return n;
+        });
+
+    /** Open the card and scroll to it — used by the matrix strategy links. */
+    const openCard = (slug: string) => {
+        setOpen((p) => new Set(p).add(slug));
+        requestAnimationFrame(() =>
+            document.getElementById(`strat-${slug}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        );
+    };
 
     const rows = useMemo<Row[]>(() => {
         return STRATEGIES.map((s) => {
@@ -108,7 +125,16 @@ export default function StrategyExplorer() {
                     <tbody className="divide-y divide-gray-800/70">
                         {filtered.map(({ s, stats, capital }) => (
                             <tr key={s.slug} className="hover:bg-white/5">
-                                <td className="px-3 py-3 font-medium text-gray-100">{s.name}</td>
+                                <td className="px-3 py-3 font-medium">
+                                    <button
+                                        type="button"
+                                        onClick={() => openCard(s.slug)}
+                                        className="text-left text-gray-100 transition-colors hover:text-teal-300 hover:underline"
+                                        title={`Jump to ${s.name} details`}
+                                    >
+                                        {s.name}
+                                    </button>
+                                </td>
                                 <td className="px-3 py-3 text-gray-400">{s.marketView}</td>
                                 <td className="px-3 py-3 text-gray-400">{s.volView}</td>
                                 <td className={cn('px-3 py-3 text-right tabular-nums', stats?.maxProfit === null ? 'text-emerald-400 font-semibold' : 'text-gray-200')}>
@@ -142,11 +168,16 @@ export default function StrategyExplorer() {
 
             {/* Strategy cards */}
             <div className="flex flex-col gap-2.5">
-                {filtered.map(({ s, stats, capital }) => (
-                    <Collapsible
-                        key={s.slug}
-                        className="rounded-xl border border-gray-800 bg-gray-900/40"
-                        header={
+                {filtered.map(({ s, stats, capital }) => {
+                    const isOpen = open.has(s.slug);
+                    return (
+                    <div key={s.slug} id={`strat-${s.slug}`} className="scroll-mt-28 overflow-hidden rounded-xl border border-gray-800 bg-gray-900/40">
+                        <button
+                            type="button"
+                            onClick={() => toggleCard(s.slug)}
+                            aria-expanded={isOpen}
+                            className="flex w-full items-center justify-between gap-3 p-4 text-left md:p-5"
+                        >
                             <div className="flex min-w-0 flex-wrap items-center gap-2">
                                 <span className="font-semibold text-gray-100">{s.name}</span>
                                 <span className={cn('rounded-md px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset', DIFF_COLOR[s.difficulty])}>{s.difficulty}</span>
@@ -154,8 +185,10 @@ export default function StrategyExplorer() {
                                 {s.income && <MiniTag tone="teal">Income</MiniTag>}
                                 {s.hedge && <MiniTag tone="blue">Hedge</MiniTag>}
                             </div>
-                        }
-                    >
+                            <ChevronDown size={18} className={cn('shrink-0 text-gray-500 transition-transform duration-200', isOpen && 'rotate-180')} />
+                        </button>
+                        {isOpen && (
+                        <div className="px-4 pb-4 md:px-5 md:pb-5">
                         <p className="text-sm leading-relaxed text-gray-300">{s.summary}</p>
 
                         <div className="mt-4 grid gap-4 lg:grid-cols-2">
@@ -200,8 +233,11 @@ export default function StrategyExplorer() {
                                 </div>
                             </div>
                         </div>
-                    </Collapsible>
-                ))}
+                        </div>
+                        )}
+                    </div>
+                    );
+                })}
             </div>
         </div>
     );
