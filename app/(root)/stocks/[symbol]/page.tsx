@@ -31,6 +31,15 @@ import {
     TechSnapshot,
 } from '@/components/stocks/InsightPanels';
 import { formatSymbolForTradingView } from '@/lib/utils';
+import CompanyScore from '@/components/stocks/CompanyScore';
+import { getCompanyScore } from '@/lib/actions/company-score.actions';
+
+/** Lazily-loaded proprietary FeedCast Company Score card. */
+async function CompanyScoreCard({ symbol }: { symbol: string }) {
+    const data = await getCompanyScore(symbol);
+    if (!data) return null;
+    return <CompanyScore data={data} />;
+}
 
 export default async function StockDetails({ params }: StockDetailsPageProps) {
     const { symbol } = await params;
@@ -105,6 +114,10 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
                 <div className="flex flex-col gap-6">
                     <Suspense fallback={null}>
                         <CompanyBrief symbol={symbol.toUpperCase()} name={companyName} />
+                    </Suspense>
+
+                    <Suspense fallback={null}>
+                        <CompanyScoreCard symbol={symbol.toUpperCase()} />
                     </Suspense>
 
                     <Suspense fallback={null}>

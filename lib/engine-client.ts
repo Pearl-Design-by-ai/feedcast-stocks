@@ -27,6 +27,7 @@ const CACHE_TTLS: Array<[prefix: string, seconds: number]> = [
   ['/v1/company/brief', 3_600],
   ['/v1/company/bullbear', 1_800],
   ['/v1/company/consensus', 21_600], // heavy multi-section analysis; changes slowly
+  ['/v1/company/score', 21_600], // deterministic multi-factor score; engine-cached 12h
   ['/v1/portfolio/lens', 1_800], // portfolio-level value-cycle read; basket-keyed
   ['/v1/portfolio/suggest', 10_800], // AI ETF starter portfolios; static-ish per risk/horizon
   ['/v1/portfolio/allocate', 1_800], // momentum weights; refresh within a session
