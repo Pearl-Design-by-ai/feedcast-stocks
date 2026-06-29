@@ -17,7 +17,7 @@ import { usePathname } from 'next/navigation';
 import { Menu, X, ChevronDown, ArrowLeft, LogOut } from 'lucide-react';
 import { FeedcastLogo } from '@/components/FeedcastLogo';
 import SearchCommand from '@/components/SearchCommand';
-import { navSectionsForUser, NAV_DEFAULT_OPEN, SEARCH_HREF } from '@/lib/constants';
+import { navSectionsForUser, NAV_DEFAULT_OPEN, SEARCH_HREF, SIGN_IN_URL } from '@/lib/constants';
 import { NAV_ICONS, SECTION_ICONS, NAV_FALLBACK_ICON } from '@/components/navIcons';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
@@ -41,7 +41,7 @@ export default function MobileDrawer({
   initialStocks,
   isPowerUser = false,
 }: {
-  user: User;
+  user: User | null;
   initialStocks: StockWithWatchlistStatus[];
   isPowerUser?: boolean;
 }) {
@@ -163,15 +163,24 @@ export default function MobileDrawer({
           <div className="absolute inset-y-0 left-0 flex w-[300px] max-w-[85vw] flex-col overflow-y-auto border-r border-gray-700 bg-gray-800 shadow-2xl animate-in slide-in-from-left duration-200">
             {/* Profile block */}
             <div className="flex items-start justify-between gap-2 px-4 pb-4 pt-5">
-              <div className="flex min-w-0 items-center gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-teal-400/15 text-base font-bold text-teal-400">
-                  {user.name?.[0]?.toUpperCase() ?? 'U'}
+              {user ? (
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-teal-400/15 text-base font-bold text-teal-400">
+                    {user.name?.[0]?.toUpperCase() ?? 'U'}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-base font-semibold text-gray-100">{user.name}</p>
+                    <p className="truncate text-xs text-gray-500">{user.email}</p>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <p className="truncate text-base font-semibold text-gray-100">{user.name}</p>
-                  <p className="truncate text-xs text-gray-500">{user.email}</p>
-                </div>
-              </div>
+              ) : (
+                <a
+                  href={SIGN_IN_URL}
+                  className="inline-flex items-center rounded-lg bg-teal-500 px-4 py-2 text-sm font-semibold text-teal-950 transition-colors hover:bg-teal-400"
+                >
+                  Sign in
+                </a>
+              )}
               <button
                 type="button"
                 onClick={close}
@@ -219,10 +228,12 @@ export default function MobileDrawer({
                   <ArrowLeft size={18} className="shrink-0" />
                   Back to Feedcast
                 </a>
-                <button type="button" onClick={handleSignOut} className={ROW}>
-                  <LogOut size={18} className="shrink-0" />
-                  Log out
-                </button>
+                {user && (
+                  <button type="button" onClick={handleSignOut} className={ROW}>
+                    <LogOut size={18} className="shrink-0" />
+                    Log out
+                  </button>
+                )}
               </div>
             </nav>
           </div>

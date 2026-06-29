@@ -1,5 +1,4 @@
 import Header from "@/components/Header";
-import { redirect } from "next/navigation";
 import HomeOnlyFooter from "@/components/HomeOnlyFooter";
 import DisclaimerFooter from "@/components/DisclaimerFooter";
 import SideNav from "@/components/SideNav";
@@ -10,9 +9,11 @@ import { buildThemeCss, themeFromMain, lightIdFromMain } from "@/lib/appearance"
 import { isPowerUserEmail } from "@/lib/constants";
 import ThemeProvider from "@/components/ThemeProvider";
 
-// Auth is handled by the main Feedcast app (SSO). Unauthenticated users
-// are bounced to the Feedcast sign-in.
-const SIGN_IN_URL = 'https://www.feedcast.news/?signin=stocks';
+// Auth is handled by the main Feedcast app (SSO). The site is PUBLIC so it can
+// be indexed for SEO — anonymous visitors see all content with default theming.
+// Membership is only required to *customize* (dashboard layout, watchlist,
+// alerts, appearance); those pages/actions self-gate. So no blanket redirect
+// here — `user` may be null and the layout falls back to sensible defaults.
 
 const Layout = async ({ children }: { children: React.ReactNode }) => {
     const supabase = await getSupabaseServerClient();
@@ -20,18 +21,18 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
         data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) redirect(SIGN_IN_URL);
-
-    const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
-    const sessionUser = {
-        id: user.id,
-        name:
-            (meta.full_name as string) ||
-            (meta.name as string) ||
-            user.email?.split('@')[0] ||
-            'Investor',
-        email: user.email ?? '',
-    };
+    const meta = (user?.user_metadata ?? {}) as Record<string, unknown>;
+    const sessionUser: User | null = user
+        ? {
+              id: user.id,
+              name:
+                  (meta.full_name as string) ||
+                  (meta.name as string) ||
+                  user.email?.split('@')[0] ||
+                  'Investor',
+              email: user.email ?? '',
+          }
+        : null;
 
     // Pull the member's appearance picks from user_preferences.reading_preferences.
     // These are the SAME keys the main app (www.feedcast.news) writes — theme,
@@ -39,6 +40,7 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
     // SHARED_PREF_KEYS). RLS scopes the read to the logged-in user; missing keys
     // fall back to the defaults (gold accent, Auto theme, Obsidian/Pearl tones).
     const prefsPromise = (async (): Promise<{ accentColor?: string; darkBackground?: string; lightBackground?: string; theme?: string }> => {
+        if (!user) return {};
         try {
             const { data } = await supabase
                 .from('user_preferences')
@@ -68,7 +70,7 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
 
     const brand = accentHex(prefs.accentColor);
     const mode = themeFromMain(prefs.theme);
-    const powerUser = isPowerUserEmail(sessionUser.email);
+    const powerUser = sessionUser ? isPowerUserEmail(sessionUser.email) : false;
 
     // Injected as a :root override (rather than inline on <main>) so portaled
     // UI — dropdowns, dialogs, the command palette — gets the same theme and

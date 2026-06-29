@@ -6,19 +6,23 @@ import {
 } from '@/lib/supabase/cookie-storage';
 
 /**
- * Auth gate. Feedcast Stocks has no sign-in pages of its own — auth is
- * handled by the main Feedcast app (SSO). The Supabase session cookie is
- * scoped to `.feedcast.news`, so a user signed in on `www.feedcast.news`
- * is already signed in here.
+ * Session-refresh passthrough. Feedcast Stocks has no sign-in pages of its
+ * own — auth is handled by the main Feedcast app (SSO). The Supabase session
+ * cookie is scoped to `.feedcast.news`, so a user signed in on
+ * `www.feedcast.news` is already signed in here.
  *
- * If there is no authenticated Supabase user, bounce to the Feedcast
- * sign-in with a `?signin=stocks` hint so it can return the user here.
+ * The site is PUBLIC for SEO, so this does NOT gate anonymous visitors — it
+ * only refreshes the session cookie when present. Membership is enforced where
+ * it matters instead: members-only pages self-gate (redirect / notFound) and
+ * the costly on-demand AI actions check `getCurrentUser()`.
  *
- * `/api/*` is excluded from the matcher entirely — `/api/cron/*` carries
- * its own Bearer-token auth and must stay reachable.
+ * NOTE: this file lives at `middleware/index.ts`, which Next.js does NOT pick
+ * up as middleware (it expects a root `middleware.ts`). It is currently inert;
+ * kept here so the SSO session-refresh logic is ready if we ever wire it.
+ *
+ * `/api/*` is excluded from the matcher — `/api/cron/*` carries its own
+ * Bearer-token auth and must stay reachable.
  */
-
-const SIGN_IN_URL = 'https://www.feedcast.news/?signin=stocks';
 
 export async function middleware(request: NextRequest) {
     // `response` collects any refreshed-session cookies Supabase wants to set.
@@ -27,9 +31,10 @@ export async function middleware(request: NextRequest) {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    // If env is missing we can't verify — fail closed to the sign-in page.
+    // Without env we can't refresh the session — but the site is public, so
+    // just let the request through unauthenticated.
     if (!url || !anonKey) {
-        return NextResponse.redirect(SIGN_IN_URL);
+        return response;
     }
 
     const supabase = createServerClient(url, anonKey, {
@@ -48,13 +53,8 @@ export async function middleware(request: NextRequest) {
         },
     });
 
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-        return NextResponse.redirect(SIGN_IN_URL);
-    }
+    // Touch the session so Supabase can rotate the cookie if needed; no gating.
+    await supabase.auth.getUser();
 
     return response;
 }

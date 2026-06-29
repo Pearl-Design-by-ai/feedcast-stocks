@@ -25,6 +25,7 @@ const Home = async () => {
       <DataDisclaimer className="w-fit" />
       <DashboardShell
         initialLayout={layout}
+        isAuthed={!!user}
         view={<DashboardView layout={layout} userId={userId} />}
       />
     </div>

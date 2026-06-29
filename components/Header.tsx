@@ -3,8 +3,9 @@ import UserDropdown from "@/components/UserDropdown";
 import MobileDrawer from "@/components/MobileDrawer";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { FeedcastLogo } from "@/components/FeedcastLogo";
+import { SIGN_IN_URL } from "@/lib/constants";
 
-const Header = ({ user, initialStocks, isPowerUser = false }: { user: User; initialStocks: StockWithWatchlistStatus[]; isPowerUser?: boolean }) => {
+const Header = ({ user, initialStocks, isPowerUser = false }: { user: User | null; initialStocks: StockWithWatchlistStatus[]; isPowerUser?: boolean }) => {
     return (
         <header className="sticky top-0 header">
             <div className="container header-wrapper">
@@ -23,7 +24,16 @@ const Header = ({ user, initialStocks, isPowerUser = false }: { user: User; init
 
                 <div className="flex items-center gap-2">
                     <LanguageSelector />
-                    <UserDropdown user={user} />
+                    {user ? (
+                        <UserDropdown user={user} />
+                    ) : (
+                        <a
+                            href={SIGN_IN_URL}
+                            className="inline-flex items-center rounded-lg bg-teal-500 px-4 py-2 text-sm font-semibold text-teal-950 transition-colors hover:bg-teal-400"
+                        >
+                            Sign in
+                        </a>
+                    )}
                 </div>
             </div>
         </header>

@@ -7,6 +7,7 @@
  */
 
 import { enginePost } from '@/lib/engine-client';
+import { getCurrentUser } from '@/lib/supabase/server';
 
 export interface ChatMessage {
     role: 'user' | 'assistant';
@@ -22,6 +23,11 @@ const MAX_MESSAGES = 12;
 const MAX_MESSAGE_CHARS = 2_000;
 
 export async function askMarkets(messages: ChatMessage[]): Promise<AskResult> {
+    // Members-only: the page is public for SEO, but generating answers hits the
+    // engine's LLM and must not be callable anonymously (cost / abuse).
+    if (!(await getCurrentUser())) {
+        return { ok: false, error: 'Please sign in to use Ask the Markets.' };
+    }
     if (!Array.isArray(messages) || messages.length === 0) {
         return { ok: false, error: 'Nothing to ask.' };
     }

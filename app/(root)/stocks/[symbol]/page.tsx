@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import TradingViewWidget from "@/components/TradingViewWidget";
 import { Suspense } from "react";
 import StockSentimentCard from "@/components/stocks/StockSentimentCard";
@@ -33,6 +34,26 @@ import {
 import { formatSymbolForTradingView } from '@/lib/utils';
 import CompanyScore from '@/components/stocks/CompanyScore';
 import { getCompanyScore } from '@/lib/actions/company-score.actions';
+
+/**
+ * Per-stock SEO metadata. The page is public, so every company gets a unique
+ * title/description/canonical for indexing. getCompanyProfile is cached, so
+ * this shares the one upstream call the page already makes.
+ */
+export async function generateMetadata({ params }: StockDetailsPageProps): Promise<Metadata> {
+    const { symbol } = await params;
+    const sym = symbol.toUpperCase();
+    const profile = await getCompanyProfile(symbol).catch(() => null);
+    const name = profile?.name || sym;
+    const title = `${name} (${sym}) Stock`;
+    const description = `${name} (${sym}) — live (delayed) price, charts, analyst ratings, key stats, news and AI insights on FeedCast Markets.`;
+    return {
+        title,
+        description,
+        alternates: { canonical: `/stocks/${sym}` },
+        openGraph: { title: `${title} · FeedCast Markets`, description, url: `/stocks/${sym}`, type: 'website' },
+    };
+}
 
 /** Lazily-loaded proprietary FeedCast Company Score card. */
 async function CompanyScoreCard({ symbol }: { symbol: string }) {

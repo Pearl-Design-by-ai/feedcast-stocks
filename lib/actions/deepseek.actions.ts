@@ -11,6 +11,7 @@
 
 import { engineGet, enginePost } from '@/lib/engine-client';
 import { isTickerLike, sanitizeSymbols } from '@/lib/utils';
+import { getCurrentUser } from '@/lib/supabase/server';
 
 export interface IndicatorExplanation {
     summary: string;
@@ -57,6 +58,12 @@ export async function explainIndicator(
     blurb: string,
     category?: string
 ): Promise<ExplainResult> {
+    // Members-only: on-demand "Explain" button hits the engine's LLM, so it
+    // can't be triggered anonymously (cost / abuse). The indicator catalog
+    // itself stays public for SEO.
+    if (!(await getCurrentUser())) {
+        return { ok: false, error: 'Please sign in to get an AI explanation.' };
+    }
     return enginePost<ExplainResult>(
         '/v1/indicator/explain',
         { name, blurb, category },

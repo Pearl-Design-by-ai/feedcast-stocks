@@ -116,6 +116,11 @@ export const NAV_DEFAULT_OPEN = ['home', 'research', 'lists'];
  * the mechanism stays wired up for future power-only features. Compare
  * case-insensitively.
  */
+// SSO sign-in lives on the main Feedcast app; `?signin=stocks` returns the
+// user here afterwards. The site is public for SEO, so this is only surfaced
+// where membership is needed (header, mobile drawer, customize affordances).
+export const SIGN_IN_URL = 'https://www.feedcast.news/?signin=stocks';
+
 export const POWER_USER_EMAILS = ['altuginci@gmail.com'];
 
 export function isPowerUserEmail(email: string | null | undefined): boolean {
