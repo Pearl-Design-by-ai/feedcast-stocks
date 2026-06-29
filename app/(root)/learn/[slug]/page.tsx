@@ -5,8 +5,10 @@ import { ArrowLeft, Clock, Lightbulb, ArrowRight, Compass } from 'lucide-react';
 import DataDisclaimer from '@/components/DataDisclaimer';
 import ArticleCard from '@/components/learn/ArticleCard';
 import LearnArt from '@/components/learn/LearnArt';
+import JsonLd from '@/components/JsonLd';
 import { getArticle, getCategory, articlesByCategory, type Block } from '@/lib/learn';
 import { getLearnArticles } from '@/lib/actions/learn.actions';
+import { SITE_URL } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 
 export async function generateStaticParams() {
@@ -22,7 +24,21 @@ export async function generateMetadata({
     const { slug } = await params;
     const a = getArticle(await getLearnArticles(), slug);
     if (!a) return { title: 'Learn' };
-    return { title: `${a.title} — Learn`, description: a.excerpt };
+    const cat = getCategory(a.category);
+    const url = `${SITE_URL}/learn/${a.slug}`;
+    return {
+        title: `${a.title} — Learn`,
+        description: a.excerpt,
+        keywords: [a.title, cat.label, 'investing', 'financial education', 'FeedCast Markets'],
+        alternates: { canonical: `/learn/${a.slug}` },
+        openGraph: {
+            type: 'article',
+            title: a.title,
+            description: a.excerpt,
+            url,
+            section: cat.label,
+        },
+    };
 }
 
 function Content({ block }: { block: Block }) {
@@ -58,8 +74,43 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
     const cat = getCategory(article.category);
     const related = articlesByCategory(articles, article.category).filter((a) => a.slug !== article.slug).slice(0, 3);
 
+    const url = `${SITE_URL}/learn/${article.slug}`;
+    const publisher = {
+        '@type': 'Organization',
+        name: 'FeedCast Markets',
+        url: SITE_URL,
+        logo: { '@type': 'ImageObject', url: `${SITE_URL}/opengraph-image.png` },
+    };
+    // Evergreen, in-house education — model as an Article + LearningResource.
+    // No fabricated dates; timeRequired carries the read length for rich results.
+    const articleLd = {
+        '@context': 'https://schema.org',
+        '@type': ['Article', 'LearningResource'],
+        headline: article.title,
+        description: article.excerpt,
+        articleSection: cat.label,
+        learningResourceType: 'Concept overview',
+        timeRequired: `PT${article.readMin}M`,
+        inLanguage: 'en',
+        image: `${SITE_URL}/opengraph-image.png`,
+        mainEntityOfPage: { '@type': 'WebPage', '@id': url },
+        author: publisher,
+        publisher,
+    };
+    const breadcrumbLd = {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
+            { '@type': 'ListItem', position: 2, name: 'Learn', item: `${SITE_URL}/learn` },
+            { '@type': 'ListItem', position: 3, name: cat.label, item: `${SITE_URL}/learn?category=${article.category}` },
+            { '@type': 'ListItem', position: 4, name: article.title, item: url },
+        ],
+    };
+
     return (
         <div className="flex min-h-screen w-full flex-col gap-6 p-4 md:p-8">
+            <JsonLd data={[articleLd, breadcrumbLd]} />
             <article className="mx-auto w-full max-w-3xl">
                 <Link href={`/learn?category=${article.category}`} className="flex w-fit items-center gap-1.5 text-xs text-gray-500 transition-colors hover:text-teal-400">
                     <ArrowLeft size={13} /> {cat.label}

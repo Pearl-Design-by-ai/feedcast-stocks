@@ -2,17 +2,62 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { GraduationCap } from 'lucide-react';
 import ArticleCard from '@/components/learn/ArticleCard';
+import JsonLd from '@/components/JsonLd';
 import { CATEGORIES, getCategory, type CategoryId } from '@/lib/learn';
 import { getLearnArticles } from '@/lib/actions/learn.actions';
+import { SITE_URL } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 
-export const metadata: Metadata = {
-    title: 'Learn — Financial Education',
-    description:
-        'Become a better investor. Plain-English guides to recessions, inflation, the Fed, ETFs, dividends, bonds, bubbles and more — each linked to FeedCast’s live tools.',
-};
-
 const VALID = new Set<string>(CATEGORIES.map((c) => c.id));
+
+const HUB_DESCRIPTION =
+    'Become a better investor. Plain-English guides to recessions, inflation, the Fed, ETFs, dividends, bonds, bubbles and more — each linked to FeedCast’s live tools.';
+
+export async function generateMetadata({
+    searchParams,
+}: {
+    searchParams: Promise<{ category?: string }>;
+}): Promise<Metadata> {
+    const { category } = await searchParams;
+    const active = category && VALID.has(category) ? (category as CategoryId) : null;
+
+    // Category views are filtered slices of the same library — point their
+    // canonical at the hub so Google consolidates them and doesn't treat the
+    // `?category=` query pages as thin duplicates.
+    if (active) {
+        const c = getCategory(active);
+        return {
+            title: `${c.label} — Learn`,
+            description: `${c.blurb} Plain-English ${c.label.toLowerCase()} guides from FeedCast Markets, each linked to live tools.`,
+            alternates: { canonical: '/learn' },
+            openGraph: {
+                type: 'website',
+                title: `${c.label} — Learn`,
+                description: c.blurb,
+                url: `${SITE_URL}/learn?category=${active}`,
+            },
+        };
+    }
+
+    return {
+        title: 'Learn — Financial Education',
+        description: HUB_DESCRIPTION,
+        keywords: [
+            'financial education',
+            'investing basics',
+            'how to invest',
+            'stock market guide',
+            'ETFs',
+            'dividends',
+            'bonds',
+            'inflation',
+            'recession',
+            'Federal Reserve',
+        ],
+        alternates: { canonical: '/learn' },
+        openGraph: { type: 'website', title: 'Learn — Financial Education', description: HUB_DESCRIPTION, url: `${SITE_URL}/learn` },
+    };
+}
 
 export default async function LearnPage({
     searchParams,
@@ -26,8 +71,34 @@ export default async function LearnPage({
     const list = active ? all.filter((a) => a.category === active) : all;
     const [featured, ...rest] = list;
 
+    // Structured data: the library as an ItemList (always the full hub, matching
+    // the /learn canonical) + a Home › Learn breadcrumb. Helps Google surface
+    // the guides as a rich, navigable collection.
+    const itemListLd = {
+        '@context': 'https://schema.org',
+        '@type': 'ItemList',
+        name: 'FeedCast Markets — Learn',
+        description: HUB_DESCRIPTION,
+        numberOfItems: all.length,
+        itemListElement: all.map((a, i) => ({
+            '@type': 'ListItem',
+            position: i + 1,
+            url: `${SITE_URL}/learn/${a.slug}`,
+            name: a.title,
+        })),
+    };
+    const breadcrumbLd = {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
+            { '@type': 'ListItem', position: 2, name: 'Learn', item: `${SITE_URL}/learn` },
+        ],
+    };
+
     return (
         <div className="flex min-h-screen w-full flex-col gap-6 p-4 md:p-8">
+            <JsonLd data={[itemListLd, breadcrumbLd]} />
             {/* Hero */}
             <header className="overflow-hidden rounded-2xl border border-gray-800 bg-gradient-to-br from-teal-500/10 via-gray-900/40 to-gray-900/40 p-6 md:p-8">
                 <h1 className="flex items-center gap-2 text-3xl font-bold text-gray-100">

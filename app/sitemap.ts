@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { POPULAR_STOCK_SYMBOLS } from '@/lib/constants';
+import { getLearnArticles } from '@/lib/actions/learn.actions';
 
 const SITE_URL = 'https://markets.feedcast.news';
 
@@ -40,7 +41,7 @@ const PUBLIC_ROUTES = [
     '/world-indices',
 ];
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const routes: MetadataRoute.Sitemap = PUBLIC_ROUTES.map((path) => ({
         url: `${SITE_URL}${path}`,
         changeFrequency: path === '/' ? 'hourly' : 'daily',
@@ -53,5 +54,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
         priority: 0.6,
     }));
 
-    return [...routes, ...stocks];
+    // Learn articles are the highest-value evergreen content to index. Sourced
+    // from the engine (same call the pages use); falls back to [] if unreachable.
+    const articles = await getLearnArticles().catch(() => []);
+    const learn: MetadataRoute.Sitemap = articles.map((a) => ({
+        url: `${SITE_URL}/learn/${a.slug}`,
+        changeFrequency: 'monthly',
+        priority: 0.6,
+    }));
+
+    return [...routes, ...stocks, ...learn];
 }
