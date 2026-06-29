@@ -20,6 +20,8 @@ import {
 import { askMarkets, type ChatMessage } from '@/lib/actions/ask.actions';
 import { MarkdownLite } from '@/components/ask/MarkdownLite';
 import { cn } from '@/lib/utils';
+import { useIsAuthed } from '@/components/AuthProvider';
+import { SIGN_IN_URL } from '@/lib/constants';
 
 /**
  * ChatGPT-style grounded markets chat. Free-text composer (the engine answers
@@ -181,7 +183,15 @@ export default function AskMarkets() {
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   };
 
+  // Public page, members-only action: bounce anonymous visitors to sign-in
+  // before any starter/composer call hits the (gated) server action.
+  const isAuthed = useIsAuthed();
+
   async function send(text: string) {
+    if (!isAuthed) {
+      window.location.href = SIGN_IN_URL;
+      return;
+    }
     const question = text.trim();
     if (!question || loading) return;
     setError('');
@@ -414,31 +424,47 @@ export default function AskMarkets() {
           <div className="mb-3 rounded-xl border border-gray-800 bg-gray-950/40 p-3">{promptBrowser}</div>
         )}
 
-        <div className="flex items-end gap-2 rounded-xl border border-gray-700 bg-gray-800/60 p-1.5 transition-colors focus-within:border-teal-400/50">
-          <textarea
-            ref={taRef}
-            value={input}
-            onChange={(e) => {
-              setInput(e.target.value);
-              autoGrow();
-            }}
-            onKeyDown={onKeyDown}
-            rows={1}
-            placeholder="Ask anything about the markets…"
-            className="max-h-40 flex-1 resize-none bg-transparent px-2.5 py-1.5 text-sm text-gray-100 placeholder:text-gray-500 focus:outline-none"
-          />
-          <button
-            type="submit"
-            disabled={loading || !input.trim()}
-            aria-label="Send"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-500 text-black transition-colors hover:bg-teal-400 disabled:cursor-not-allowed disabled:bg-gray-700 disabled:text-gray-500"
-          >
-            {loading ? <Loader2 size={16} className="animate-spin" /> : <ArrowUp size={16} />}
-          </button>
-        </div>
-        <p className="mt-1.5 px-1 text-[11px] text-gray-500">
-          Live market context &amp; headlines — informational only, not advice. Enter to send, Shift+Enter for a new line.
-        </p>
+        {isAuthed ? (
+          <>
+            <div className="flex items-end gap-2 rounded-xl border border-gray-700 bg-gray-800/60 p-1.5 transition-colors focus-within:border-teal-400/50">
+              <textarea
+                ref={taRef}
+                value={input}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  autoGrow();
+                }}
+                onKeyDown={onKeyDown}
+                rows={1}
+                placeholder="Ask anything about the markets…"
+                className="max-h-40 flex-1 resize-none bg-transparent px-2.5 py-1.5 text-sm text-gray-100 placeholder:text-gray-500 focus:outline-none"
+              />
+              <button
+                type="submit"
+                disabled={loading || !input.trim()}
+                aria-label="Send"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-500 text-black transition-colors hover:bg-teal-400 disabled:cursor-not-allowed disabled:bg-gray-700 disabled:text-gray-500"
+              >
+                {loading ? <Loader2 size={16} className="animate-spin" /> : <ArrowUp size={16} />}
+              </button>
+            </div>
+            <p className="mt-1.5 px-1 text-[11px] text-gray-500">
+              Live market context &amp; headlines — informational only, not advice. Enter to send, Shift+Enter for a new line.
+            </p>
+          </>
+        ) : (
+          <div className="flex flex-col items-center gap-2 rounded-xl border border-teal-500/20 bg-teal-500/5 px-4 py-4 text-center">
+            <p className="text-sm text-gray-300">
+              Ask the Markets is free for members — sign in to start a conversation.
+            </p>
+            <a
+              href={SIGN_IN_URL}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-teal-500 px-4 py-2 text-sm font-semibold text-teal-950 transition-colors hover:bg-teal-400"
+            >
+              <Sparkles className="h-4 w-4" /> Sign in to ask
+            </a>
+          </div>
+        )}
       </form>
     </div>
   );

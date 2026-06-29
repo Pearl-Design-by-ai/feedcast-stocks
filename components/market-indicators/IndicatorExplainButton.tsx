@@ -14,6 +14,8 @@ import {
     explainIndicator,
     type IndicatorExplanation,
 } from '@/lib/actions/deepseek.actions';
+import { useIsAuthed } from '@/components/AuthProvider';
+import { SIGN_IN_URL } from '@/lib/constants';
 
 const SECTIONS: Array<{ key: keyof IndicatorExplanation; label: string }> = [
     { key: 'summary', label: 'What it measures' },
@@ -42,6 +44,22 @@ export default function IndicatorExplainButton({
     category?: string;
 }) {
     const [state, setState] = useState<State>({ status: 'idle' });
+    const isAuthed = useIsAuthed();
+
+    // Public page, members-only AI: anonymous visitors get a sign-in link in
+    // place of the Explain button (the action is gated server-side too).
+    if (!isAuthed) {
+        return (
+            <a
+                href={SIGN_IN_URL}
+                title="Sign in to explain this indicator with AI"
+                aria-label={`Sign in to explain ${name} with AI`}
+                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-teal-500/30 bg-teal-500/10 text-teal-300 transition-colors hover:bg-teal-500/20 hover:text-teal-200"
+            >
+                <Sparkles className="h-4 w-4" />
+            </a>
+        );
+    }
 
     async function load() {
         setState({ status: 'loading' });

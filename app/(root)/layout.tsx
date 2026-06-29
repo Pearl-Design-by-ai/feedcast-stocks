@@ -8,6 +8,7 @@ import { accentHex } from "@/lib/accent";
 import { buildThemeCss, themeFromMain, lightIdFromMain } from "@/lib/appearance";
 import { isPowerUserEmail } from "@/lib/constants";
 import ThemeProvider from "@/components/ThemeProvider";
+import { AuthProvider } from "@/components/AuthProvider";
 
 // Auth is handled by the main Feedcast app (SSO). The site is PUBLIC so it can
 // be indexed for SEO — anonymous visitors see all content with default theming.
@@ -92,7 +93,9 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
                         <SideNav initialStocks={initialStocks} isPowerUser={powerUser} />
                         <div className="min-w-0 flex-1">
                             <div className="mx-auto w-full max-w-[1400px] py-8 md:py-10">
-                                {children}
+                                <AuthProvider isAuthed={!!sessionUser}>
+                                    {children}
+                                </AuthProvider>
                             </div>
                         </div>
                     </div>
