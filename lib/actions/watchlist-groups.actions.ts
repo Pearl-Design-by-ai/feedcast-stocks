@@ -5,7 +5,7 @@ import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { getCompanyProfile, getQuote } from '@/lib/actions/finnhub.actions';
 import { isTickerLike, sanitizeSymbols } from '@/lib/utils';
 import { isPowerUserEmail } from '@/lib/constants';
-import { MAX_GROUPS, type WatchlistGroup, type GroupPortfolio } from '@/lib/watchlist-groups';
+import { MAX_GROUPS, MAX_GROUPS_POWER, type WatchlistGroup, type GroupPortfolio } from '@/lib/watchlist-groups';
 
 const GROUPS = 'stock_watchlist_groups';
 const ITEMS = 'stock_watchlist';
@@ -184,9 +184,10 @@ export async function createGroup(name: string): Promise<{ ok: boolean; error?: 
             .from(GROUPS)
             .select('id', { count: 'exact', head: true })
             .eq('user_id', user.id);
-        // Power users get unlimited lists; everyone else is capped at MAX_GROUPS.
-        if (!isPowerUserEmail(user.email) && (count ?? 0) >= MAX_GROUPS)
-            return { ok: false, error: `You can have at most ${MAX_GROUPS} watchlists.` };
+        // Power users get a higher cap (MAX_GROUPS_POWER); everyone else MAX_GROUPS.
+        const cap = isPowerUserEmail(user.email) ? MAX_GROUPS_POWER : MAX_GROUPS;
+        if ((count ?? 0) >= cap)
+            return { ok: false, error: `You can have at most ${cap} watchlists.` };
 
         const { data, error } = await supabase
             .from(GROUPS)

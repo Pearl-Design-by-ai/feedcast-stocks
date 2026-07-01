@@ -2,6 +2,8 @@
 // actions and client components — server-action files may only export async).
 
 export const MAX_GROUPS = 5;
+/** Power users get a much higher cap than the standard 5 (but not unlimited). */
+export const MAX_GROUPS_POWER = 100;
 
 export interface WatchlistGroup {
     id: number;
