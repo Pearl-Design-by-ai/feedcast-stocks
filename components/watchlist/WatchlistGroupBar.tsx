@@ -37,11 +37,14 @@ export default function WatchlistGroupBar({
     groups,
     activeId,
     portfolios,
+    unlimited = false,
 }: {
     groups: WatchlistGroup[];
     activeId: number;
     /** Per-group portfolio day move, keyed by group id. */
     portfolios?: Record<number, GroupPortfolio>;
+    /** Power users bypass the MAX_GROUPS cap (unlimited watchlists). */
+    unlimited?: boolean;
 }) {
     const router = useRouter();
     const [pending, start] = useTransition();
@@ -55,7 +58,7 @@ export default function WatchlistGroupBar({
     const [symbol, setSymbol] = useState('');
 
     const active = groups.find((g) => g.id === activeId) ?? groups[0];
-    const atMax = groups.length >= MAX_GROUPS;
+    const atMax = !unlimited && groups.length >= MAX_GROUPS;
 
     // Optimistic selection: reflect the clicked tab the instant it's pressed,
     // while the server round-trip for that list is still in flight. Without

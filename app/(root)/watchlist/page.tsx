@@ -13,6 +13,7 @@ import DivergenceRadar from '@/components/watchlist/DivergenceRadar';
 import NewsGrid from '@/components/watchlist/NewsGrid';
 import DataDisclaimer from '@/components/DataDisclaimer';
 import RelatedLinks from '@/components/common/RelatedLinks';
+import { isPowerUserEmail } from '@/lib/constants';
 import { Loader2, Bell } from 'lucide-react';
 
 export const metadata = {
@@ -61,6 +62,7 @@ export default async function WatchlistPage({
     } = await supabase.auth.getUser();
     if (!user) redirect('https://www.feedcast.news/?signin=stocks');
 
+    const unlimited = isPowerUserEmail(user.email);
     const { list } = await searchParams;
 
     // Lists + each list's portfolio move run in parallel — the portfolio scan
@@ -93,7 +95,7 @@ export default async function WatchlistPage({
 
             <DataDisclaimer className="mb-6 max-w-2xl" />
 
-            {active && <WatchlistGroupBar groups={groups} activeId={active.id} portfolios={portfolios} />}
+            {active && <WatchlistGroupBar groups={groups} activeId={active.id} portfolios={portfolios} unlimited={unlimited} />}
 
             <div className="mt-6 space-y-8">
                 {items.length === 0 ? (
