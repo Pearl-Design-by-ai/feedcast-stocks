@@ -9,16 +9,18 @@
 
 import { kvCachedJSON, fnv1a } from '@/lib/market-cache';
 import { enginePost } from '@/lib/engine-client';
+import { sanitizeSymbols } from '@/lib/utils';
 
 type CloseSeries = Array<{ date: string; close: number }>;
 
 const POINTS = 30;
 
 export async function getSparks(symbols: string[]): Promise<Record<string, number[]>> {
-    if (symbols.length === 0) return {};
-    const key = `sparks:v1:${fnv1a(symbols.slice().sort().join(','))}`;
+    const clean = sanitizeSymbols(symbols);
+    if (clean.length === 0) return {};
+    const key = `sparks:v1:${fnv1a(clean.slice().sort().join(','))}`;
     return kvCachedJSON(key, 6 * 3600, async () => {
-        const res = await enginePost<{ closes?: Record<string, CloseSeries> }>('/v1/closes', { symbols }, {});
+        const res = await enginePost<{ closes?: Record<string, CloseSeries> }>('/v1/closes', { symbols: clean }, {});
         const out: Record<string, number[]> = {};
         for (const [sym, series] of Object.entries(res?.closes ?? {})) {
             const closes = series.map((c) => c.close).slice(-POINTS);

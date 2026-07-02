@@ -9,8 +9,14 @@
  */
 
 import { engineGet } from '@/lib/engine-client';
+import { isPowerUserEmail } from '@/lib/constants';
+import { getCurrentUser } from '@/lib/supabase/server';
 import type { DiagnosticsReport } from '@/lib/admin';
 
 export async function getDiagnostics(): Promise<DiagnosticsReport | null> {
+    // Power-user only. The page gates with notFound(), but the action is a
+    // callable endpoint on its own — enforce authz here at the trust boundary,
+    // or any member could read internal feed/secret-wiring diagnostics directly.
+    if (!isPowerUserEmail((await getCurrentUser())?.email)) return null;
     return engineGet<DiagnosticsReport | null>('/v1/admin/diagnostics', {}, null);
 }

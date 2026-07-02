@@ -13,6 +13,18 @@ import { engineGet, enginePost } from '@/lib/engine-client';
 import { isTickerLike, sanitizeSymbols } from '@/lib/utils';
 import { getCurrentUser } from '@/lib/supabase/server';
 
+// Company display name is grounding-only; `symbol` identifies the company. It
+// rides in the engine cache key, so bound + normalize it: a legit name passes
+// through unchanged (stable per symbol → normal cache hit), while junk/oversized
+// values can't inject unbounded entropy to force cache-miss LLM regenerations.
+function cleanCompanyName(name: string): string {
+    return String(name ?? '')
+        .replace(/[^A-Za-z0-9 .,&'-]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 60);
+}
+
 export interface IndicatorExplanation {
     summary: string;
     importance: string;
@@ -77,10 +89,12 @@ export async function getMarketBrief(): Promise<MarketBrief | null> {
 
 export async function getCompanyBrief(symbol: string, name: string): Promise<CompanyBrief | null> {
     if (!isTickerLike(symbol)) return null;
-    return engineGet<CompanyBrief | null>('/v1/company/brief', { symbol, name }, null);
+    return engineGet<CompanyBrief | null>('/v1/company/brief', { symbol, name: cleanCompanyName(name) }, null);
 }
 
 export async function getWatchlistDigest(symbols: string[]): Promise<MarketBrief | null> {
+    // Members-only: watchlist digest is a personalized on-demand LLM call.
+    if (!(await getCurrentUser())) return null;
     // Cap and validate — an oversized or junk-filled list shouldn't reach the engine.
     const clean = sanitizeSymbols(symbols);
     if (clean.length === 0) return null;
@@ -88,17 +102,21 @@ export async function getWatchlistDigest(symbols: string[]): Promise<MarketBrief
 }
 
 export async function getBullBear(symbol: string, name: string): Promise<BullBear | null> {
+    // Members-only: on-demand "Bull vs Bear" button triggers an LLM call.
+    if (!(await getCurrentUser())) return null;
     if (!isTickerLike(symbol)) return null;
-    return engineGet<BullBear | null>('/v1/company/bullbear', { symbol, name }, null);
+    return engineGet<BullBear | null>('/v1/company/bullbear', { symbol, name: cleanCompanyName(name) }, null);
 }
 
 
 export async function getConsensus(symbol: string, name: string): Promise<Consensus | null> {
     if (!isTickerLike(symbol)) return null;
-    return engineGet<Consensus | null>('/v1/company/consensus', { symbol, name }, null);
+    return engineGet<Consensus | null>('/v1/company/consensus', { symbol, name: cleanCompanyName(name) }, null);
 }
 
 export async function getNewsImpact(symbols: string[]): Promise<NewsImpactItem[] | null> {
+    // Members-only: personalized news-impact digest triggers an LLM fan-out.
+    if (!(await getCurrentUser())) return null;
     const clean = sanitizeSymbols(symbols);
     if (clean.length === 0) return null;
     return enginePost<NewsImpactItem[] | null>('/v1/news/impact', { symbols: clean }, null);
