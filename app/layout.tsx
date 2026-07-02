@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
 import {Toaster} from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -11,6 +11,15 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+// Display face — page titles and section headers only. The squared, slightly
+// technical letterforms give headings a voice of their own while Geist keeps
+// body text and data quiet. Wired to h1/h2 in globals.css.
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
 });
 
 const SITE_URL = "https://markets.feedcast.news";
@@ -58,7 +67,7 @@ export default function RootLayout({
     return (
         <html lang="en" className="dark">
             <body
-                className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+                className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} antialiased`}
             >
                 {children}
                 <Toaster/>

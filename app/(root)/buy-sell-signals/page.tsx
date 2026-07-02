@@ -2,11 +2,13 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { Loader2, Signal } from 'lucide-react';
 import DataDisclaimer from '@/components/DataDisclaimer';
+import ToneAura from '@/components/ToneAura';
 import ScoreMethodology from '@/components/common/ScoreMethodology';
 import RelatedLinks from '@/components/common/RelatedLinks';
 import Collapsible from '@/components/common/Collapsible';
 import { SignalCard, MacroStrip, SectorBoard, RecoveryStats, WhyMarketsRise, TacticalCard, SmartMoneyBoard } from '@/components/signals/SignalsUi';
 import { getSignalsReport } from '@/lib/signals-scan';
+import { getSparks } from '@/lib/actions/sparks.actions';
 import { cn, formatEodDate } from '@/lib/utils';
 
 export const metadata: Metadata = {
@@ -27,6 +29,9 @@ async function Signals() {
     }
 
     const { indices, sectors, macro, tone, asOf, dataDate, tactical, smartMoney } = r;
+
+    // 30-day shapes for the index cards + sector rows — one cached engine call.
+    const sparks = await getSparks([...indices, ...sectors].map((s) => s.symbol));
 
     return (
         <>
@@ -49,18 +54,18 @@ async function Signals() {
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 {indices.map((s) => (
-                    <SignalCard key={s.key} s={s} />
+                    <SignalCard key={s.key} s={s} spark={sparks[s.symbol]} />
                 ))}
             </div>
 
-            <SectorBoard sectors={sectors} />
+            <SectorBoard sectors={sectors} sparks={sparks} />
         </>
     );
 }
 
 function Skeleton() {
     return (
-        <div className="flex items-center gap-3 rounded-2xl border border-gray-800 bg-gray-900/40 p-10 text-sm text-gray-500">
+        <div className="fc-shimmer flex items-center gap-3 rounded-2xl border border-gray-800 bg-gray-900/40 p-10 text-sm text-gray-500">
             <Loader2 className="h-4 w-4 animate-spin text-teal-400" />
             Scoring the indices — trend, momentum and key levels from end-of-day data…
         </div>
@@ -81,7 +86,10 @@ async function SignalsContext() {
 
 export default function BuySellSignalsPage() {
     return (
-        <div className="flex min-h-screen w-full flex-col gap-6 p-4 md:p-8">
+        <div className="relative flex min-h-screen w-full flex-col gap-6 p-4 md:p-8">
+            <Suspense fallback={null}>
+                <ToneAura />
+            </Suspense>
             <header className="flex flex-col gap-3">
                 <div className="flex flex-col gap-1">
                     <h1 className="flex items-center gap-2 text-3xl font-bold text-gray-100">

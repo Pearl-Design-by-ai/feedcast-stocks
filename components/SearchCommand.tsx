@@ -60,13 +60,17 @@ export default function SearchCommand({ renderAs = 'button', label = 'Add stock'
                 <button
                     type="button"
                     onClick={() => setOpen(true)}
-                    className="search-text"
+                    className="search-text group inline-flex items-center gap-2"
                 >
                     {label}
+                    <kbd className="hidden items-center gap-0.5 rounded border border-gray-600 bg-gray-800 px-1.5 py-0.5 font-mono text-[10px] text-gray-500 transition-colors group-hover:text-gray-300 md:inline-flex">
+                        ⌘K
+                    </kbd>
                 </button>
             ): (
                 <Button onClick={() => setOpen(true)} className="search-btn">
                     {label}
+                    <kbd className="ml-1 hidden items-center rounded border border-gray-950/30 px-1 font-mono text-[10px] opacity-70 md:inline-flex">⌘K</kbd>
                 </Button>
             )}
             <CommandDialog open={open} onOpenChange={setOpen} className="search-dialog">
@@ -75,6 +79,27 @@ export default function SearchCommand({ renderAs = 'button', label = 'Add stock'
                     {loading && <Loader2 className="search-loader" />}
                 </div>
                 <CommandList className="search-list">
+                    {/* Quick jumps — the tools people reach for most, one keystroke away. */}
+                    {!isSearchMode && !loading && (
+                        <div className="flex flex-wrap gap-1.5 border-b border-gray-800 px-4 py-2.5">
+                            {[
+                                { href: '/buy-sell-signals', label: 'Buy & Sell Signals' },
+                                { href: '/market-regime', label: 'Market Regime' },
+                                { href: '/ask', label: 'Ask AI' },
+                                { href: '/screener', label: 'Screener' },
+                                { href: '/watchlist', label: 'Watchlist' },
+                            ].map((q) => (
+                                <Link
+                                    key={q.href}
+                                    href={q.href}
+                                    onClick={() => setOpen(false)}
+                                    className="rounded-full border border-gray-700 px-2.5 py-1 text-[11px] text-gray-400 transition-colors hover:border-teal-400 hover:text-gray-200"
+                                >
+                                    {q.label}
+                                </Link>
+                            ))}
+                        </div>
+                    )}
                     {loading ? (
                         <CommandEmpty className="search-list-empty">Loading stocks...</CommandEmpty>
                     ) : displayStocks?.length === 0 ? (

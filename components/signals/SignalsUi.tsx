@@ -59,18 +59,19 @@ export function MacroStrip({ macro }: { macro: MacroRead[] }) {
 }
 
 /** Compact sector board — every SPDR sector graded, sorted strongest first. */
-export function SectorBoard({ sectors }: { sectors: IndexSignal[] }) {
+export function SectorBoard({ sectors, sparks }: { sectors: IndexSignal[]; sparks?: Record<string, number[]> }) {
     if (sectors.length === 0) return null;
     return (
         <div className="rounded-xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
             <h2 className="text-base font-semibold text-gray-100">Sector signals</h2>
             <p className="mb-3 mt-0.5 text-xs text-gray-500">All 11 S&amp;P sectors on the same engine — strongest at the top. Favor green, avoid red.</p>
             <div className="overflow-x-auto">
-                <table className="w-full min-w-[560px] text-left text-sm">
+                <table className="w-full min-w-[640px] text-left text-sm">
                     <thead>
                         <tr className="border-b border-gray-800 text-[10px] font-bold uppercase tracking-wider text-gray-500">
                             <th className="px-3 py-2">Sector</th>
                             <th className="px-3 py-2">Day</th>
+                            <th className="px-3 py-2">30d</th>
                             <th className="px-3 py-2 w-40">Signal score</th>
                             <th className="px-3 py-2">Trend</th>
                             <th className="px-3 py-2 text-right">Call</th>
@@ -82,10 +83,12 @@ export function SectorBoard({ sectors }: { sectors: IndexSignal[] }) {
                             const tone = GRADE_TONE[meta.tone];
                             const up = (s.dayChangePct ?? 0) >= 0;
                             const delta = s.scorePrev != null ? s.score - s.scorePrev : null;
+                            const spark = sparks?.[s.symbol];
                             return (
                                 <tr key={s.key} className="border-b border-gray-800/60 hover:bg-gray-800/40">
                                     <td className="px-3 py-2.5 font-semibold text-gray-100">{s.name} <span className="ml-1 font-mono text-[10px] text-gray-500">{s.symbol}</span></td>
                                     <td className={cn('px-3 py-2.5 tabular-nums text-xs', up ? 'text-green-400' : 'text-red-400')}>{s.dayChangePct != null ? `${up ? '+' : ''}${s.dayChangePct.toFixed(2)}%` : '—'}</td>
+                                    <td className="px-3 py-2.5">{spark ? <Sparkline closes={spark} className="h-5 w-16" /> : <span className="text-gray-600">—</span>}</td>
                                     <td className="px-3 py-2.5">
                                         <div className="flex items-center gap-2">
                                             <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-gray-800">
@@ -109,10 +112,11 @@ export function SectorBoard({ sectors }: { sectors: IndexSignal[] }) {
 }
 
 /** One index card: grade, score gauge, day move, sub-signals, levels, outlook. */
-export function SignalCard({ s }: { s: IndexSignal }) {
+export function SignalCard({ s, spark }: { s: IndexSignal; spark?: number[] }) {
     const meta = GRADE_META[s.grade];
     const tone = GRADE_TONE[meta.tone];
     const up = (s.dayChangePct ?? 0) >= 0;
+    const strong = meta.tone === 'pos2' || meta.tone === 'neg2';
 
     return (
         <div className="flex flex-col rounded-2xl border border-gray-800 bg-gray-900/40 p-5">
@@ -122,40 +126,39 @@ export function SignalCard({ s }: { s: IndexSignal }) {
                     <h3 className="text-lg font-bold text-gray-100">{s.name}</h3>
                     <p className="text-[11px] text-gray-500">{s.blurb}</p>
                 </div>
-                <span className={cn('shrink-0 rounded-lg px-3 py-1.5 text-sm font-bold', tone.chip)}>
+                <span
+                    className={cn('shrink-0 rounded-lg px-3 py-1.5 text-sm font-bold', tone.chip)}
+                    style={strong ? { boxShadow: '0 0 18px -4px currentColor' } : undefined}
+                >
                     {meta.label}
                 </span>
             </div>
 
-            {/* Price + day move */}
-            <div className="mt-3 flex items-baseline gap-2">
-                <span className="text-2xl font-bold tabular-nums text-gray-100">{fmtNum(s.last)}</span>
-                {s.dayChangePct != null && (
-                    <span className={cn('inline-flex items-center gap-0.5 text-sm font-semibold tabular-nums', up ? 'text-green-400' : 'text-red-400')}>
-                        {up ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
-                        {Math.abs(s.dayChangePct).toFixed(2)}%
-                    </span>
-                )}
-                {s.limited && <span className="text-[10px] text-gray-600" title="Under ~1 year of history">*</span>}
-            </div>
-
-            {/* Score gauge 0–100 */}
-            <div className="mt-3">
-                <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-gray-500">
-                    <span>Sell</span><span>Hold</span><span>Buy</span>
+            {/* Price + day move + 30-day shape · score dial */}
+            <div className="mt-3 flex items-end justify-between gap-3">
+                <div className="min-w-0">
+                    <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-bold tabular-nums text-gray-100">{fmtNum(s.last)}</span>
+                        {s.dayChangePct != null && (
+                            <span className={cn('inline-flex items-center gap-0.5 text-sm font-semibold tabular-nums', up ? 'text-green-400' : 'text-red-400')}>
+                                {up ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
+                                {Math.abs(s.dayChangePct).toFixed(2)}%
+                            </span>
+                        )}
+                        {s.limited && <span className="text-[10px] text-gray-600" title="Under ~1 year of history">*</span>}
+                    </div>
+                    {spark && spark.length >= 2 && (
+                        <div className="mt-1.5">
+                            <Sparkline closes={spark} className="h-7 w-28" />
+                            <p className="mt-0.5 text-[9px] uppercase tracking-wider text-gray-600">Last 30 sessions</p>
+                        </div>
+                    )}
                 </div>
-                <div className="relative mt-1">
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-gradient-to-r from-red-500 via-amber-400 to-emerald-500" />
-                    <span
-                        className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-gray-950 bg-white shadow"
-                        style={{ left: `${Math.min(96, Math.max(4, s.score))}%` }}
-                    />
-                </div>
-                <div className="mt-1 flex items-center justify-between">
-                    <TrendChip trend={s.trend} delta={s.scorePrev != null ? s.score - s.scorePrev : null} />
-                    <p className="text-[11px] tabular-nums text-gray-500">
-                        Signal score <span className={cn('font-bold', tone.text)}>{s.score}</span>/100
-                    </p>
+                <div className="flex flex-col items-center">
+                    <ScoreGauge score={s.score} toneText={tone.text} />
+                    <div className="mt-1">
+                        <TrendChip trend={s.trend} delta={s.scorePrev != null ? s.score - s.scorePrev : null} />
+                    </div>
                 </div>
             </div>
 
@@ -454,6 +457,92 @@ export function SmartMoneyBoard({ sm }: { sm: import('@/lib/signals-scan').Smart
                         </div>
                     );
                 })}
+            </div>
+        </div>
+    );
+}
+
+// ── Sparkline + score gauge ──────────────────────────────────────────────────
+
+/**
+ * Inline 30-day sparkline — pure SVG, server-rendered. Colored by direction
+ * over the window, with a soft area fill and an end dot on the latest close.
+ */
+export function Sparkline({ closes, className }: { closes: number[]; className?: string }) {
+    if (closes.length < 2) return null;
+    const min = Math.min(...closes);
+    const max = Math.max(...closes);
+    const span = max - min || 1;
+    const W = 100, H = 30, PAD = 2;
+    const pts = closes.map((c, i) => {
+        const x = PAD + (i / (closes.length - 1)) * (W - PAD * 2);
+        const y = PAD + (1 - (c - min) / span) * (H - PAD * 2);
+        return [x, y] as const;
+    });
+    const line = pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+    const up = closes[closes.length - 1] >= closes[0];
+    const [ex, ey] = pts[pts.length - 1];
+    return (
+        <svg
+            viewBox={`0 0 ${W} ${H}`}
+            className={cn('overflow-visible', up ? 'text-green-400' : 'text-red-400', className)}
+            aria-hidden="true"
+        >
+            <polygon
+                points={`${PAD},${H - PAD} ${line} ${W - PAD},${H - PAD}`}
+                fill="currentColor"
+                opacity="0.08"
+            />
+            <polyline
+                points={line}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+            />
+            <circle cx={ex} cy={ey} r="1.8" fill="currentColor" />
+        </svg>
+    );
+}
+
+/**
+ * Signal-score arc gauge — a semicircle that sweeps to the 0–100 score on
+ * paint (fc-gauge-arc animation), with the score set in the mono face at the
+ * center. Replaces the linear bar: the shape reads at a glance from across
+ * the room, the way a cockpit dial does.
+ */
+export function ScoreGauge({ score, toneText }: { score: number; toneText: string }) {
+    const clampScore = Math.max(0, Math.min(100, score));
+    return (
+        <div className="relative h-[52px] w-[96px] shrink-0" role="img" aria-label={`Signal score ${score} out of 100`}>
+            <svg viewBox="0 0 96 52" className="absolute inset-0 h-full w-full overflow-visible">
+                {/* Track */}
+                <path
+                    d="M 8 48 A 40 40 0 0 1 88 48"
+                    fill="none"
+                    stroke="var(--surface-600)"
+                    strokeWidth="7"
+                    strokeLinecap="round"
+                    pathLength={100}
+                />
+                {/* Value arc — sweeps in via the fc-gauge keyframe. */}
+                <path
+                    d="M 8 48 A 40 40 0 0 1 88 48"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="7"
+                    strokeLinecap="round"
+                    pathLength={100}
+                    strokeDasharray={100}
+                    strokeDashoffset={100 - clampScore}
+                    className={cn('fc-gauge-arc', toneText)}
+                    style={{ '--fc-gauge-track': 100 } as React.CSSProperties}
+                />
+            </svg>
+            <div className="absolute inset-x-0 bottom-0 text-center leading-none">
+                <span className={cn('text-xl font-bold tabular-nums', toneText)}>{score}</span>
+                <span className="ml-0.5 text-[9px] text-gray-500">/100</span>
             </div>
         </div>
     );

@@ -615,3 +615,145 @@
 }
 body { top: 0 !important; }
 .skiptranslate { display: none !important; }
+/* ═══════════════════════════════════════════════════════════════════════════
+   Living-terminal layer — the cosmetic system that makes the app feel alive.
+   Pure CSS: every piece respects prefers-reduced-motion and costs no JS.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* 1 · Terminal numerals — every tabular number in the app renders in the mono
+   face. One rule restyles every price, score and percent site-wide. */
+.tabular-nums {
+    font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+    letter-spacing: -0.02em;
+}
+
+/* 2 · Card rise — top-level cards fade-lift in with a small per-sibling
+   stagger, so pages assemble like a terminal booting rather than popping.
+   Scoped to main content; portaled UI (menus, dialogs) never matches. */
+@media (prefers-reduced-motion: no-preference) {
+    @keyframes fc-rise {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    main [class*="rounded-xl"][class*="bg-gray-900/"],
+    main [class*="rounded-2xl"][class*="bg-gray-900/"] {
+        animation: fc-rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    main [class*="rounded-xl"][class*="bg-gray-900/"]:nth-child(2),
+    main [class*="rounded-2xl"][class*="bg-gray-900/"]:nth-child(2) { animation-delay: 60ms; }
+    main [class*="rounded-xl"][class*="bg-gray-900/"]:nth-child(3),
+    main [class*="rounded-2xl"][class*="bg-gray-900/"]:nth-child(3) { animation-delay: 120ms; }
+    main [class*="rounded-xl"][class*="bg-gray-900/"]:nth-child(4),
+    main [class*="rounded-2xl"][class*="bg-gray-900/"]:nth-child(4) { animation-delay: 180ms; }
+    main [class*="rounded-xl"][class*="bg-gray-900/"]:nth-child(5),
+    main [class*="rounded-2xl"][class*="bg-gray-900/"]:nth-child(5) { animation-delay: 240ms; }
+    main [class*="rounded-xl"][class*="bg-gray-900/"]:nth-child(6),
+    main [class*="rounded-2xl"][class*="bg-gray-900/"]:nth-child(6) { animation-delay: 300ms; }
+    main [class*="rounded-xl"][class*="bg-gray-900/"]:nth-child(n+7),
+    main [class*="rounded-2xl"][class*="bg-gray-900/"]:nth-child(n+7) { animation-delay: 340ms; }
+}
+
+/* 3 · Hover depth — card-shaped LINKS (navigational cards) warm toward the
+   brand accent and lift. Static info cards stay quiet on purpose: hover
+   implies "clickable", and we only promise what we deliver. */
+main a[class*="rounded-xl"],
+main a[class*="rounded-lg"][class*="border"] {
+    transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+@media (hover: hover) {
+    main a[class*="rounded-xl"]:hover,
+    main a[class*="rounded-lg"][class*="border"]:hover {
+        border-color: color-mix(in oklab, var(--brand) 45%, transparent);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 24px -12px color-mix(in oklab, var(--brand) 35%, transparent);
+    }
+}
+
+/* 4 · Tick flash — a one-shot glow tinted by direction, for freshly painted
+   up/down readings (ticker tape items, change cells). Apply per component. */
+@media (prefers-reduced-motion: no-preference) {
+    @keyframes fc-tick-up {
+        0% { background-color: color-mix(in oklab, var(--up) 22%, transparent); }
+        100% { background-color: transparent; }
+    }
+    @keyframes fc-tick-down {
+        0% { background-color: color-mix(in oklab, var(--down) 22%, transparent); }
+        100% { background-color: transparent; }
+    }
+    .fc-tick-up { animation: fc-tick-up 0.9s ease-out 0.3s both; border-radius: 4px; }
+    .fc-tick-down { animation: fc-tick-down 0.9s ease-out 0.3s both; border-radius: 4px; }
+}
+
+/* 5 · Market Pulse tape — seamless marquee (content rendered twice; the track
+   translates by exactly half). Pauses on hover so values can be read. */
+@keyframes fc-marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+}
+.fc-tape-track {
+    animation: fc-marquee var(--fc-tape-speed, 60s) linear infinite;
+    will-change: transform;
+}
+.fc-tape:hover .fc-tape-track { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+    .fc-tape-track { animation: none; }
+    .fc-tape { overflow-x: auto; }
+    /* The loop copy is only needed while scrolling — hide it for a clean,
+       swipeable single run. */
+    .fc-tape-track > [aria-hidden] { display: none; }
+}
+
+/* Session dot — a slow breath while the market is open. */
+@media (prefers-reduced-motion: no-preference) {
+    @keyframes fc-breathe {
+        0%, 100% { opacity: 1; box-shadow: 0 0 0 0 color-mix(in oklab, currentColor 45%, transparent); }
+        50% { opacity: 0.6; box-shadow: 0 0 0 3px transparent; }
+    }
+    .fc-breathe { animation: fc-breathe 2.4s ease-in-out infinite; }
+}
+
+/* 7 · Gauge draw — the signal-score arc sweeps to its value on paint. */
+@media (prefers-reduced-motion: no-preference) {
+    @keyframes fc-gauge {
+        from { stroke-dashoffset: var(--fc-gauge-track, 100); }
+    }
+    .fc-gauge-arc { animation: fc-gauge 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both; }
+}
+
+/* 8 · Tape-aware aura — a barely-there radial wash behind a page header that
+   carries the day's Risk-On / Mixed / Risk-Off tone. Felt, not read. */
+.fc-aura {
+    pointer-events: none;
+    position: absolute;
+    inset: -40px 0 auto 0;
+    height: 260px;
+    background: radial-gradient(60% 100% at 50% 0%, var(--fc-aura-color, transparent), transparent 70%);
+}
+.fc-aura-pos { --fc-aura-color: color-mix(in oklab, var(--up) 7%, transparent); }
+.fc-aura-neutral { --fc-aura-color: color-mix(in oklab, var(--warn) 6%, transparent); }
+.fc-aura-neg { --fc-aura-color: color-mix(in oklab, var(--down) 7%, transparent); }
+
+/* 11 · Shimmer — brand-tinted sheen for skeleton loading states. */
+@media (prefers-reduced-motion: no-preference) {
+    @keyframes fc-shimmer {
+        from { background-position: -200% 0; }
+        to { background-position: 200% 0; }
+    }
+    .fc-shimmer {
+        background-image: linear-gradient(
+            100deg,
+            transparent 30%,
+            color-mix(in oklab, var(--brand) 6%, transparent) 50%,
+            transparent 70%
+        );
+        background-size: 200% 100%;
+        animation: fc-shimmer 1.8s ease-in-out infinite;
+    }
+}
+
+/* 9 · Display voice — headings carry the identity; body and data stay in
+   Geist. Space Grotesk's squared, technical letterforms suit a terminal. */
+h1, h2 {
+    font-family: var(--font-display), var(--font-geist-sans), sans-serif;
+    letter-spacing: -0.015em;
+}

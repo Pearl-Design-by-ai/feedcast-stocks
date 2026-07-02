@@ -1,4 +1,6 @@
+import { Suspense } from 'react';
 import DataDisclaimer from '@/components/DataDisclaimer';
+import ToneAura from '@/components/ToneAura';
 import DashboardShell from '@/components/dashboard/DashboardShell';
 import DashboardView from '@/components/dashboard/DashboardView';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
@@ -17,7 +19,11 @@ const Home = async () => {
   const layout = saved ?? DEFAULT_LAYOUT;
 
   return (
-    <div className="flex min-h-screen w-full flex-col gap-6">
+    <div className="relative flex min-h-screen w-full flex-col gap-6">
+      {/* The day's Risk-On / Risk-Off tone as a faint wash behind the header. */}
+      <Suspense fallback={null}>
+        <ToneAura />
+      </Suspense>
       <header className="flex flex-col gap-1">
         <h1 className="text-3xl font-bold text-gray-100">Dashboard</h1>
         <p className="max-w-3xl text-base font-semibold text-gray-200">What matters right now?</p>

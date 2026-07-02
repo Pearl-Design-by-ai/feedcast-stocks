@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import Header from "@/components/Header";
+import MarketPulseTape from "@/components/MarketPulseTape";
 import HomeOnlyFooter from "@/components/HomeOnlyFooter";
 import DisclaimerFooter from "@/components/DisclaimerFooter";
 import SideNav from "@/components/SideNav";
@@ -85,6 +87,12 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
             <style>{themeCss}</style>
             <ThemeProvider mode={mode}>
                 <Header user={sessionUser} initialStocks={initialStocks} isPowerUser={powerUser} />
+
+                {/* Market Pulse — the living ticker ribbon. Streams in after the
+                    page shell so it never blocks first paint. */}
+                <Suspense fallback={<div className="h-8 w-full border-b border-gray-800 bg-gray-900/80" />}>
+                    <MarketPulseTape />
+                </Suspense>
 
                 {/* Centered app shell — sidebar + content read as one centered block
                     on wide screens, mirroring the main Feedcast layout. */}
