@@ -104,6 +104,9 @@ export async function removeFromWatchlist(symbol: string) {
 }
 
 export async function getUserWatchlist(userId: string) {
+    // Anonymous visitors have no watchlist — skip the query rather than send
+    // an empty string to a uuid column (22P02 error noise on every anon view).
+    if (!userId) return [];
     try {
         const supabase = await getSupabaseServerClient();
         const { data, error } = await supabase
@@ -130,6 +133,7 @@ export async function getUserWatchlist(userId: string) {
 
 // Check if a symbol is in the user's watchlist
 export async function isStockInWatchlist(userId: string, symbol: string) {
+    if (!userId) return false;
     try {
         const supabase = await getSupabaseServerClient();
         const { data, error } = await supabase

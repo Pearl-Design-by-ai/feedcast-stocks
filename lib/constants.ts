@@ -219,7 +219,9 @@ export const MARKET_DATA_WIDGET_CONFIG = {
                 { name: 'NASDAQ:AMZN', displayName: 'Amazon' },
                 { name: 'NYSE:BABA', displayName: 'Alibaba Group Hldg Ltd' },
                 { name: 'NYSE:T', displayName: 'At&t Inc' },
-                { name: 'NYSE:WMT', displayName: 'Walmart' },
+                // NB: NYSE:WMT has no delayed data on the free TV embed — it
+                // rendered an empty row + console noise, so Costco replaces it.
+                { name: 'NASDAQ:COST', displayName: 'Costco' },
                 { name: 'NYSE:V', displayName: 'Visa' },
             ],
         },
