@@ -37,6 +37,34 @@ export interface TacticalAllocation {
     disclaimer: string;
 }
 
+// Smart-money tracks (Polymarket odds, insider Form-4 flow, congress trades) —
+// computed in the engine; the app only renders the result.
+export type SmartState = 'bull' | 'neutral' | 'bear';
+
+export interface SmartItem {
+    label: string;
+    value: string;
+    tone: 'pos' | 'neutral' | 'neg';
+}
+
+export interface SmartTrack {
+    key: 'polymarket' | 'insider' | 'congress';
+    name: string;
+    blurb: string;
+    state: SmartState;
+    score: number;
+    headline: string;
+    detail: string;
+    items: SmartItem[];
+}
+
+export interface SmartMoney {
+    tracks: SmartTrack[];
+    /** Combined bounded tilt (−10…+10) already folded into the tactical call. */
+    tilt: number;
+    note: string;
+}
+
 export interface SignalsReport {
     asOf: string;
     /** The most recent close date in the underlying EOD data (YYYY-MM-DD). */
@@ -50,6 +78,8 @@ export interface SignalsReport {
     whyMarketsRise: WhyUp[];
     /** Engine-derived equity/cash tilt with a scenario ladder. */
     tactical: TacticalAllocation | null;
+    /** Smart-money tracks — absent on older engine deployments. */
+    smartMoney?: SmartMoney | null;
 }
 
 export async function getSignalsReport(): Promise<SignalsReport | null> {

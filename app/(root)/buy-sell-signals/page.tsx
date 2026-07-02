@@ -5,7 +5,7 @@ import DataDisclaimer from '@/components/DataDisclaimer';
 import ScoreMethodology from '@/components/common/ScoreMethodology';
 import RelatedLinks from '@/components/common/RelatedLinks';
 import Collapsible from '@/components/common/Collapsible';
-import { SignalCard, MacroStrip, SectorBoard, RecoveryStats, WhyMarketsRise, TacticalCard } from '@/components/signals/SignalsUi';
+import { SignalCard, MacroStrip, SectorBoard, RecoveryStats, WhyMarketsRise, TacticalCard, SmartMoneyBoard } from '@/components/signals/SignalsUi';
 import { getSignalsReport } from '@/lib/signals-scan';
 import { cn, formatEodDate } from '@/lib/utils';
 
@@ -26,7 +26,7 @@ async function Signals() {
         );
     }
 
-    const { indices, sectors, macro, tone, asOf, dataDate, tactical } = r;
+    const { indices, sectors, macro, tone, asOf, dataDate, tactical, smartMoney } = r;
 
     return (
         <>
@@ -44,6 +44,8 @@ async function Signals() {
             {tactical && <TacticalCard t={tactical} />}
 
             <MacroStrip macro={macro} />
+
+            {smartMoney && <SmartMoneyBoard sm={smartMoney} />}
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 {indices.map((s) => (

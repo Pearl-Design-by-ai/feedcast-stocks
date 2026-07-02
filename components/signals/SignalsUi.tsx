@@ -398,3 +398,63 @@ export function WhyMarketsRise({ reasons }: { reasons: import('@/lib/market-hist
         </div>
     );
 }
+
+// ── Smart-money tracks ───────────────────────────────────────────────────────
+
+const SMART_STATE_META: Record<import('@/lib/signals-scan').SmartState, { label: string; chip: string; dot: string }> = {
+    bull: { label: 'Bullish', chip: 'bg-emerald-500/15 text-emerald-400 ring-1 ring-inset ring-emerald-400/40', dot: 'bg-emerald-400' },
+    neutral: { label: 'Neutral', chip: 'bg-gray-700/60 text-gray-300', dot: 'bg-gray-500' },
+    bear: { label: 'Bearish', chip: 'bg-red-500/15 text-red-400 ring-1 ring-inset ring-red-400/40', dot: 'bg-red-400' },
+};
+
+const SMART_ITEM_TONE: Record<'pos' | 'neutral' | 'neg', string> = {
+    pos: 'text-emerald-400',
+    neutral: 'text-gray-300',
+    neg: 'text-red-400',
+};
+
+/**
+ * Smart Money Tracks — what the informed players are doing: prediction-market
+ * odds (Polymarket), corporate-insider Form 4 flow, and disclosed congressional
+ * trading. Computed in the engine; this only renders the read.
+ */
+export function SmartMoneyBoard({ sm }: { sm: import('@/lib/signals-scan').SmartMoney }) {
+    if (!sm.tracks.length) return null;
+    return (
+        <div className="rounded-xl border border-gray-800 bg-gray-900/40 p-4 md:p-5">
+            <h2 className="text-sm font-semibold text-gray-100">
+                Smart money tracks <span className="font-normal text-gray-500">— what the informed players are doing</span>
+            </h2>
+            <p className="mb-3 mt-0.5 text-xs text-gray-500">{sm.note}</p>
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+                {sm.tracks.map((t) => {
+                    const meta = SMART_STATE_META[t.state];
+                    return (
+                        <div key={t.key} className="flex flex-col rounded-lg border border-gray-800 bg-gray-900/60 p-3.5">
+                            <div className="flex items-start justify-between gap-2">
+                                <div>
+                                    <p className="text-sm font-semibold text-gray-100">{t.name}</p>
+                                    <p className="mt-0.5 text-[11px] text-gray-500">{t.blurb}</p>
+                                </div>
+                                <span className={cn('inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold', meta.chip)}>
+                                    <span className={cn('h-1.5 w-1.5 rounded-full', meta.dot)} />
+                                    {meta.label}
+                                </span>
+                            </div>
+                            <p className="mt-2 text-[13px] font-medium text-gray-200">{t.headline}</p>
+                            <ul className="mt-2 space-y-1.5">
+                                {t.items.map((it) => (
+                                    <li key={it.label} className="flex items-baseline justify-between gap-2 text-xs">
+                                        <span className="text-gray-400">{it.label}</span>
+                                        <span className={cn('font-semibold tabular-nums', SMART_ITEM_TONE[it.tone])}>{it.value}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                            <p className="mt-2.5 border-t border-gray-800 pt-2 text-[11px] leading-relaxed text-gray-500">{t.detail}</p>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
