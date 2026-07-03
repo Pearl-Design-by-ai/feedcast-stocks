@@ -81,7 +81,7 @@ export default function BullBear({ symbol, name }: { symbol: string; name: strin
             )}
 
             {data && (
-                <p className="mt-3 text-[11px] text-gray-600">AI-generated &amp; balanced — not investment advice.</p>
+                <p className="mt-3 text-[11px] text-gray-600">FeedCast AI · balanced by design — not investment advice.</p>
             )}
         </div>
     );

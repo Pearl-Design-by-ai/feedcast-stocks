@@ -53,9 +53,9 @@ export const CATALOG: ModuleMeta[] = [
   { id: 'forex-heatmap', title: 'Forex Heatmap', description: 'Relative strength of major currencies.', category: 'TradingView', defaultSpan: 'full' },
   { id: 'crypto-heatmap', title: 'Crypto Heatmap', description: 'Market-cap weighted crypto heatmap.', category: 'TradingView', defaultSpan: 'full' },
   // AI
-  { id: 'market-brief', title: 'AI Market Brief', description: 'Today’s headlines summarized by AI.', category: 'AI', defaultSpan: 'full' },
-  { id: 'ai-commentary', title: 'AI Commentary', description: 'Live AI read on the market regime.', category: 'AI', defaultSpan: 'full' },
-  { id: 'ask-shortcut', title: 'Ask the Markets', description: 'Quick link into the grounded AI chat.', category: 'AI', defaultSpan: 'full' },
+  { id: 'market-brief', title: 'AI Market Brief', description: 'Today’s headlines summarized by FeedCast AI.', category: 'AI', defaultSpan: 'full' },
+  { id: 'ai-commentary', title: 'AI Commentary', description: 'Live FeedCast AI read on the market regime.', category: 'AI', defaultSpan: 'full' },
+  { id: 'ask-shortcut', title: 'Ask the Markets', description: 'Quick link into the grounded FeedCast AI chat.', category: 'AI', defaultSpan: 'full' },
   // Personal
   { id: 'watchlist', title: 'Watchlist', description: 'Your saved tickers at a glance.', category: 'Personal', defaultSpan: 'full' },
   // Markets

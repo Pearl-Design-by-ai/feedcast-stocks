@@ -14,7 +14,7 @@ export default async function CompanyBrief({ symbol, name }: { symbol: string; n
             </div>
             <p className="text-sm leading-relaxed text-gray-300">{brief.text}</p>
             <p className="mt-3 text-[11px] text-gray-600">
-                AI-generated from public info &amp; headlines — not investment advice.
+                FeedCast AI · generated from public info &amp; headlines — not investment advice.
             </p>
         </div>
     );

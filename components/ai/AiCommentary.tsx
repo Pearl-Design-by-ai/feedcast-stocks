@@ -89,7 +89,7 @@ export default function AiCommentary({ topic: topicProp }: { topic?: string } = 
   return (
     <div className="mb-6">
       <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-teal-400">
-        <Sparkles className="h-3.5 w-3.5" /> AI Commentary
+        <Sparkles className="h-3.5 w-3.5" /> FeedCast AI Commentary
       </div>
       {loading || !comment ? (
         <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -101,7 +101,7 @@ export default function AiCommentary({ topic: topicProp }: { topic?: string } = 
             <MarkdownLite text={comment} />
           </div>
           <p className="mt-2 text-[11px] text-gray-500">
-            AI Generated{asOf && <> · based on end-of-day data through <span className="tabular-nums">{formatEodDate(asOf)}</span>&apos;s close</>}
+            FeedCast AI{asOf && <> · based on end-of-day data through <span className="tabular-nums">{formatEodDate(asOf)}</span>&apos;s close</>}
           </p>
         </>
       )}

@@ -327,8 +327,8 @@ export default function AskMarkets() {
                 What do you want to know?
               </h2>
               <p className="mx-auto mt-2 max-w-md text-sm text-gray-400">
-                Ask anything about the markets in your own words — answers are grounded in today&apos;s
-                regime and headlines, not stale model memory. Or start with one of these.
+                Ask FeedCast AI anything about the markets in your own words — answers are grounded
+                in today&apos;s regime and headlines, not stale model memory. Or start with one of these.
               </p>
             </div>
 

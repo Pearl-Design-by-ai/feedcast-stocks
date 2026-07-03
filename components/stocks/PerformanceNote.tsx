@@ -33,7 +33,7 @@ export default async function PerformanceNote({ symbol, name }: { symbol: string
                 ))}
             </div>
             <p className="mt-3 text-[11px] text-gray-600">
-                AI-generated from market data &amp; headlines — not investment advice.
+                FeedCast AI · generated from market data &amp; headlines — not investment advice.
             </p>
         </div>
     );
