@@ -76,6 +76,7 @@ export const NAV_SECTIONS: NavSection[] = [
             { href: '/market-indicators', label: 'Market Indicators' },
             { href: '/ask', label: 'Ask the Markets' },
             { href: '/learn', label: 'Learn' },
+            { href: '/markets/options-strategies', label: 'Options Strategies' },
         ],
     },
     {
@@ -101,7 +102,6 @@ export const NAV_SECTIONS: NavSection[] = [
         label: 'More',
         items: [
             { href: '/appearance', label: 'Appearance' },
-            { href: '/markets/options-strategies', label: 'Options Strategies' },
             { href: '/about', label: 'About' },
             { href: '/help', label: 'Help' },
             { href: '/api-docs', label: 'API Docs' },
