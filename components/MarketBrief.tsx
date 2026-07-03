@@ -1,5 +1,5 @@
 import { Sparkles } from 'lucide-react';
-import { getMarketBrief } from '@/lib/actions/deepseek.actions';
+import { getMarketBrief } from '@/lib/actions/ai.actions';
 
 /**
  * AI-written daily market brief for the homepage. Streamed via <Suspense>, so it
@@ -14,7 +14,7 @@ export default async function MarketBrief() {
             <div className="mb-3 flex flex-wrap items-center gap-2">
                 <Sparkles className="h-4 w-4 text-teal-400" />
                 <h2 className="text-sm font-semibold text-gray-100">AI Market Brief</h2>
-                <span className="text-xs text-gray-500">DeepSeek · from today’s headlines</span>
+                <span className="text-xs text-gray-500">AI generated · from today’s headlines</span>
             </div>
             <ul className="flex flex-col gap-2">
                 {brief.points.map((point, i) => (

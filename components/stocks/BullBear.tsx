@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { TrendingUp, TrendingDown, Loader2, Scale } from 'lucide-react';
-import { getBullBear, type BullBear as BullBearData } from '@/lib/actions/deepseek.actions';
+import { getBullBear, type BullBear as BullBearData } from '@/lib/actions/ai.actions';
 
 /** On-demand AI bull vs bear case for a ticker (avoids cost on every page view). */
 export default function BullBear({ symbol, name }: { symbol: string; name: string }) {

@@ -8,7 +8,7 @@
 
 import { enginePost } from '@/lib/engine-client';
 import type { PortfolioInputs, PortfolioPlan, EntryPlan } from '@/lib/portfolio/engine';
-import { getConsensus, type Consensus } from '@/lib/actions/deepseek.actions';
+import { getConsensus, type Consensus } from '@/lib/actions/ai.actions';
 import { getReturns, fetchDailyClosesMap } from '@/lib/actions/returns.actions';
 import { sanitizeSymbols, isTickerLike } from '@/lib/utils';
 import { getCurrentUser } from '@/lib/supabase/server';
@@ -53,7 +53,7 @@ export interface EtfSuggestion {
 
 /**
  * AI-driven, ready-to-use ETF portfolio for a risk profile + holding period.
- * DeepSeek constructs a cycle-aware, value-disciplined allocation from a curated
+ * The engine's LLM constructs a cycle-aware, value-disciplined allocation from a curated
  * real-ETF universe in the private engine; this is a thin proxy. The Portfolio
  * Lens offers it as a one-click starting basket the user can then analyze.
  */

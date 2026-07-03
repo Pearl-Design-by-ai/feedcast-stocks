@@ -22,7 +22,7 @@ import {
 export const metadata = {
   title: 'API & Architecture | FeedCast Markets',
   description:
-    'How FeedCast Markets is built — an AGPL public app over a private analysis engine on Cloudflare Workers, with proprietary AI scores, DeepSeek inference and a multi-provider data layer.',
+    'How FeedCast Markets is built — an AGPL public app over a private analysis engine on Cloudflare Workers, with proprietary AI scores, LLM inference and a multi-provider data layer.',
 };
 
 export default function ApiDocsPage() {
@@ -45,7 +45,7 @@ export default function ApiDocsPage() {
 
         <div className="flex flex-wrap justify-center gap-3 pt-2">
           <Badge color="green">Cloudflare Workers</Badge>
-          <Badge color="purple">DeepSeek AI</Badge>
+          <Badge color="purple">AI Inference</Badge>
           <Badge color="teal">Supabase</Badge>
           <Badge color="blue">Open Source AGPL-3.0</Badge>
         </div>
@@ -80,8 +80,8 @@ export default function ApiDocsPage() {
               </div>
               <div>
                 <h3 className="text-white font-semibold flex items-center gap-2">
-                  AI inference: DeepSeek
-                  <span className="text-[10px] bg-teal-500/10 text-teal-400 px-2 py-0.5 rounded-full border border-teal-500/20">OpenAI-compatible</span>
+                  AI inference layer
+                  <span className="text-[10px] bg-teal-500/10 text-teal-400 px-2 py-0.5 rounded-full border border-teal-500/20">in-engine LLM</span>
                 </h3>
                 <p className="text-sm text-gray-500 mt-1">
                   Powers every AI feature — Consensus, Ask the Markets, briefs, bull/bear and grounded commentary.
@@ -140,7 +140,7 @@ export default function ApiDocsPage() {
             </div>
             <div className="h-5 w-px bg-gray-700" />
             <div className="bg-green-900/20 text-green-400 px-4 py-2 rounded-lg text-sm border border-green-900/50 w-full text-center font-medium">
-              DeepSeek + data providers
+              LLM + data providers
             </div>
           </div>
         </div>
@@ -233,11 +233,6 @@ export default function ApiDocsPage() {
             title="SEC EDGAR + OpenFIGI"
             desc="Official 13F filings for fund-manager portfolios, with CUSIP→ticker mapping."
             url="https://www.sec.gov/edgar"
-          />
-          <StackItem
-            title="DeepSeek"
-            desc="OpenAI-compatible inference behind every AI feature, called only from the engine."
-            url="https://deepseek.com"
           />
         </div>
 

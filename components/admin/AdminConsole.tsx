@@ -198,7 +198,7 @@ export default function AdminConsole({ initial }: { initial: DiagnosticsReport }
                     <ul className="grid grid-cols-2 gap-y-2 text-sm">
                         {([
                             ['Engine token', report.config.engineToken],
-                            ['DeepSeek', report.config.deepseek],
+                            ['AI key', report.config.deepseek],
                             ['Finnhub', report.config.finnhub],
                             ['Adanos', report.config.adanos],
                             ['KV cache', report.config.kvCache],

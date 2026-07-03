@@ -1,5 +1,5 @@
 import { Sparkles } from 'lucide-react';
-import { getWatchlistDigest } from '@/lib/actions/deepseek.actions';
+import { getWatchlistDigest } from '@/lib/actions/ai.actions';
 
 /** AI digest of news across the user's watchlist (streamed; omitted when empty). */
 export default async function WatchlistDigest({ symbols }: { symbols: string[] }) {
@@ -12,7 +12,7 @@ export default async function WatchlistDigest({ symbols }: { symbols: string[] }
             <div className="mb-3 flex flex-wrap items-center gap-2">
                 <Sparkles className="h-4 w-4 text-teal-400" />
                 <h2 className="text-sm font-semibold text-gray-100">AI Watchlist Digest</h2>
-                <span className="text-xs text-gray-500">DeepSeek · from your stocks’ headlines</span>
+                <span className="text-xs text-gray-500">AI generated · from your stocks’ headlines</span>
             </div>
             <ul className="flex flex-col gap-2">
                 {digest.points.map((point, i) => (

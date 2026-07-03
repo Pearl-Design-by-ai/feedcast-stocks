@@ -1,5 +1,5 @@
 import { Sparkles } from 'lucide-react';
-import { getCompanyBrief } from '@/lib/actions/deepseek.actions';
+import { getCompanyBrief } from '@/lib/actions/ai.actions';
 
 /** AI company summary (streamed via Suspense; renders nothing when unavailable). */
 export default async function CompanyBrief({ symbol, name }: { symbol: string; name: string }) {

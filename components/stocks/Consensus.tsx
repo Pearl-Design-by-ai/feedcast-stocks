@@ -1,5 +1,5 @@
 import { Gauge } from 'lucide-react';
-import { getConsensus } from '@/lib/actions/deepseek.actions';
+import { getConsensus } from '@/lib/actions/ai.actions';
 
 /**
  * Cycle-aware fundamental "Consensus" read on the stock — a disciplined

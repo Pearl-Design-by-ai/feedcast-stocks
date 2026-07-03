@@ -1,5 +1,5 @@
 import { ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
-import { getNewsImpact } from '@/lib/actions/deepseek.actions';
+import { getNewsImpact } from '@/lib/actions/ai.actions';
 
 const IMPACT_STYLE: Record<string, { cls: string; Icon: typeof ArrowUpRight }> = {
     positive: { cls: 'bg-green-500/15 text-green-400', Icon: ArrowUpRight },

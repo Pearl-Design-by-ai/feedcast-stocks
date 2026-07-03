@@ -13,7 +13,7 @@ import {
 import {
     explainIndicator,
     type IndicatorExplanation,
-} from '@/lib/actions/deepseek.actions';
+} from '@/lib/actions/ai.actions';
 import { useIsAuthed } from '@/components/AuthProvider';
 import { SIGN_IN_URL } from '@/lib/constants';
 
@@ -31,7 +31,7 @@ type State =
     | { status: 'error'; error: string };
 
 /**
- * AI button on each indicator card. On first open it asks DeepSeek to explain
+ * AI button on each indicator card. On first open it asks the LLM to explain
  * the indicator in plain language, then keeps the result so re-opening is instant.
  */
 export default function IndicatorExplainButton({
