@@ -1,6 +1,8 @@
 import type { MetadataRoute } from 'next';
 import { POPULAR_STOCK_SYMBOLS } from '@/lib/constants';
 import { getLearnArticles } from '@/lib/actions/learn.actions';
+import { ETF_CATEGORIES } from '@/lib/etfs';
+import { STOCK_CATEGORIES } from '@/lib/stock-lists';
 
 const SITE_URL = 'https://markets.feedcast.news';
 
@@ -26,6 +28,7 @@ const PUBLIC_ROUTES = [
     '/crypto',
     '/currency',
     '/economic-calendar',
+    '/etfs',
     '/fixed-income',
     '/help',
     '/learn',
@@ -48,6 +51,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: path === '/' ? 1 : 0.7,
     }));
 
+    const etfCategories: MetadataRoute.Sitemap = ETF_CATEGORIES.map((c) => ({
+        url: `${SITE_URL}/etfs/${c.id}`,
+        changeFrequency: 'daily',
+        priority: 0.7,
+    }));
+
+    const stockLists: MetadataRoute.Sitemap = STOCK_CATEGORIES.map((c) => ({
+        url: `${SITE_URL}/stocks/lists/${c.id}`,
+        changeFrequency: 'daily',
+        priority: 0.7,
+    }));
+
     const stocks: MetadataRoute.Sitemap = POPULAR_STOCK_SYMBOLS.map((symbol) => ({
         url: `${SITE_URL}/stocks/${symbol}`,
         changeFrequency: 'daily',
@@ -63,5 +78,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.6,
     }));
 
-    return [...routes, ...stocks, ...learn];
+    return [...routes, ...etfCategories, ...stockLists, ...stocks, ...learn];
 }

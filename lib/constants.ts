@@ -16,6 +16,8 @@ export const MARKETS_NAV = {
         { href: '/market-regime', label: 'Market Regime' },
         { href: '/market-indicators', label: 'Indicators' },
         { href: '/sectors', label: 'Sectors' },
+        { href: '/stocks', label: 'Stock Hub' },
+        { href: '/etfs', label: 'ETF Hub' },
         { href: '/world-indices', label: 'World Indices' },
         { href: '/currency', label: 'Currency' },
         { href: '/commodities', label: 'Commodities' },
@@ -81,6 +83,8 @@ export const NAV_SECTIONS: NavSection[] = [
         label: 'Market Dashboards',
         items: [
             { href: '/sectors', label: 'Sectors' },
+            { href: '/stocks', label: 'Stock Hub' },
+            { href: '/etfs', label: 'ETF Hub' },
             { href: '/world-indices', label: 'World Indices' },
             { href: '/currency', label: 'Currency' },
             { href: '/commodities', label: 'Commodities' },
