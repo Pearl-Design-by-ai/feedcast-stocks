@@ -32,6 +32,7 @@ import {
     TechSnapshot,
 } from '@/components/stocks/InsightPanels';
 import { formatSymbolForTradingView } from '@/lib/utils';
+import BackButton from '@/components/common/BackButton';
 import CompanyScore from '@/components/stocks/CompanyScore';
 import { getCompanyScore } from '@/lib/actions/company-score.actions';
 
@@ -82,7 +83,8 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
 
     return (
         <div className="flex flex-col min-h-screen p-4 md:p-6 lg:p-8">
-            <div className="mb-6 flex items-start justify-between gap-4">
+            <BackButton fallback="/stocks" />
+            <div className="mb-6 mt-3 flex items-start justify-between gap-4">
                 <div className="flex flex-col">
                     <h1 className="text-2xl font-bold text-white">{symbol.toUpperCase()}</h1>
                     {companyName !== symbol.toUpperCase() && (

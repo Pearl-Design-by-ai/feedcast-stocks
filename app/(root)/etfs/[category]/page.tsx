@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import AiCommentary from '@/components/ai/AiCommentary';
+import BackButton from '@/components/common/BackButton';
 import DataDisclaimer from '@/components/DataDisclaimer';
 import JsonLd from '@/components/JsonLd';
 import RelatedLinks from '@/components/common/RelatedLinks';
@@ -72,6 +73,7 @@ export default async function EtfCategoryPage({ params }: Props) {
             <JsonLd data={[breadcrumbLd, itemListLd]} />
             <header className="flex flex-col gap-3">
                 <nav className="flex flex-wrap items-center gap-1.5 text-sm" aria-label="ETF categories">
+                    <BackButton fallback="/etfs" />
                     <Link href="/etfs" className="rounded-full border border-gray-800 bg-gray-900/40 px-3 py-1 text-gray-400 transition-colors hover:border-gray-700 hover:text-gray-200">
                         All categories
                     </Link>
