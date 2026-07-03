@@ -10,7 +10,8 @@ import { enginePost } from '@/lib/engine-client';
 import type { PortfolioInputs, PortfolioPlan, EntryPlan } from '@/lib/portfolio/engine';
 import { getConsensus, type Consensus } from '@/lib/actions/deepseek.actions';
 import { getReturns, fetchDailyClosesMap } from '@/lib/actions/returns.actions';
-import { sanitizeSymbols } from '@/lib/utils';
+import { sanitizeSymbols, isTickerLike } from '@/lib/utils';
+import { getCurrentUser } from '@/lib/supabase/server';
 
 export interface BacktestRow {
     label: string;
@@ -26,6 +27,9 @@ export interface BacktestRow {
 export async function buildPortfolioPlan(
     inputs: PortfolioInputs
 ): Promise<{ plan: PortfolioPlan; entry: EntryPlan } | null> {
+    // Portfolio Labs is a member feature (its page redirects anonymous users);
+    // enforce it in the action too so the endpoint can't be driven directly.
+    if (!(await getCurrentUser())) return null;
     return enginePost<{ plan: PortfolioPlan; entry: EntryPlan } | null>('/v1/portfolio/build', inputs, null);
 }
 
@@ -57,6 +61,7 @@ export async function suggestEtfPortfolio(
     risk: RiskProfile,
     horizon: Horizon
 ): Promise<EtfSuggestion | null> {
+    if (!(await getCurrentUser())) return null;
     // `v` busts the KV cache when the engine's allocation logic changes (v2: risk
     // profile now drives the equity/cash split, not the holding period). The
     // engine ignores the extra field.
@@ -76,6 +81,7 @@ export interface SmartAllocation {
  * flattens the tilt. The scoring runs in the private engine; this is a shim.
  */
 export async function smartAllocate(symbols: string[]): Promise<SmartAllocation | null> {
+    if (!(await getCurrentUser())) return null;
     const clean = sanitizeSymbols(symbols);
     if (clean.length === 0) return null;
     return enginePost<SmartAllocation | null>('/v1/portfolio/allocate', { symbols: clean }, null);
@@ -85,7 +91,18 @@ export async function smartAllocate(symbols: string[]): Promise<SmartAllocation 
 export async function getPortfolioReturns(
     holdings: Array<{ ticker: string; weight: number; sleeve?: string }>
 ): Promise<{ rows: BacktestRow[] }> {
-    return enginePost<{ rows: BacktestRow[] }>('/v1/portfolio/backtest', { holdings }, { rows: [] });
+    if (!(await getCurrentUser())) return { rows: [] };
+    // Validate + cap before forwarding: this array is client-supplied and each
+    // ticker fans out into upstream price fetches in the engine.
+    const clean = (Array.isArray(holdings) ? holdings : [])
+        .map((h) => ({
+            ticker: String(h?.ticker ?? '').trim().toUpperCase(),
+            weight: Number(h?.weight) || 0,
+            sleeve: h?.sleeve,
+        }))
+        .filter((h) => (h.ticker === 'CASH' || isTickerLike(h.ticker)) && h.weight > 0)
+        .slice(0, 50);
+    return enginePost<{ rows: BacktestRow[] }>('/v1/portfolio/backtest', { holdings: clean }, { rows: [] });
 }
 
 /** Last prices for a basket — turns target weights into approximate share counts. */
@@ -110,6 +127,7 @@ export interface PortfolioLens {
 export async function getPortfolioLens(
     holdings: Array<{ symbol: string; weight: number }>
 ): Promise<PortfolioLens | null> {
+    if (!(await getCurrentUser())) return null;
     const clean = holdings
         .map((h) => ({ symbol: h.symbol.toUpperCase().trim(), weight: Number(h.weight) || 0 }))
         .filter((h) => h.symbol && h.weight > 0);
@@ -148,6 +166,9 @@ function downsample(values: number[], n = 48): number[] {
 export async function analyzePortfolio(
     holdings: Array<{ symbol: string; weight: number }>
 ): Promise<PortfolioAnalysis> {
+    // Heavy fan-out (up to 25 Consensus LLM calls + lens + prices). Member-only:
+    // the Portfolio Labs page redirects anonymous users; enforce it here too.
+    if (!(await getCurrentUser())) return { lens: null, holdings: [] };
     const weightBySymbol = new Map<string, number>();
     for (const h of holdings) {
         const s = h.symbol.toUpperCase().trim();

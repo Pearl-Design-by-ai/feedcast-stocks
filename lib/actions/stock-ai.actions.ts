@@ -29,6 +29,10 @@ export interface PerformanceNote {
 export async function getPerformanceNote(symbol: string, name: string): Promise<PerformanceNote | null> {
     if (!isTickerLike(symbol)) return null;
     const sym = symbol.toUpperCase();
+    // Bound the display name: it's interpolated into the prompt and the result is
+    // cached per symbol/session, so an unbounded name could poison a symbol's
+    // cached note via a direct call.
+    const safeName = String(name ?? '').replace(/[^A-Za-z0-9 .,&'-]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
     const session = currentSession();
     return kvCachedJSON<PerformanceNote | null>(`perfnote:${sym}:${session}`, 43_200, async () => {
         let ytd: number | null = null;
@@ -41,7 +45,7 @@ export async function getPerformanceNote(symbol: string, name: string): Promise<
             /* returns optional */
         }
         const prompt =
-            `In 3–4 sentences, explain the main drivers behind ${name} (${sym})'s stock performance so far this year. ` +
+            `In 3–4 sentences, explain the main drivers behind ${safeName} (${sym})'s stock performance so far this year. ` +
             `Its price returns are: ${perf || 'not available'}. ` +
             `Point to concrete, likely catalysts — earnings results and guidance, demand or product trends, sector moves, regulation or macro — and note whether sentiment is improving or deteriorating. ` +
             `Be specific and balanced. This is informational, not investment advice.`;

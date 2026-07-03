@@ -9,6 +9,8 @@
  */
 
 import { engineGet, enginePost } from '@/lib/engine-client';
+import { isPowerUserEmail } from '@/lib/constants';
+import { getCurrentUser } from '@/lib/supabase/server';
 import type { LeverageReport, StressReport } from '@/lib/leverage';
 
 export type LevRange = '6m' | 'ytd' | '1y' | 'max';
@@ -19,6 +21,10 @@ export async function getLeverageReport(
     rebal: LevRebal = 'daily',
     costBps = 3,
 ): Promise<LeverageReport | null> {
+    // Power-user only — enforce in the action, not just the page (which
+    // notFound()s). Otherwise the proprietary leverage model is reachable by
+    // any caller invoking this action directly.
+    if (!isPowerUserEmail((await getCurrentUser())?.email)) return null;
     return engineGet<LeverageReport | null>('/v1/leverage', { range, rebal, cost: String(costBps) }, null);
 }
 
@@ -39,5 +45,6 @@ export async function getStressTest(
     costBps: number,
     scenario: StressScenarioInput,
 ): Promise<StressReport | null> {
+    if (!isPowerUserEmail((await getCurrentUser())?.email)) return null;
     return enginePost<StressReport | null>('/v1/leverage/stress', { range, rebal, cost: costBps, scenario }, null);
 }

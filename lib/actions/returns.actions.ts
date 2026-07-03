@@ -2,6 +2,11 @@
 
 import { kvCachedJSON } from '@/lib/market-cache';
 import { enginePost } from '@/lib/engine-client';
+import { sanitizeSymbols } from '@/lib/utils';
+
+// Yahoo chart ranges we ever request. Whitelisted so a range value can never
+// inject extra query params into the upstream URL, even via a future caller.
+const ALLOWED_RANGES = new Set(['1y', '2y', '5y', '10y', 'max']);
 
 /**
  * Multi-period total-return approximations from 2y of adjusted daily closes.
@@ -74,7 +79,7 @@ export async function fetchDailyClosesMap(
     symbols: string[]
 ): Promise<Map<string, CloseSeries>> {
     const out = new Map<string, CloseSeries>();
-    const tickers = [...new Set(symbols.map(tickerOf).filter(Boolean))];
+    const tickers = [...new Set(sanitizeSymbols(symbols).map(tickerOf).filter(Boolean))];
     if (tickers.length === 0) return out;
 
     const batch = await fetchClosesFromEngine(tickers);
@@ -121,7 +126,8 @@ async function fetchDailyClosesUncached(
     t: string,
     range = '2y'
 ): Promise<Array<{ date: string; close: number }>> {
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(t)}?range=${range}&interval=1d`;
+    const safeRange = ALLOWED_RANGES.has(range) ? range : '2y';
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(t)}?range=${safeRange}&interval=1d`;
     try {
         const res = await fetch(url, {
             headers: { 'User-Agent': 'Mozilla/5.0' },
@@ -160,8 +166,11 @@ function pct(latest: number, past: number | undefined): number | null {
 
 export async function getReturns(symbols: string[]): Promise<SymbolReturns[]> {
     const year = new Date().getFullYear();
+    // Validate + cap: this is a directly-callable server action and each symbol
+    // fans out into an engine/Yahoo history fetch.
+    const clean = sanitizeSymbols(symbols);
     return Promise.all(
-        symbols.map(async (symbol): Promise<SymbolReturns> => {
+        clean.map(async (symbol): Promise<SymbolReturns> => {
             try {
                 const closes = await fetchDailyCloses(symbol);
                 if (closes.length < 2) return { symbol, w1: null, m1: null, m3: null, ytd: null, y1: null };
