@@ -1,0 +1,23 @@
+name: Catalog symbol check
+
+# Weekly guard for the ETF Hub / Stock Hub directories: fails (and emails the
+# repo owner) when a curated ticker no longer resolves on the quote source,
+# e.g. after a delisting or ticker change.
+on:
+  schedule:
+    - cron: '0 6 * * 1' # Mondays 06:00 UTC
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - name: Verify catalog symbols against the quote source
+        run: npx tsx scripts/check-catalog-symbols.ts

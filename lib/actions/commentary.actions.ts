@@ -28,6 +28,8 @@ const ALLOWED_TOPICS = new Set([
   'calendar',
   'screener',
   'compare',
+  'etfs',
+  'stocks',
 ]);
 
 export async function getCommentary(topic: string): Promise<CommentaryResult> {

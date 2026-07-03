@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { AlertTriangle } from 'lucide-react';
+import AiCommentary from '@/components/ai/AiCommentary';
 import DataDisclaimer from '@/components/DataDisclaimer';
 import JsonLd from '@/components/JsonLd';
 import RelatedLinks from '@/components/common/RelatedLinks';
@@ -104,6 +105,7 @@ export default async function StockListPage({ params }: Props) {
                 )}
                 <DataDisclaimer className="w-fit" />
             </header>
+            <AiCommentary />
 
             {cat.groups.map((group) => (
                 <section key={group.id} className="flex flex-col gap-3">

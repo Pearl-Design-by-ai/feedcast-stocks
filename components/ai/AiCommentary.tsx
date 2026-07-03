@@ -30,6 +30,8 @@ const TOPIC_PATHS = new Set([
   'calendar',
   'screener',
   'compare',
+  'etfs',
+  'stocks',
 ]);
 
 function topicFromPath(pathname: string): string | null {

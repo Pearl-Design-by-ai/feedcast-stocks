@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
+import AiCommentary from '@/components/ai/AiCommentary';
 import DataDisclaimer from '@/components/DataDisclaimer';
 import JsonLd from '@/components/JsonLd';
 import RelatedLinks from '@/components/common/RelatedLinks';
@@ -53,6 +54,7 @@ export default function EtfHubPage() {
                 </div>
                 <DataDisclaimer className="w-fit" />
             </header>
+            <AiCommentary />
 
             <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {ETF_CATEGORIES.map((category) => (
