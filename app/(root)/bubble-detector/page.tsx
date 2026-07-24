@@ -104,10 +104,11 @@ async function Scan() {
                     Next bubble candidates
                 </h2>
                 <p className="mb-4 text-xs leading-relaxed text-gray-500">
-                    Not manias yet — emerging themes with the <em>shape</em> of an early bubble: a real,
-                    exciting story pulling in fast money. For each we track the tradeable instruments
-                    and flag the signal that would tip it from “story” into “bubble.” Live scores below
-                    show how inflated each one already is.
+                    Themes with the <em>shape</em> of an early bubble: a real, exciting story capable of
+                    pulling in fast money. For each we track the tradeable instruments and flag the
+                    signal that would tip it from “story” into “bubble.” A low score here is a finding,
+                    not a gap — several of these deflated without ever inflating, and the write-up says
+                    so. Live scores below show where each one actually stands.
                 </p>
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                     {scan.candidates.map(({ candidate, assets, avgBubble, avgPop }) => (
@@ -165,7 +166,8 @@ async function Scan() {
                 </div>
                 <p className="mt-3 text-[11px] leading-relaxed text-gray-500">
                     Each chip links to the stock page; the number is its live bubble score (0–100).
-                    Candidate themes are editorial, mid-2026 — informational, not advice.
+                    Candidate write-ups are editorial, re-grounded against the scan on 24 Jul 2026 —
+                    informational, not advice.
                 </p>
             </section>
 
@@ -275,8 +277,9 @@ export default function BubbleDetectorPage() {
                         Where could the next bubble be — and what’s already cracking? Each asset gets
                         a live <strong className="text-gray-200">bubble score</strong> (how inflated)
                         and a <strong className="text-gray-200">pop-risk score</strong> (how fragile),
-                        computed from two years of real price data. The “why” for each theme is AI
-                        research, current to mid-2026.
+                        computed from two years of real price data. Each theme’s “why” is written
+                        against that same scan and re-grounded when the numbers move — last on
+                        24 Jul 2026.
                     </p>
                 </div>
                 <DataDisclaimer className="w-fit" />
@@ -284,7 +287,7 @@ export default function BubbleDetectorPage() {
 
             <ScoreMethodology
                 methodology="Each asset gets a bubble score (how far price sits above its 200-day average, the 1-year run-up, RSI(14) and distance to its 52-week high) and a pop-risk score (the bubble score scaled by active deflation signals — below the 50-day average, a negative month, already down 8%+ from the high, or a volatility spike). Theme “why” is AI research. Full breakdown in “How the scores work” below."
-                cadence="Recomputed each visit from end-of-day closes (cached up to ~6h); inputs are daily closes, so scores move about once per trading day after the US close. Theme/candidate write-ups are editorial, current to mid-2026."
+                cadence="Recomputed each visit from end-of-day closes (cached up to ~6h); inputs are daily closes, so scores move about once per trading day after the US close. Theme/candidate write-ups are editorial and re-grounded against the scan — last on 24 Jul 2026."
                 thresholds="Bubble & pop-risk are 0–100. Roughly: <40 calm · 40–54 warm · 55–69 stretched · 70+ frothy. “Highest pop risk” = inflated names already showing deflation signals. * = under ~1 year of history."
             />
 
