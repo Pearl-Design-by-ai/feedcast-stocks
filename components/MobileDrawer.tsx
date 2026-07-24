@@ -17,12 +17,11 @@ import { usePathname } from 'next/navigation';
 import { Menu, X, ChevronDown, ArrowLeft, LogOut } from 'lucide-react';
 import { FeedcastLogo } from '@/components/FeedcastLogo';
 import SearchCommand from '@/components/SearchCommand';
-import { navSectionsForUser, NAV_DEFAULT_OPEN, SEARCH_HREF, SIGN_IN_URL } from '@/lib/constants';
+import { navSectionsForUser, NAV_DEFAULT_OPEN, SEARCH_HREF, SIGN_IN_URL, FEEDCAST_HOME } from '@/lib/constants';
 import { NAV_ICONS, SECTION_ICONS, NAV_FALLBACK_ICON } from '@/components/navIcons';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 
-const FEEDCAST_HOME = 'https://www.feedcast.news/';
 const SECTION_KEY = (id: string) => `fcm_nav_sec_${id}`;
 
 const ROW =

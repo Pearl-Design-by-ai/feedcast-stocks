@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import UserDropdown from "@/components/UserDropdown";
 import MobileDrawer from "@/components/MobileDrawer";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { FeedcastLogo } from "@/components/FeedcastLogo";
-import { SIGN_IN_URL } from "@/lib/constants";
+import { SIGN_IN_URL, FEEDCAST_HOME } from "@/lib/constants";
 
 const Header = ({ user, initialStocks, isPowerUser = false }: { user: User | null; initialStocks: StockWithWatchlistStatus[]; isPowerUser?: boolean }) => {
     return (
@@ -23,6 +24,19 @@ const Header = ({ user, initialStocks, isPowerUser = false }: { user: User | nul
                 </div>
 
                 <div className="flex items-center gap-2">
+                    {/* Way back to the main app. Markets is a separate origin, so
+                        a reader who lands here from search has no Back button to
+                        use — this is the only exit that's visible signed-out too
+                        (the rail and drawer versions sit behind a menu). */}
+                    <a
+                        href={FEEDCAST_HOME}
+                        aria-label="Back to FeedCast News"
+                        title="Back to FeedCast News"
+                        className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-medium text-gray-400 transition-[color,transform] duration-150 ease-out hover:text-teal-400 active:scale-[0.97]"
+                    >
+                        <ArrowLeft size={16} className="shrink-0" />
+                        <span className="hidden sm:inline">News</span>
+                    </a>
                     <LanguageSelector />
                     {user ? (
                         <UserDropdown user={user} />

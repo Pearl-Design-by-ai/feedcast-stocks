@@ -10,16 +10,17 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {Button} from "@/components/ui/button";
-import {LogOut, Palette} from "lucide-react";
+import {ArrowLeft, LogOut, Palette} from "lucide-react";
 import Link from "next/link";
 import {getSupabaseBrowserClient} from "@/lib/supabase/client";
+import {FEEDCAST_HOME} from "@/lib/constants";
 
 const UserDropdown = ({ user }: {user: User}) => {
     const handleSignOut = async () => {
         // Clears the shared `.feedcast.news` session cookie, then sends
         // the user back to the Feedcast home page.
         await getSupabaseBrowserClient().auth.signOut();
-        window.location.href = "https://www.feedcast.news/";
+        window.location.href = FEEDCAST_HOME;
     }
 
     return (
@@ -57,6 +58,13 @@ const UserDropdown = ({ user }: {user: User}) => {
                     </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-gray-600"/>
+                <DropdownMenuItem asChild className="text-gray-100 text-md font-medium focus:bg-transparent focus:text-teal-500 transition-colors cursor-pointer">
+                    {/* Plain <a>: a different origin, not a client-side route. */}
+                    <a href={FEEDCAST_HOME}>
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        Back to FeedCast News
+                    </a>
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild className="text-gray-100 text-md font-medium focus:bg-transparent focus:text-teal-500 transition-colors cursor-pointer">
                     <Link href="/appearance">
                         <Palette className="h-4 w-4 mr-2" />

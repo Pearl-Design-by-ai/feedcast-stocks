@@ -129,6 +129,11 @@ export const SITE_URL = 'https://markets.feedcast.news';
 // where membership is needed (header, mobile drawer, customize affordances).
 export const SIGN_IN_URL = 'https://www.feedcast.news/?signin=stocks';
 
+// The main Feedcast app. Markets is a separate origin, so the browser Back
+// button doesn't reliably lead home — every surface that can strand a reader
+// here (header, side rail, mobile drawer, user menu) links out explicitly.
+export const FEEDCAST_HOME = 'https://www.feedcast.news/';
+
 export const POWER_USER_EMAILS = ['altuginci@gmail.com'];
 
 export function isPowerUserEmail(email: string | null | undefined): boolean {

@@ -19,13 +19,12 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Menu, PanelLeftClose, ArrowLeft, ChevronDown } from 'lucide-react';
 import SearchCommand from '@/components/SearchCommand';
-import { navSectionsForUser, NAV_DEFAULT_OPEN, SEARCH_HREF } from '@/lib/constants';
+import { navSectionsForUser, NAV_DEFAULT_OPEN, SEARCH_HREF, FEEDCAST_HOME } from '@/lib/constants';
 import { NAV_ICONS, SECTION_ICONS, NAV_FALLBACK_ICON } from '@/components/navIcons';
 import { cn } from '@/lib/utils';
 
 const STORAGE_KEY = 'fcm_sidenav_open';
 const SECTION_KEY = (id: string) => `fcm_nav_sec_${id}`;
-const FEEDCAST_HOME = 'https://www.feedcast.news/';
 
 /** Open the SearchCommand dialog via its global Cmd/Ctrl+K listener. */
 function openSearch() {
