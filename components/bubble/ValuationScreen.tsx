@@ -6,6 +6,9 @@ import { ArrowDownWideNarrow, ArrowUpWideNarrow, Loader2 } from 'lucide-react';
 import { cn, formatEodDate } from '@/lib/utils';
 import type { ValuationEntry, ValuationScreen } from '@/lib/valuation';
 
+/** Which multiple the two lists are ranked by. */
+type Basis = 'pe' | 'fpe';
+
 const ratio = (v: number | null) => (v == null ? '—' : v.toFixed(1));
 const money = (v: number | null) => (v == null ? '—' : `$${v.toFixed(2)}`);
 const pct = (v: number | null, signed = false) =>
@@ -38,16 +41,17 @@ function RangeCell({ price, lo, hi }: { price: number | null; lo: number | null;
 
 const TH = 'px-3 py-2 text-right';
 
-/** Rich table — web only. P/E leads (it's the ranking metric). */
-function Table({ rows, peClass }: { rows: ValuationEntry[]; peClass: string }) {
+/** Rich table — web only. Both multiples lead; the ranking one is highlighted. */
+function Table({ rows, peClass, basis }: { rows: ValuationEntry[]; peClass: string; basis: Basis }) {
     return (
         <div className="hidden overflow-x-auto md:block">
-            <table className="w-full min-w-[1120px] text-left text-sm">
+            <table className="w-full min-w-[1200px] text-left text-sm">
                 <thead>
                     <tr className="border-b border-gray-800 text-[10px] font-bold uppercase tracking-wider text-gray-500">
                         <th className="px-3 py-2 w-10">#</th>
                         <th className="px-3 py-2">Symbol</th>
-                        <th className={TH}>P/E</th>
+                        <th className={cn(TH, basis === 'pe' && 'text-gray-300')}>P/E</th>
+                        <th className={cn(TH, basis === 'fpe' && 'text-gray-300')}>Fwd P/E</th>
                         <th className={TH}>Price</th>
                         <th className={TH}>Mkt cap</th>
                         <th className={TH}>P/S</th>
@@ -70,7 +74,12 @@ function Table({ rows, peClass }: { rows: ValuationEntry[]; peClass: string }) {
                                     {r.symbol}
                                 </Link>
                             </td>
-                            <td className={cn('px-3 py-2 text-right font-semibold tabular-nums', peClass)}>{ratio(r.pe)}</td>
+                            <td className={cn('px-3 py-2 text-right tabular-nums', basis === 'pe' ? cn('font-semibold', peClass) : 'text-gray-400')}>
+                                {ratio(r.pe)}
+                            </td>
+                            <td className={cn('px-3 py-2 text-right tabular-nums', basis === 'fpe' ? cn('font-semibold', peClass) : 'text-gray-400')}>
+                                {ratio(r.fpe)}
+                            </td>
                             <td className="px-3 py-2 text-right tabular-nums text-gray-200">{money(r.price)}</td>
                             <td className="px-3 py-2 text-right tabular-nums text-gray-300">{marketCap(r.mktCap)}</td>
                             <td className="px-3 py-2 text-right tabular-nums text-gray-400">{ratio(r.ps)}</td>
@@ -96,8 +105,8 @@ function Table({ rows, peClass }: { rows: ValuationEntry[]; peClass: string }) {
     );
 }
 
-/** Simple stacked list — mobile only. P/E leads, with price + 1Y for context. */
-function MobileList({ rows, peClass }: { rows: ValuationEntry[]; peClass: string }) {
+/** Simple stacked list — mobile only. The ranking multiple leads, the other trails it. */
+function MobileList({ rows, peClass, basis }: { rows: ValuationEntry[]; peClass: string; basis: Basis }) {
     return (
         <ul className="space-y-1.5 md:hidden">
             {rows.map((r, i) => (
@@ -111,7 +120,11 @@ function MobileList({ rows, peClass }: { rows: ValuationEntry[]; peClass: string
                     </div>
                     <div className="shrink-0 text-right">
                         <div className={cn('text-base font-bold tabular-nums', peClass)}>
-                            {ratio(r.pe)} <span className="text-[10px] font-normal text-gray-500">P/E</span>
+                            {ratio(basis === 'fpe' ? r.fpe : r.pe)}{' '}
+                            <span className="text-[10px] font-normal text-gray-500">{basis === 'fpe' ? 'Fwd P/E' : 'P/E'}</span>
+                        </div>
+                        <div className="text-[11px] tabular-nums text-gray-500">
+                            {ratio(basis === 'fpe' ? r.pe : r.fpe)} {basis === 'fpe' ? 'P/E' : 'Fwd P/E'}
                         </div>
                         <div className={cn('text-[11px] tabular-nums', r.ret1y != null && r.ret1y < 0 ? 'text-red-400' : 'text-emerald-400')}>
                             {pct(r.ret1y, true)} 1Y
@@ -125,6 +138,7 @@ function MobileList({ rows, peClass }: { rows: ValuationEntry[]; peClass: string
 
 export function ValuationLists({ screen }: { screen: ValuationScreen | null }) {
     const [tab, setTab] = useState<'cheapest' | 'priciest'>('cheapest');
+    const [basis, setBasis] = useState<Basis>('pe');
 
     if (!screen || (screen.cheapest.length === 0 && screen.priciest.length === 0)) {
         return (
@@ -136,7 +150,16 @@ export function ValuationLists({ screen }: { screen: ValuationScreen | null }) {
         );
     }
 
-    const rows = tab === 'cheapest' ? screen.cheapest : screen.priciest;
+    // A screen built before the forward-P/E change carries no forward lists — stay
+    // on the trailing ranking until the next engine scan tick rebuilds it.
+    const forwardReady = (screen.cheapestF?.length ?? 0) > 0 || (screen.priciestF?.length ?? 0) > 0;
+    const activeBasis: Basis = forwardReady ? basis : 'pe';
+    const lists =
+        activeBasis === 'fpe'
+            ? { cheapest: screen.cheapestF ?? [], priciest: screen.priciestF ?? [] }
+            : { cheapest: screen.cheapest, priciest: screen.priciest };
+    const rows = tab === 'cheapest' ? lists.cheapest : lists.priciest;
+    const scored = activeBasis === 'fpe' ? screen.scannedF ?? rows.length : screen.scanned;
     const asOf = new Intl.DateTimeFormat('en-US', {
         month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York',
     }).format(new Date(screen.asOf));
@@ -152,7 +175,7 @@ export function ValuationLists({ screen }: { screen: ValuationScreen | null }) {
                         tab === 'cheapest' ? 'bg-emerald-500/15 text-emerald-300 ring-1 ring-inset ring-emerald-400/40' : 'text-gray-400 hover:bg-gray-800/70 hover:text-gray-200'
                     )}
                 >
-                    <ArrowDownWideNarrow size={15} /> Cheapest {screen.cheapest.length}
+                    <ArrowDownWideNarrow size={15} /> Cheapest {lists.cheapest.length}
                 </button>
                 <button
                     type="button"
@@ -162,19 +185,55 @@ export function ValuationLists({ screen }: { screen: ValuationScreen | null }) {
                         tab === 'priciest' ? 'bg-red-500/15 text-red-300 ring-1 ring-inset ring-red-400/40' : 'text-gray-400 hover:bg-gray-800/70 hover:text-gray-200'
                     )}
                 >
-                    <ArrowUpWideNarrow size={15} /> Most expensive {screen.priciest.length}
+                    <ArrowUpWideNarrow size={15} /> Most expensive {lists.priciest.length}
                 </button>
+                {forwardReady && (
+                    <div className="flex items-center gap-1 rounded-lg bg-gray-800/60 p-0.5" role="group" aria-label="Rank by">
+                        <span className="px-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-500">Rank by</span>
+                        {(
+                            [
+                                { id: 'pe', label: 'P/E' },
+                                { id: 'fpe', label: 'Fwd P/E' },
+                            ] as { id: Basis; label: string }[]
+                        ).map((b) => (
+                            <button
+                                key={b.id}
+                                type="button"
+                                onClick={() => setBasis(b.id)}
+                                aria-pressed={activeBasis === b.id}
+                                className={cn(
+                                    'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
+                                    activeBasis === b.id ? 'bg-gray-700 text-gray-100' : 'text-gray-400 hover:text-gray-200'
+                                )}
+                            >
+                                {b.label}
+                            </button>
+                        ))}
+                    </div>
+                )}
                 <span className="ml-auto text-[11px] text-gray-500">
-                    {screen.scanned}/{screen.universe} scored · data through {formatEodDate(screen.session)} close (EOD) · rebuilt {asOf} ET
+                    {scored}/{screen.universe} scored · data through {formatEodDate(screen.session)} close (EOD) · rebuilt {asOf} ET
                 </span>
             </div>
 
-            <MobileList rows={rows} peClass={tab === 'cheapest' ? 'text-emerald-400' : 'text-red-400'} />
-            <Table rows={rows} peClass={tab === 'cheapest' ? 'text-emerald-400' : 'text-red-400'} />
+            <MobileList rows={rows} peClass={tab === 'cheapest' ? 'text-emerald-400' : 'text-red-400'} basis={activeBasis} />
+            <Table rows={rows} peClass={tab === 'cheapest' ? 'text-emerald-400' : 'text-red-400'} basis={activeBasis} />
 
             <p className="mt-3 text-[11px] leading-relaxed text-gray-500">
-                Ranked by trailing P/E (lower = cheaper on earnings). {screen.noEarnings} names are
-                excluded for having no positive trailing earnings. ROE, net margin and revenue growth
+                {activeBasis === 'fpe' ? (
+                    <>
+                        Ranked by forward P/E — price ÷ next-twelve-month consensus earnings estimate
+                        (lower = cheaper on expected earnings). {screen.noForward ?? 0} names are excluded
+                        for having no positive forward estimate. Forward multiples rest on analyst
+                        forecasts, so they move when estimates are revised, not only when price moves.{' '}
+                    </>
+                ) : (
+                    <>
+                        Ranked by trailing P/E (lower = cheaper on earnings). {screen.noEarnings} names are
+                        excluded for having no positive trailing earnings.{' '}
+                    </>
+                )}
+                ROE, net margin and revenue growth
                 are trailing; the 52-week range marks where the last price sits between its low and
                 high. A low P/E isn&apos;t automatically a bargain — it can flag a value trap or a
                 cyclical peak. Screen, not advice.

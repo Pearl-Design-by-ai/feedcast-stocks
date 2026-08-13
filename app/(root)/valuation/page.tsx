@@ -11,7 +11,7 @@ import { ensureFreshScreen } from '@/lib/actions/valuation.actions';
 export const metadata: Metadata = {
     title: 'Valuation',
     description:
-        'The cheapest and most expensive major US stocks by trailing P/E — a daily valuation screen across ~190 large-caps.',
+        'The cheapest and most expensive major US stocks by trailing and forward P/E — a daily valuation screen across ~230 large-caps.',
 };
 
 async function ValuationSection() {
@@ -40,7 +40,8 @@ export default function ValuationPage() {
                     Two views in one place. First the <span className="text-gray-200">whole-market read</span> —
                     broad valuation gauges, which sectors look cheap vs expensive, and where the rotation
                     may go next. Then the live <span className="text-gray-200">per-stock screen</span>: a daily
-                    batch ranks ~230 major US stocks by trailing P/E to surface the{' '}
+                    batch ranks ~230 major US stocks by{' '}
+                    <span className="text-gray-200">trailing or forward P/E</span> — your choice — to surface the{' '}
                     <span className="text-emerald-400">cheapest 100</span> and{' '}
                     <span className="text-red-400">most expensive 100</span> (with P/S and dividend yield
                     alongside), rebuilt automatically after each US market close.
@@ -51,9 +52,9 @@ export default function ValuationPage() {
 
             <ScoreMethodology
                 className="mb-6"
-                methodology="Two layers. The whole-market read shows broad valuation gauges and relative sector cheapness. The per-stock screen ranks ~230 major US large-caps by trailing P/E (with P/S and dividend yield alongside) to surface the cheapest and most expensive names. Low P/E is not automatically “cheap” — pair it with the quality and cycle context."
+                methodology="Two layers. The whole-market read shows broad valuation gauges and relative sector cheapness. The per-stock screen ranks ~230 major US large-caps by trailing P/E — or, on the same universe, by forward P/E (price ÷ next-twelve-month consensus earnings) — with P/S and dividend yield alongside, to surface the cheapest and most expensive names. Low P/E is not automatically “cheap” — pair it with the quality and cycle context; a forward multiple additionally rests on analyst estimates that can be revised."
                 cadence="The per-stock screen is rebuilt by a daily batch automatically after each US market close; the whole-market gauges refresh on a similar daily cadence."
-                thresholds="Ranking is relative, not absolute: the cheapest 100 and most expensive 100 by trailing P/E within the universe. Names without positive trailing earnings are excluded from the P/E ranking."
+                thresholds="Ranking is relative, not absolute: the cheapest 100 and most expensive 100 within the universe, on whichever multiple you rank by. Names without positive trailing earnings drop out of the trailing ranking; names without a positive forward estimate drop out of the forward one — so the two lists are not the same set."
             />
 
             <div className="mb-8">
@@ -63,7 +64,7 @@ export default function ValuationPage() {
             <div className="mb-4">
                 <h2 className="text-lg font-bold text-gray-100">Cheapest &amp; most expensive stocks</h2>
                 <p className="mt-0.5 text-xs text-gray-500">
-                    Live per-stock screen — ranked by trailing P/E across ~230 large-caps.
+                    Live per-stock screen across ~230 large-caps — rank it by trailing P/E or forward P/E.
                 </p>
             </div>
 

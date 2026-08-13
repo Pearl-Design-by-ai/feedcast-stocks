@@ -12,8 +12,10 @@ export interface ValuationEntry {
     symbol: string;
     /** Last trade / close. */
     price: number | null;
-    /** Trailing P/E (the ranking metric, always > 0 here). */
-    pe: number;
+    /** Trailing P/E. Null only on forward-ranked rows with no positive TTM earnings. */
+    pe: number | null;
+    /** Forward P/E — price ÷ next-twelve-month consensus EPS. */
+    fpe: number | null;
     /** Trailing price/sales. */
     ps: number | null;
     /** Price/book. */
@@ -49,10 +51,21 @@ export interface ValuationScreen {
     scanned: number;
     /** Universe size. */
     universe: number;
-    /** Names with no positive trailing earnings (excluded from the P/E ranking). */
+    /** Names with no positive trailing earnings (excluded from the trailing ranking). */
     noEarnings: number;
+    /** How many universe names currently have a usable forward P/E. */
+    scannedF?: number;
+    /** Names with no positive forward estimate (excluded from the forward ranking). */
+    noForward?: number;
     cheapest: ValuationEntry[];
     priciest: ValuationEntry[];
+    /**
+     * The same universe ranked by forward P/E. Optional: a screen stored by an
+     * engine build older than the forward-P/E change won't carry them, so the
+     * UI falls back to the trailing ranking until the next scan tick rebuilds it.
+     */
+    cheapestF?: ValuationEntry[];
+    priciestF?: ValuationEntry[];
 }
 
 /**
