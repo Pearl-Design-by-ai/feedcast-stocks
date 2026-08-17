@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDiagnostics } from '@/lib/actions/admin.actions';
+import { engineGet } from '@/lib/engine-client';
 import { runValuationScan } from '@/lib/actions/valuation.actions';
+import type { DiagnosticsReport } from '@/lib/admin';
 
 /**
  * Markets-health bridge for the FeedCast (news) system monitor.
@@ -22,6 +23,16 @@ import { runValuationScan } from '@/lib/actions/valuation.actions';
  * Auth: a shared bearer secret (MARKETS_HEALTH_SECRET) the FeedCast app also
  * holds. Kept distinct from this app's CRON_SECRET so the engine token never
  * leaves this app and FeedCast only ever sees this thin summary.
+ *
+ * That secret is this route's ONLY trust boundary, which is why the diagnostics
+ * read below goes straight to the engine instead of through
+ * `getDiagnostics()` — that server action gates on a power-user SESSION, and a
+ * machine caller authenticated by a bearer token has none. When the session
+ * gate was added (2026-07-02, "harden server-action authz") the action started
+ * returning null here, so this route reported `overall: 'unreachable'` on every
+ * run from 2026-07-04 and FeedCast's monitor read a healthy markets engine as a
+ * 36-day outage. Keep the two paths separate: the action stays session-gated
+ * for browser callers, this route stays secret-gated for the monitor.
  */
 
 export const runtime = 'nodejs';
@@ -56,7 +67,11 @@ export async function GET(request: NextRequest) {
     }
 
     const checkedAt = new Date().toISOString();
-    const diag = await getDiagnostics();
+    // Uncached (engine-client only caches the listed /v1 prefixes), so every
+    // probe reflects live feed state. Returns null only when the engine really
+    // is unconfigured or unreachable — which is what `overall: 'unreachable'`
+    // below is meant to mean.
+    const diag = await engineGet<DiagnosticsReport | null>('/v1/admin/diagnostics', {}, null);
 
     // Engine unconfigured/unreachable — the whole markets data plane is dark.
     if (!diag) {
