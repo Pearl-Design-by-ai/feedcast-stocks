@@ -1,7 +1,7 @@
 /**
  * Valuation — public type contract + the shared trading-session helper.
  *
- * The curated universe, the P/E ranking and the KV-backed daily scan now run in
+ * The curated universe, the P/E and PEG rankings and the KV-backed daily scan run in
  * the PRIVATE markets-engine (driven by its own cron); the public app reads the
  * finished screen via lib/actions/valuation.actions.ts. `currentSession()`
  * stays here because many public modules (crons, AI commentary, stock-AI) share
@@ -16,6 +16,10 @@ export interface ValuationEntry {
     pe: number | null;
     /** Forward P/E — price ÷ next-twelve-month consensus EPS. */
     fpe: number | null;
+    /** Trailing PEG — trailing P/E ÷ trailing EPS growth. Negative when earnings shrank. */
+    peg: number | null;
+    /** Forward PEG — forward P/E ÷ expected EPS growth. */
+    fpeg: number | null;
     /** Trailing price/sales. */
     ps: number | null;
     /** Price/book. */
@@ -57,6 +61,14 @@ export interface ValuationScreen {
     scannedF?: number;
     /** Names with no positive forward estimate (excluded from the forward ranking). */
     noForward?: number;
+    /** How many universe names currently have a usable trailing PEG. */
+    scannedP?: number;
+    /** Names with no positive trailing PEG — no growth, or shrinking earnings. */
+    noPeg?: number;
+    /** How many universe names currently have a usable forward PEG. */
+    scannedFP?: number;
+    /** Names with no positive forward PEG. */
+    noFpeg?: number;
     cheapest: ValuationEntry[];
     priciest: ValuationEntry[];
     /**
@@ -66,6 +78,16 @@ export interface ValuationScreen {
      */
     cheapestF?: ValuationEntry[];
     priciestF?: ValuationEntry[];
+    /**
+     * The same universe ranked by PEG — the multiple set against growth. Optional
+     * for the same reason as the forward lists: a screen stored by an engine build
+     * older than the PEG change won't carry them, and the UI simply doesn't offer
+     * those rankings until the next scan tick rebuilds it.
+     */
+    cheapestP?: ValuationEntry[];
+    priciestP?: ValuationEntry[];
+    cheapestFP?: ValuationEntry[];
+    priciestFP?: ValuationEntry[];
 }
 
 /**
