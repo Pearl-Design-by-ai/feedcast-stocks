@@ -7,9 +7,24 @@ import { cn, formatEodDate } from '@/lib/utils';
 import type { ValuationEntry, ValuationScreen } from '@/lib/valuation';
 
 /** Which multiple the two lists are ranked by. */
-type Basis = 'pe' | 'fpe';
+type Basis = 'pe' | 'fpe' | 'peg' | 'fpeg';
+
+/** Column label per basis, plus the one shown next to it on mobile. */
+const BASIS_META: Record<Basis, { label: string; sibling: Basis }> = {
+    pe: { label: 'P/E', sibling: 'fpe' },
+    fpe: { label: 'Fwd P/E', sibling: 'pe' },
+    peg: { label: 'PEG', sibling: 'fpeg' },
+    fpeg: { label: 'Fwd PEG', sibling: 'peg' },
+};
+
+/** Below this many ranked names a measure is still filling in — don't offer it. */
+const MIN_RANKED = 20;
 
 const ratio = (v: number | null) => (v == null ? '—' : v.toFixed(1));
+/** PEG clusters around 1, so it earns a second decimal that a P/E doesn't. */
+const pegRatio = (v: number | null) => (v == null ? '—' : v.toFixed(2));
+const byBasis = (r: ValuationEntry, b: Basis) =>
+    b === 'peg' || b === 'fpeg' ? pegRatio(r[b]) : ratio(r[b]);
 const money = (v: number | null) => (v == null ? '—' : `$${v.toFixed(2)}`);
 const pct = (v: number | null, signed = false) =>
     v == null ? '—' : `${signed && v > 0 ? '+' : ''}${v.toFixed(1)}%`;
@@ -45,13 +60,15 @@ const TH = 'px-3 py-2 text-right';
 function Table({ rows, peClass, basis }: { rows: ValuationEntry[]; peClass: string; basis: Basis }) {
     return (
         <div className="hidden overflow-x-auto md:block">
-            <table className="w-full min-w-[1200px] text-left text-sm">
+            <table className="w-full min-w-[1360px] text-left text-sm">
                 <thead>
                     <tr className="border-b border-gray-800 text-[10px] font-bold uppercase tracking-wider text-gray-500">
                         <th className="px-3 py-2 w-10">#</th>
                         <th className="px-3 py-2">Symbol</th>
                         <th className={cn(TH, basis === 'pe' && 'text-gray-300')}>P/E</th>
                         <th className={cn(TH, basis === 'fpe' && 'text-gray-300')}>Fwd P/E</th>
+                        <th className={cn(TH, basis === 'peg' && 'text-gray-300')}>PEG</th>
+                        <th className={cn(TH, basis === 'fpeg' && 'text-gray-300')}>Fwd PEG</th>
                         <th className={TH}>Price</th>
                         <th className={TH}>Mkt cap</th>
                         <th className={TH}>P/S</th>
@@ -79,6 +96,12 @@ function Table({ rows, peClass, basis }: { rows: ValuationEntry[]; peClass: stri
                             </td>
                             <td className={cn('px-3 py-2 text-right tabular-nums', basis === 'fpe' ? cn('font-semibold', peClass) : 'text-gray-400')}>
                                 {ratio(r.fpe)}
+                            </td>
+                            <td className={cn('px-3 py-2 text-right tabular-nums', basis === 'peg' ? cn('font-semibold', peClass) : 'text-gray-400')}>
+                                {pegRatio(r.peg)}
+                            </td>
+                            <td className={cn('px-3 py-2 text-right tabular-nums', basis === 'fpeg' ? cn('font-semibold', peClass) : 'text-gray-400')}>
+                                {pegRatio(r.fpeg)}
                             </td>
                             <td className="px-3 py-2 text-right tabular-nums text-gray-200">{money(r.price)}</td>
                             <td className="px-3 py-2 text-right tabular-nums text-gray-300">{marketCap(r.mktCap)}</td>
@@ -120,11 +143,11 @@ function MobileList({ rows, peClass, basis }: { rows: ValuationEntry[]; peClass:
                     </div>
                     <div className="shrink-0 text-right">
                         <div className={cn('text-base font-bold tabular-nums', peClass)}>
-                            {ratio(basis === 'fpe' ? r.fpe : r.pe)}{' '}
-                            <span className="text-[10px] font-normal text-gray-500">{basis === 'fpe' ? 'Fwd P/E' : 'P/E'}</span>
+                            {byBasis(r, basis)}{' '}
+                            <span className="text-[10px] font-normal text-gray-500">{BASIS_META[basis].label}</span>
                         </div>
                         <div className="text-[11px] tabular-nums text-gray-500">
-                            {ratio(basis === 'fpe' ? r.pe : r.fpe)} {basis === 'fpe' ? 'P/E' : 'Fwd P/E'}
+                            {byBasis(r, BASIS_META[basis].sibling)} {BASIS_META[BASIS_META[basis].sibling].label}
                         </div>
                         <div className={cn('text-[11px] tabular-nums', r.ret1y != null && r.ret1y < 0 ? 'text-red-400' : 'text-emerald-400')}>
                             {pct(r.ret1y, true)} 1Y
@@ -150,16 +173,31 @@ export function ValuationLists({ screen }: { screen: ValuationScreen | null }) {
         );
     }
 
-    // A screen built before the forward-P/E change carries no forward lists — stay
-    // on the trailing ranking until the next engine scan tick rebuilds it.
-    const forwardReady = (screen.cheapestF?.length ?? 0) > 0 || (screen.priciestF?.length ?? 0) > 0;
-    const activeBasis: Basis = forwardReady ? basis : 'pe';
-    const lists =
-        activeBasis === 'fpe'
-            ? { cheapest: screen.cheapestF ?? [], priciest: screen.priciestF ?? [] }
-            : { cheapest: screen.cheapest, priciest: screen.priciest };
+    // A screen built by an engine older than a given ranking carries no lists for
+    // it — that basis is simply not offered until the next scan tick rebuilds the
+    // screen. Trailing P/E has always been there, so it is the safe fallback.
+    const byRanking: Record<Basis, { cheapest: ValuationEntry[]; priciest: ValuationEntry[] }> = {
+        pe: { cheapest: screen.cheapest, priciest: screen.priciest },
+        fpe: { cheapest: screen.cheapestF ?? [], priciest: screen.priciestF ?? [] },
+        peg: { cheapest: screen.cheapestP ?? [], priciest: screen.priciestP ?? [] },
+        fpeg: { cheapest: screen.cheapestFP ?? [], priciest: screen.priciestFP ?? [] },
+    };
+    // A ranking is only offered once it has enough names to be a screen rather
+    // than a handful — the engine refills the universe a chunk at a time after
+    // each close, so a just-added measure would otherwise flash a 10-row list.
+    const available = (['pe', 'fpe', 'peg', 'fpeg'] as Basis[]).filter(
+        (b) => b === 'pe' || byRanking[b].cheapest.length >= MIN_RANKED || byRanking[b].priciest.length >= MIN_RANKED
+    );
+    const activeBasis: Basis = available.includes(basis) ? basis : 'pe';
+    const lists = byRanking[activeBasis];
     const rows = tab === 'cheapest' ? lists.cheapest : lists.priciest;
-    const scored = activeBasis === 'fpe' ? screen.scannedF ?? rows.length : screen.scanned;
+    const scoredBy: Record<Basis, number | undefined> = {
+        pe: screen.scanned,
+        fpe: screen.scannedF,
+        peg: screen.scannedP,
+        fpeg: screen.scannedFP,
+    };
+    const scored = scoredBy[activeBasis] ?? rows.length;
     const asOf = new Intl.DateTimeFormat('en-US', {
         month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York',
     }).format(new Date(screen.asOf));
@@ -187,26 +225,21 @@ export function ValuationLists({ screen }: { screen: ValuationScreen | null }) {
                 >
                     <ArrowUpWideNarrow size={15} /> Most expensive {lists.priciest.length}
                 </button>
-                {forwardReady && (
+                {available.length > 1 && (
                     <div className="flex items-center gap-1 rounded-lg bg-gray-800/60 p-0.5" role="group" aria-label="Rank by">
                         <span className="px-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-500">Rank by</span>
-                        {(
-                            [
-                                { id: 'pe', label: 'P/E' },
-                                { id: 'fpe', label: 'Fwd P/E' },
-                            ] as { id: Basis; label: string }[]
-                        ).map((b) => (
+                        {available.map((b) => (
                             <button
-                                key={b.id}
+                                key={b}
                                 type="button"
-                                onClick={() => setBasis(b.id)}
-                                aria-pressed={activeBasis === b.id}
+                                onClick={() => setBasis(b)}
+                                aria-pressed={activeBasis === b}
                                 className={cn(
                                     'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
-                                    activeBasis === b.id ? 'bg-gray-700 text-gray-100' : 'text-gray-400 hover:text-gray-200'
+                                    activeBasis === b ? 'bg-gray-700 text-gray-100' : 'text-gray-400 hover:text-gray-200'
                                 )}
                             >
-                                {b.label}
+                                {BASIS_META[b].label}
                             </button>
                         ))}
                     </div>
@@ -220,14 +253,31 @@ export function ValuationLists({ screen }: { screen: ValuationScreen | null }) {
             <Table rows={rows} peClass={tab === 'cheapest' ? 'text-emerald-400' : 'text-red-400'} basis={activeBasis} />
 
             <p className="mt-3 text-[11px] leading-relaxed text-gray-500">
-                {activeBasis === 'fpe' ? (
+                {activeBasis === 'fpe' && (
                     <>
                         Ranked by forward P/E — price ÷ next-twelve-month consensus earnings estimate
                         (lower = cheaper on expected earnings). {screen.noForward ?? 0} names are excluded
                         for having no positive forward estimate. Forward multiples rest on analyst
                         forecasts, so they move when estimates are revised, not only when price moves.{' '}
                     </>
-                ) : (
+                )}
+                {activeBasis === 'peg' && (
+                    <>
+                        Ranked by trailing PEG — trailing P/E ÷ trailing earnings growth, so a fast grower
+                        on a high multiple can still screen cheap (under ~1 is the classic &ldquo;growth
+                        you aren&apos;t paying for&rdquo; marker). {screen.noPeg ?? 0} names are excluded
+                        for having no positive PEG — flat or shrinking earnings leave nothing to divide by.{' '}
+                    </>
+                )}
+                {activeBasis === 'fpeg' && (
+                    <>
+                        Ranked by forward PEG — forward P/E ÷ expected earnings growth. The same
+                        growth-adjusted read as PEG, but on the year ahead rather than the year behind.{' '}
+                        {screen.noFpeg ?? 0} names are excluded for having no positive forward PEG, and
+                        the growth rate is an analyst estimate that can be revised.{' '}
+                    </>
+                )}
+                {activeBasis === 'pe' && (
                     <>
                         Ranked by trailing P/E (lower = cheaper on earnings). {screen.noEarnings} names are
                         excluded for having no positive trailing earnings.{' '}

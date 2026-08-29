@@ -11,7 +11,7 @@ import { ensureFreshScreen } from '@/lib/actions/valuation.actions';
 export const metadata: Metadata = {
     title: 'Valuation',
     description:
-        'The cheapest and most expensive major US stocks by trailing and forward P/E — a daily valuation screen across ~230 large-caps.',
+        'The cheapest and most expensive major US stocks by trailing P/E, forward P/E and PEG — a daily valuation screen across ~230 large-caps.',
 };
 
 async function ValuationSection() {
@@ -41,7 +41,7 @@ export default function ValuationPage() {
                     broad valuation gauges, which sectors look cheap vs expensive, and where the rotation
                     may go next. Then the live <span className="text-gray-200">per-stock screen</span>: a daily
                     batch ranks ~230 major US stocks by{' '}
-                    <span className="text-gray-200">trailing or forward P/E</span> — your choice — to surface the{' '}
+                    <span className="text-gray-200">trailing P/E, forward P/E or PEG</span> — your choice — to surface the{' '}
                     <span className="text-emerald-400">cheapest 100</span> and{' '}
                     <span className="text-red-400">most expensive 100</span> (with P/S and dividend yield
                     alongside), rebuilt automatically after each US market close.
@@ -52,9 +52,9 @@ export default function ValuationPage() {
 
             <ScoreMethodology
                 className="mb-6"
-                methodology="Two layers. The whole-market read shows broad valuation gauges and relative sector cheapness. The per-stock screen ranks ~230 major US large-caps by trailing P/E — or, on the same universe, by forward P/E (price ÷ next-twelve-month consensus earnings) — with P/S and dividend yield alongside, to surface the cheapest and most expensive names. Low P/E is not automatically “cheap” — pair it with the quality and cycle context; a forward multiple additionally rests on analyst estimates that can be revised."
+                methodology="Two layers. The whole-market read shows broad valuation gauges and relative sector cheapness. The per-stock screen ranks ~230 major US large-caps on the same universe by any of four measures: trailing P/E, forward P/E (price ÷ next-twelve-month consensus earnings), PEG (trailing P/E ÷ trailing earnings growth) or forward PEG (forward P/E ÷ expected earnings growth) — with P/S and dividend yield alongside, to surface the cheapest and most expensive names. Low P/E is not automatically “cheap” — pair it with the quality and cycle context; a PEG below ~1 says growth is coming cheap, but both forward measures rest on analyst estimates that can be revised."
                 cadence="The per-stock screen is rebuilt by a daily batch automatically after each US market close; the whole-market gauges refresh on a similar daily cadence."
-                thresholds="Ranking is relative, not absolute: the cheapest 100 and most expensive 100 within the universe, on whichever multiple you rank by. Names without positive trailing earnings drop out of the trailing ranking; names without a positive forward estimate drop out of the forward one — so the two lists are not the same set."
+                thresholds="Ranking is relative, not absolute: the cheapest 100 and most expensive 100 within the universe, on whichever multiple you rank by. Each measure drops the names it can't score — no positive trailing earnings, no positive forward estimate, or no positive growth rate to divide the multiple by — so the four lists are not the same set."
             />
 
             <div className="mb-8">
@@ -64,7 +64,7 @@ export default function ValuationPage() {
             <div className="mb-4">
                 <h2 className="text-lg font-bold text-gray-100">Cheapest &amp; most expensive stocks</h2>
                 <p className="mt-0.5 text-xs text-gray-500">
-                    Live per-stock screen across ~230 large-caps — rank it by trailing P/E or forward P/E.
+                    Live per-stock screen across ~230 large-caps — rank it by trailing or forward P/E, or growth-adjusted (PEG).
                 </p>
             </div>
 
