@@ -18,9 +18,8 @@ export interface ValuationEntry {
     fpe: number | null;
     /**
      * Trailing PEG — trailing P/E ÷ multi-year trailing EPS CAGR. Null when a
-     * plausibility guard fired (see `PEG_EXCLUSION_LABEL`), which the table
-     * renders as "n/m" rather than a blank: the value is not meaningful, as
-     * opposed to merely absent.
+     * plausibility guard fired (see `PEG_EXCLUSION_LABEL`); the table renders it
+     * blank and the footnote accounts for it by reason.
      */
     peg: number | null;
     /** Forward PEG — forward P/E ÷ forward EPS growth. Null on the same terms. */
@@ -103,6 +102,8 @@ export interface ValuationScreen {
     priciestFP?: ValuationEntry[];
     /** Rows suppressed entirely — today, no price for the session. */
     suppressedRows?: number;
+    /** Published rows carrying at least one data-quality flag. */
+    flaggedRows?: number;
     /**
      * Per-symbol exclusion audit from the engine. Optional: a screen stored by
      * an engine build older than the PEG-guard change won't carry it, and the
@@ -132,6 +133,7 @@ export const PEG_EXCLUSION_LABEL: Record<string, string> = {
     no_pe: 'no positive earnings',
     no_growth: 'no usable growth series',
     growth_non_positive: 'flat or shrinking earnings',
+    growth_below_floor: 'growth too small to divide by',
     base_effect: 'growth too high to be a trend (base effect)',
     earnings_contracting: 'forward P/E above trailing — earnings expected to fall',
     peg_artifact: 'PEG too low to be real',

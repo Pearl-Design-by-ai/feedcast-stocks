@@ -31,12 +31,12 @@ const BASIS_TOOLTIP: Record<Basis, string> = {
         'PEG (TTM) — trailing P/E ÷ trailing EPS growth, using a 3-year EPS CAGR ' +
         '(5-year, then 1-year, as fallbacks). A multi-year CAGR is used because a ' +
         'single year against a depressed base reads as spectacular growth and makes ' +
-        'an expensive stock look cheap. Shown as n/m when a plausibility guard fires.',
+        'an expensive stock look cheap. Left blank when a plausibility guard rejects the value.',
     fpeg:
         'PEG (FWD) — forward P/E ÷ forward EPS growth, where growth is derived from ' +
         'the two multiples on this row: trailing P/E ÷ forward P/E = 1 + growth. ' +
         'That is next-twelve-month consensus against trailing-twelve-month actual, ' +
-        'not next fiscal year against current. Shown as n/m when a guard fires.',
+        'not next fiscal year against current. Left blank when a guard rejects the value.',
 };
 
 /** Below this many ranked names a measure is still filling in — don't offer it. */
@@ -45,10 +45,11 @@ const MIN_RANKED = 20;
 const ratio = (v: number | null) => (v == null ? '—' : v.toFixed(1));
 /**
  * PEG clusters around 1, so it earns a second decimal that a P/E doesn't.
- * A null PEG is "not meaningful", not "missing": the engine computed it and a
- * guard rejected it. "n/m" says that; an em dash would read as absent data.
+ * A null PEG means a guard rejected the value — the tooltip and the footnote
+ * carry the reason, so the cell itself stays an em dash like every other empty
+ * cell rather than introducing a second empty-state glyph.
  */
-const pegRatio = (v: number | null) => (v == null ? 'n/m' : v.toFixed(2));
+const pegRatio = (v: number | null) => (v == null ? '—' : v.toFixed(2));
 const byBasis = (r: ValuationEntry, b: Basis) =>
     b === 'peg' || b === 'fpeg' ? pegRatio(r[b]) : ratio(r[b]);
 const money = (v: number | null) => (v == null ? '—' : `$${v.toFixed(2)}`);
@@ -351,6 +352,13 @@ export function ValuationLists({ screen }: { screen: ValuationScreen | null }) {
                     <>
                         {screen.suppressedRows} row{screen.suppressedRows === 1 ? '' : 's'} withheld
                         entirely for having no price this session.{' '}
+                    </>
+                )}
+                {!!screen.flaggedRows && (
+                    <>
+                        {screen.flaggedRows} row{screen.flaggedRows === 1 ? '' : 's'} carry a data-quality
+                        flag — a 52-week range or a growth series that disagrees with the rest of the
+                        row, usually an unadjusted split.{' '}
                     </>
                 )}
                 A low P/E isn&apos;t automatically a bargain — it can flag a value trap or a
