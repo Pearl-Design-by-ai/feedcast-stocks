@@ -4,7 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowDownWideNarrow, ArrowUpWideNarrow, Loader2 } from 'lucide-react';
 import { cn, formatEodDate } from '@/lib/utils';
-import type { ValuationEntry, ValuationScreen } from '@/lib/valuation';
+import type { ValuationEntry, ValuationScreen, ScreenExclusion } from '@/lib/valuation';
+import { PEG_EXCLUSION_LABEL } from '@/lib/valuation';
 
 /** Which multiple the two lists are ranked by. */
 type Basis = 'pe' | 'fpe' | 'peg' | 'fpeg';
@@ -13,16 +14,41 @@ type Basis = 'pe' | 'fpe' | 'peg' | 'fpeg';
 const BASIS_META: Record<Basis, { label: string; sibling: Basis }> = {
     pe: { label: 'P/E', sibling: 'fpe' },
     fpe: { label: 'Fwd P/E', sibling: 'pe' },
-    peg: { label: 'PEG', sibling: 'fpeg' },
-    fpeg: { label: 'Fwd PEG', sibling: 'peg' },
+    peg: { label: 'PEG (TTM)', sibling: 'fpeg' },
+    fpeg: { label: 'PEG (FWD)', sibling: 'peg' },
+};
+
+/**
+ * Exactly what each multiple divides by. The PEG columns carry this because
+ * "PEG" alone hid a denominator nobody could see: both columns used to be the
+ * data provider's own composite, and a base-effect growth rate off a depressed
+ * prior year put names like MPC and AMT at the top of the "cheapest" list.
+ */
+const BASIS_TOOLTIP: Record<Basis, string> = {
+    pe: 'Trailing P/E — price ÷ trailing-twelve-month earnings per share.',
+    fpe: 'Forward P/E — price ÷ next-twelve-month consensus earnings per share.',
+    peg:
+        'PEG (TTM) — trailing P/E ÷ trailing EPS growth, using a 3-year EPS CAGR ' +
+        '(5-year, then 1-year, as fallbacks). A multi-year CAGR is used because a ' +
+        'single year against a depressed base reads as spectacular growth and makes ' +
+        'an expensive stock look cheap. Shown as n/m when a plausibility guard fires.',
+    fpeg:
+        'PEG (FWD) — forward P/E ÷ forward EPS growth, where growth is derived from ' +
+        'the two multiples on this row: trailing P/E ÷ forward P/E = 1 + growth. ' +
+        'That is next-twelve-month consensus against trailing-twelve-month actual, ' +
+        'not next fiscal year against current. Shown as n/m when a guard fires.',
 };
 
 /** Below this many ranked names a measure is still filling in — don't offer it. */
 const MIN_RANKED = 20;
 
 const ratio = (v: number | null) => (v == null ? '—' : v.toFixed(1));
-/** PEG clusters around 1, so it earns a second decimal that a P/E doesn't. */
-const pegRatio = (v: number | null) => (v == null ? '—' : v.toFixed(2));
+/**
+ * PEG clusters around 1, so it earns a second decimal that a P/E doesn't.
+ * A null PEG is "not meaningful", not "missing": the engine computed it and a
+ * guard rejected it. "n/m" says that; an em dash would read as absent data.
+ */
+const pegRatio = (v: number | null) => (v == null ? 'n/m' : v.toFixed(2));
 const byBasis = (r: ValuationEntry, b: Basis) =>
     b === 'peg' || b === 'fpeg' ? pegRatio(r[b]) : ratio(r[b]);
 const money = (v: number | null) => (v == null ? '—' : `$${v.toFixed(2)}`);
@@ -56,6 +82,32 @@ function RangeCell({ price, lo, hi }: { price: number | null; lo: number | null;
 
 const TH = 'px-3 py-2 text-right';
 
+/**
+ * "N names are excluded" only ever said how many, never why — so a broken growth
+ * feed and a quiet market produced the same sentence. The engine now reports a
+ * reason code per suppressed value; this turns those into readable counts,
+ * ordered biggest first.
+ *
+ * Returns null when the served screen predates the audit, so the caller keeps
+ * the plain count instead of rendering an empty clause.
+ */
+function exclusionBreakdown(
+    exclusions: ScreenExclusion[] | undefined,
+    scope: ScreenExclusion['scope'],
+): string | null {
+    if (!exclusions?.length) return null;
+    const counts = new Map<string, number>();
+    for (const x of exclusions) {
+        if (x.scope !== scope) continue;
+        counts.set(x.reason, (counts.get(x.reason) ?? 0) + 1);
+    }
+    if (!counts.size) return null;
+    return [...counts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([reason, n]) => `${n} ${PEG_EXCLUSION_LABEL[reason] ?? reason}`)
+        .join(', ');
+}
+
 /** Rich table — web only. Both multiples lead; the ranking one is highlighted. */
 function Table({ rows, peClass, basis }: { rows: ValuationEntry[]; peClass: string; basis: Basis }) {
     return (
@@ -65,10 +117,10 @@ function Table({ rows, peClass, basis }: { rows: ValuationEntry[]; peClass: stri
                     <tr className="border-b border-gray-800 text-[10px] font-bold uppercase tracking-wider text-gray-500">
                         <th className="px-3 py-2 w-10">#</th>
                         <th className="px-3 py-2">Symbol</th>
-                        <th className={cn(TH, basis === 'pe' && 'text-gray-300')}>P/E</th>
-                        <th className={cn(TH, basis === 'fpe' && 'text-gray-300')}>Fwd P/E</th>
-                        <th className={cn(TH, basis === 'peg' && 'text-gray-300')}>PEG</th>
-                        <th className={cn(TH, basis === 'fpeg' && 'text-gray-300')}>Fwd PEG</th>
+                        <th className={cn(TH, 'cursor-help', basis === 'pe' && 'text-gray-300')} title={BASIS_TOOLTIP.pe}>P/E</th>
+                        <th className={cn(TH, 'cursor-help', basis === 'fpe' && 'text-gray-300')} title={BASIS_TOOLTIP.fpe}>Fwd P/E</th>
+                        <th className={cn(TH, 'cursor-help', basis === 'peg' && 'text-gray-300')} title={BASIS_TOOLTIP.peg}>PEG (TTM)</th>
+                        <th className={cn(TH, 'cursor-help', basis === 'fpeg' && 'text-gray-300')} title={BASIS_TOOLTIP.fpeg}>PEG (FWD)</th>
                         <th className={TH}>Price</th>
                         <th className={TH}>Mkt cap</th>
                         <th className={TH}>P/S</th>
@@ -198,6 +250,10 @@ export function ValuationLists({ screen }: { screen: ValuationScreen | null }) {
         fpeg: screen.scannedFP,
     };
     const scored = scoredBy[activeBasis] ?? rows.length;
+    // Why names dropped out, not just how many. Null on a screen from an engine
+    // build that predates the audit — the footnote then keeps its plain count.
+    const pegExcluded = exclusionBreakdown(screen.exclusions, 'peg');
+    const fpegExcluded = exclusionBreakdown(screen.exclusions, 'fpeg');
     const asOf = new Intl.DateTimeFormat('en-US', {
         month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York',
     }).format(new Date(screen.asOf));
@@ -263,17 +319,21 @@ export function ValuationLists({ screen }: { screen: ValuationScreen | null }) {
                 )}
                 {activeBasis === 'peg' && (
                     <>
-                        Ranked by trailing PEG — trailing P/E ÷ trailing earnings growth, so a fast grower
+                        Ranked by PEG (TTM) — trailing P/E ÷ a 3-year EPS CAGR, so a fast grower
                         on a high multiple can still screen cheap (under ~1 is the classic &ldquo;growth
-                        you aren&apos;t paying for&rdquo; marker). {screen.noPeg ?? 0} names are excluded
-                        for having no positive PEG — flat or shrinking earnings leave nothing to divide by.{' '}
+                        you aren&apos;t paying for&rdquo; marker). A multi-year CAGR is used rather than
+                        a one-year change: a single year against a depressed base reads as spectacular
+                        growth and makes an expensive stock look cheap. {screen.noPeg ?? 0} names are
+                        excluded{pegExcluded ? <> — {pegExcluded}</> : <> for having no positive PEG</>}.{' '}
                     </>
                 )}
                 {activeBasis === 'fpeg' && (
                     <>
-                        Ranked by forward PEG — forward P/E ÷ expected earnings growth. The same
-                        growth-adjusted read as PEG, but on the year ahead rather than the year behind.{' '}
-                        {screen.noFpeg ?? 0} names are excluded for having no positive forward PEG, and
+                        Ranked by PEG (FWD) — forward P/E ÷ forward EPS growth, derived from the two
+                        multiples on each row (trailing P/E ÷ forward P/E = 1 + growth). The same
+                        growth-adjusted read as PEG (TTM), but on the year ahead rather than the year
+                        behind. {screen.noFpeg ?? 0} names are excluded
+                        {fpegExcluded ? <> — {fpegExcluded}</> : <> for having no positive forward PEG</>};
                         the growth rate is an analyst estimate that can be revised.{' '}
                     </>
                 )}
@@ -285,7 +345,15 @@ export function ValuationLists({ screen }: { screen: ValuationScreen | null }) {
                 )}
                 ROE, net margin and revenue growth
                 are trailing; the 52-week range marks where the last price sits between its low and
-                high. A low P/E isn&apos;t automatically a bargain — it can flag a value trap or a
+                high. Revenue growth is withheld for banks and insurers, whose reported revenue is
+                gross interest income rather than net revenue.{' '}
+                {!!screen.suppressedRows && (
+                    <>
+                        {screen.suppressedRows} row{screen.suppressedRows === 1 ? '' : 's'} withheld
+                        entirely for having no price this session.{' '}
+                    </>
+                )}
+                A low P/E isn&apos;t automatically a bargain — it can flag a value trap or a
                 cyclical peak. Screen, not advice.
             </p>
         </div>

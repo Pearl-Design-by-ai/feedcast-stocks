@@ -16,10 +16,23 @@ export interface ValuationEntry {
     pe: number | null;
     /** Forward P/E — price ÷ next-twelve-month consensus EPS. */
     fpe: number | null;
-    /** Trailing PEG — trailing P/E ÷ trailing EPS growth. Negative when earnings shrank. */
+    /**
+     * Trailing PEG — trailing P/E ÷ multi-year trailing EPS CAGR. Null when a
+     * plausibility guard fired (see `PEG_EXCLUSION_LABEL`), which the table
+     * renders as "n/m" rather than a blank: the value is not meaningful, as
+     * opposed to merely absent.
+     */
     peg: number | null;
-    /** Forward PEG — forward P/E ÷ expected EPS growth. */
+    /** Forward PEG — forward P/E ÷ forward EPS growth. Null on the same terms. */
     fpeg: number | null;
+    /** The growth % actually used as the trailing PEG denominator. */
+    gTtm?: number | null;
+    /** The growth % actually used as the forward PEG denominator. */
+    gFwd?: number | null;
+    /** Which trailing EPS series fed gTtm ('eps3y' | 'eps5y' | 'epsTtmYoy'). */
+    gSrc?: string | null;
+    /** Non-fatal data-quality notes on the row (implausible beta, 1y fallback). */
+    flags?: string[];
     /** Trailing price/sales. */
     ps: number | null;
     /** Price/book. */
@@ -88,7 +101,43 @@ export interface ValuationScreen {
     priciestP?: ValuationEntry[];
     cheapestFP?: ValuationEntry[];
     priciestFP?: ValuationEntry[];
+    /** Rows suppressed entirely — today, no price for the session. */
+    suppressedRows?: number;
+    /**
+     * Per-symbol exclusion audit from the engine. Optional: a screen stored by
+     * an engine build older than the PEG-guard change won't carry it, and the
+     * footnote falls back to the plain count.
+     */
+    exclusions?: ScreenExclusion[];
 }
+
+/** One suppressed value, as the engine reports it. */
+export interface ScreenExclusion {
+    symbol: string;
+    /** What was suppressed. 'row' means the whole line was withheld. */
+    scope: 'row' | 'peg' | 'fpeg' | 'revGrowth';
+    /** Machine reason code — see PEG_EXCLUSION_LABEL. */
+    reason: string;
+    /** Engine-supplied human text; the UI prefers its own wording. */
+    label?: string;
+}
+
+/**
+ * Reader-facing wording per exclusion reason. Deliberately duplicated rather
+ * than imported: the engine is a separate program and no module crosses that
+ * boundary, so this is the public app's own copy of the vocabulary.
+ */
+export const PEG_EXCLUSION_LABEL: Record<string, string> = {
+    no_price: 'no price for the session',
+    no_pe: 'no positive earnings',
+    no_growth: 'no usable growth series',
+    growth_non_positive: 'flat or shrinking earnings',
+    base_effect: 'growth too high to be a trend (base effect)',
+    earnings_contracting: 'forward P/E above trailing — earnings expected to fall',
+    peg_artifact: 'PEG too low to be real',
+    peg_implausible: 'growth denominator near zero',
+    gross_revenue_unusable: 'bank revenue reported gross, not net',
+};
 
 /**
  * The most recent completed US trading session as an ET date string
