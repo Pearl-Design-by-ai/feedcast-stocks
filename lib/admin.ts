@@ -46,7 +46,13 @@ export interface DiagnosticsReport {
     };
     config: {
         engineToken: boolean;
-        deepseek: boolean;
+        /** AI inference key (OpenRouter). Optional because the engine deploys
+         *  from its own pipeline: a report produced before the engine shipped
+         *  the rename still carries only `deepseek`. */
+        openrouter?: boolean;
+        /** @deprecated Pre-rename mirror of `openrouter`. Read both until the
+         *  engine drops it. */
+        deepseek?: boolean;
         finnhub: boolean;
         adanos: boolean;
         kvCache: boolean;

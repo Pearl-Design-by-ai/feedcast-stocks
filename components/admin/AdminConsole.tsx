@@ -198,7 +198,9 @@ export default function AdminConsole({ initial }: { initial: DiagnosticsReport }
                     <ul className="grid grid-cols-2 gap-y-2 text-sm">
                         {([
                             ['Engine token', report.config.engineToken],
-                            ['AI key', report.config.deepseek],
+                            // Engine renamed this deepseek -> openrouter; it emits both
+                            // for now, and the two repos deploy separately, so read either.
+                            ['AI key', report.config.openrouter ?? report.config.deepseek ?? false],
                             ['Finnhub', report.config.finnhub],
                             ['Adanos', report.config.adanos],
                             ['KV cache', report.config.kvCache],
