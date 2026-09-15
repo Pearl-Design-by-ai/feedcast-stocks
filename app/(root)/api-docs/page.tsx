@@ -186,7 +186,7 @@ export default function ApiDocsPage() {
             icon={<RefreshCw size={20} />}
             title="Valuation Scan"
             trigger="Cron: 10m"
-            desc="Engine job rebuilds the daily P/E valuation screen a chunk per tick."
+            desc="Engine job rebuilds the daily P/E and PEG valuation screen a chunk per tick."
             color="teal"
           />
           <JobCard

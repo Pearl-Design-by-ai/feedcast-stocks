@@ -1,7 +1,7 @@
 /**
  * Valuation — public type contract + the shared trading-session helper.
  *
- * The curated universe, the P/E ranking and the KV-backed daily scan now run in
+ * The curated universe, the P/E and PEG rankings and the KV-backed daily scan run in
  * the PRIVATE markets-engine (driven by its own cron); the public app reads the
  * finished screen via lib/actions/valuation.actions.ts. `currentSession()`
  * stays here because many public modules (crons, AI commentary, stock-AI) share
@@ -16,6 +16,22 @@ export interface ValuationEntry {
     pe: number | null;
     /** Forward P/E — price ÷ next-twelve-month consensus EPS. */
     fpe: number | null;
+    /**
+     * Trailing PEG — trailing P/E ÷ multi-year trailing EPS CAGR. Null when a
+     * plausibility guard fired (see `PEG_EXCLUSION_LABEL`); the table renders it
+     * blank and the footnote accounts for it by reason.
+     */
+    peg: number | null;
+    /** Forward PEG — forward P/E ÷ forward EPS growth. Null on the same terms. */
+    fpeg: number | null;
+    /** The growth % actually used as the trailing PEG denominator. */
+    gTtm?: number | null;
+    /** The growth % actually used as the forward PEG denominator. */
+    gFwd?: number | null;
+    /** Which trailing EPS series fed gTtm ('eps3y' | 'eps5y' | 'epsTtmYoy'). */
+    gSrc?: string | null;
+    /** Non-fatal data-quality notes on the row (implausible beta, 1y fallback). */
+    flags?: string[];
     /** Trailing price/sales. */
     ps: number | null;
     /** Price/book. */
@@ -57,6 +73,14 @@ export interface ValuationScreen {
     scannedF?: number;
     /** Names with no positive forward estimate (excluded from the forward ranking). */
     noForward?: number;
+    /** How many universe names currently have a usable trailing PEG. */
+    scannedP?: number;
+    /** Names with no positive trailing PEG — no growth, or shrinking earnings. */
+    noPeg?: number;
+    /** How many universe names currently have a usable forward PEG. */
+    scannedFP?: number;
+    /** Names with no positive forward PEG. */
+    noFpeg?: number;
     cheapest: ValuationEntry[];
     priciest: ValuationEntry[];
     /**
@@ -66,7 +90,56 @@ export interface ValuationScreen {
      */
     cheapestF?: ValuationEntry[];
     priciestF?: ValuationEntry[];
+    /**
+     * The same universe ranked by PEG — the multiple set against growth. Optional
+     * for the same reason as the forward lists: a screen stored by an engine build
+     * older than the PEG change won't carry them, and the UI simply doesn't offer
+     * those rankings until the next scan tick rebuilds it.
+     */
+    cheapestP?: ValuationEntry[];
+    priciestP?: ValuationEntry[];
+    cheapestFP?: ValuationEntry[];
+    priciestFP?: ValuationEntry[];
+    /** Rows suppressed entirely — today, no price for the session. */
+    suppressedRows?: number;
+    /** Published rows carrying at least one data-quality flag. */
+    flaggedRows?: number;
+    /**
+     * Per-symbol exclusion audit from the engine. Optional: a screen stored by
+     * an engine build older than the PEG-guard change won't carry it, and the
+     * footnote falls back to the plain count.
+     */
+    exclusions?: ScreenExclusion[];
 }
+
+/** One suppressed value, as the engine reports it. */
+export interface ScreenExclusion {
+    symbol: string;
+    /** What was suppressed. 'row' means the whole line was withheld. */
+    scope: 'row' | 'peg' | 'fpeg' | 'revGrowth';
+    /** Machine reason code — see PEG_EXCLUSION_LABEL. */
+    reason: string;
+    /** Engine-supplied human text; the UI prefers its own wording. */
+    label?: string;
+}
+
+/**
+ * Reader-facing wording per exclusion reason. Deliberately duplicated rather
+ * than imported: the engine is a separate program and no module crosses that
+ * boundary, so this is the public app's own copy of the vocabulary.
+ */
+export const PEG_EXCLUSION_LABEL: Record<string, string> = {
+    no_price: 'no price for the session',
+    no_pe: 'no positive earnings',
+    no_growth: 'no usable growth series',
+    growth_non_positive: 'flat or shrinking earnings',
+    growth_below_floor: 'growth too small to divide by',
+    base_effect: 'growth too high to be a trend (base effect)',
+    earnings_contracting: 'forward P/E above trailing — earnings expected to fall',
+    peg_artifact: 'PEG too low to be real',
+    peg_implausible: 'growth denominator near zero',
+    gross_revenue_unusable: 'bank revenue reported gross, not net',
+};
 
 /**
  * The most recent completed US trading session as an ET date string
