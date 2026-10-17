@@ -34,10 +34,17 @@ export const MARKETS_NAV = {
 // the desktop SideNav and the mobile drawer. (NAV_ITEMS / MARKETS_NAV above are
 // kept for the top header nav.) '/search' opens the command palette rather than
 // navigating — the menus special-case it.
+export interface NavItem {
+    href: string;
+    label: string;
+    /** Absolute URL to another app — rendered as a plain link, never active. */
+    external?: boolean;
+}
+
 export interface NavSection {
     id: string;
     label: string;
-    items: { href: string; label: string }[];
+    items: NavItem[];
 }
 
 export const SEARCH_HREF = '/search';
@@ -136,8 +143,8 @@ export function isPowerUserEmail(email: string | null | undefined): boolean {
 }
 
 /** Nav items injected only for power users, by section id. */
-const POWER_NAV_ITEMS: Record<string, { href: string; label: string }[]> = {
-    lists: [{ href: '/my-portfolio', label: 'My Portfolio' }],
+const POWER_NAV_ITEMS: Record<string, NavItem[]> = {
+    lists: [{ href: 'https://pf.feedcast.news', label: 'Private', external: true }],
     research: [{ href: '/leverage', label: 'Leverage Rotation' }],
     more: [{ href: '/admin', label: 'Admin Console' }],
 };

@@ -17,7 +17,7 @@ import { usePathname } from 'next/navigation';
 import { Menu, X, ChevronDown, ArrowLeft, LogOut } from 'lucide-react';
 import { FeedcastLogo } from '@/components/FeedcastLogo';
 import SearchCommand from '@/components/SearchCommand';
-import { navSectionsForUser, NAV_DEFAULT_OPEN, SEARCH_HREF, SIGN_IN_URL } from '@/lib/constants';
+import { navSectionsForUser, NAV_DEFAULT_OPEN, SEARCH_HREF, SIGN_IN_URL, type NavItem } from '@/lib/constants';
 import { NAV_ICONS, SECTION_ICONS, NAV_FALLBACK_ICON } from '@/components/navIcons';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
@@ -107,9 +107,9 @@ export default function MobileDrawer({
     window.location.href = FEEDCAST_HOME;
   };
 
-  const renderItem = (href: string, label: string) => {
+  const renderItem = ({ href, label, external }: NavItem) => {
     const Icon = NAV_ICONS[href] ?? NAV_FALLBACK_ICON;
-    const active = isActive(href);
+    const active = !external && isActive(href);
     const accent = href === '/appearance';
 
     if (href === SEARCH_HREF) {
@@ -118,6 +118,15 @@ export default function MobileDrawer({
           <Icon size={16} className="shrink-0" />
           {label}
         </button>
+      );
+    }
+
+    if (external) {
+      return (
+        <a key={href} href={href} onClick={close} className={SUBROW}>
+          <Icon size={16} className="shrink-0" />
+          {label}
+        </a>
       );
     }
 
@@ -214,7 +223,7 @@ export default function MobileDrawer({
                     </button>
                     {sectionOpen && (
                       <div className="mb-1 flex flex-col animate-in fade-in-0 slide-in-from-top-1 duration-150">
-                        {section.items.map((it) => renderItem(it.href, it.label))}
+                        {section.items.map((it) => renderItem(it))}
                       </div>
                     )}
                   </div>
