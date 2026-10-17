@@ -1,14 +1,17 @@
 import { cn } from '@/lib/utils';
 import { BulletList, Card, CardTitle, Kpi, deltaTone } from './ui';
 import {
-    accountsForScope,
     allHoldings,
     allocationByCustodian,
     allocationByGroup,
     compareSlices,
     diffTotals,
     groupDiff,
+    netCashNeedUsd,
     planIncomeUsd,
+    planScope,
+    scopeIncomeUsd,
+    sum,
     type Slice,
 } from '@/lib/private-portfolio/math';
 import { fmtDate, fmtNum, fmtPct, fmtShare, fmtSignedUsd, fmtUsd, fmtUsdShort } from '@/lib/private-portfolio/format';
@@ -63,10 +66,10 @@ function SideBySide({ title, current, target }: { title: string; current: Slice[
 }
 
 export default function CompareTab({ snapshot, plan }: { snapshot: Snapshot | null; plan: Plan }) {
-    const accounts = snapshot ? accountsForScope(snapshot.accounts, plan.account) : [];
-    const current = allHoldings(accounts);
-    const scoped = !!snapshot && accounts.length !== snapshot.accounts.length;
-    const currentIncome = scoped ? current.reduce((s, h) => s + (h.annualIncomeUsd ?? 0), 0) : snapshot?.totals.annualIncomeUsd ?? 0;
+    const scope = snapshot ? planScope(snapshot.accounts, plan) : null;
+    const current = allHoldings(scope?.accounts ?? []);
+    const currentIncome = snapshot && scope ? scopeIncomeUsd(snapshot, scope) : 0;
+    const netCash = netCashNeedUsd(plan, snapshot ? current : null);
     const targetIncome = planIncomeUsd(plan);
     const fees = typeof plan.summary.feesUsd === 'number' ? plan.summary.feesUsd : null;
     const currentFees = typeof plan.summary.currentFeesUsd === 'number' ? plan.summary.currentFeesUsd : null;
@@ -82,9 +85,16 @@ export default function CompareTab({ snapshot, plan }: { snapshot: Snapshot | nu
                         <h2 className="text-lg font-semibold text-gray-100">{plan.title}</h2>
                         {plan.subtitle && <p className="text-sm text-gray-400">{plan.subtitle}</p>}
                     </div>
-                    <p className="text-xs text-gray-500">
-                        {SCOPE_LABEL[plan.account]} · {fmtDate(plan.asOf)}
-                    </p>
+                    <div className="text-xs text-gray-500 sm:text-right">
+                        <p>
+                            {scope?.explicit ? 'Plan kapsamı' : SCOPE_LABEL[plan.account]} · {fmtDate(plan.asOf)}
+                        </p>
+                        {scope && (
+                            <p className={cn('mt-0.5', scope.accounts.length ? 'text-gray-400' : 'text-amber-400')}>
+                                Kapsam: {scope.accounts.length ? scope.accounts.map((a) => a.name).join(', ') : `eşleşen hesap yok (${plan.scopeAccounts?.join(', ')})`}
+                            </p>
+                        )}
+                    </div>
                 </div>
             </Card>
 
@@ -116,13 +126,19 @@ export default function CompareTab({ snapshot, plan }: { snapshot: Snapshot | nu
                 <Kpi label="Beklenen getiri" value={fmtPct(plan.summary.expectedReturnPct)} sub={typeof plan.summary.durationYrs === 'number' ? `Süre ${plan.summary.durationYrs.toFixed(1)} yıl` : undefined} />
                 <Kpi
                     label="Net nakit ihtiyacı"
-                    value={fmtSignedUsd(totals.netCashUsd)}
-                    sub={target ? `Hedef gelir ${fmtUsdShort(target[0])}–${fmtUsdShort(target[1])}` : 'Alış − satış'}
+                    value={fmtSignedUsd(netCash)}
+                    sub={
+                        snapshot && plan.targetHoldings.length
+                            ? `Hedef ${fmtUsdShort(sum(plan.targetHoldings.map((h) => h.valueUsd)))} − mevcut ${fmtUsdShort(sum(current.map((h) => h.valueUsd)))}`
+                            : target
+                              ? `Hedef gelir ${fmtUsdShort(target[0])}–${fmtUsdShort(target[1])}`
+                              : 'Alış − satış'
+                    }
                 />
             </div>
 
             {!snapshot && <p className="text-xs text-gray-500">Mevcut portföy henüz senkronize edilmedi — karşılaştırma yalnızca hedefi gösteriyor.</p>}
-            {scoped && <p className="text-xs text-gray-500">Mevcut sütunu yalnızca planın kapsamındaki hesapları içeriyor ({SCOPE_LABEL[plan.account].toLowerCase()}).</p>}
+            {scope && !scope.whole && <p className="text-xs text-gray-500">Mevcut sütunu yalnızca planın kapsamındaki hesapları içeriyor.</p>}
 
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
                 <SideBySide title="Gruba göre" current={allocationByGroup(current)} target={allocationByGroup(plan.targetHoldings)} />

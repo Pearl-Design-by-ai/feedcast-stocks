@@ -63,8 +63,18 @@ describe('parsePlan', () => {
         expect(p.diff).toEqual([expect.objectContaining({ action: 'buy', amountUsd: 50, custodian: 'Diğer' })]);
         expect(p.summary).toEqual({ b: [1, 2], c: 3 });
         expect(p.drawdown).toBeUndefined();
+        expect(p.scopeAccounts).toBeUndefined();
         expect(parsePlan({ title: 'no slug' })).toBeNull();
         expect(parsePlan('garbage')).toBeNull();
+    });
+});
+
+describe('parsePlan scopeAccounts', () => {
+    it('keeps non-blank strings, accepts a bare string, omits when empty', () => {
+        expect(parsePlan({ slug: 'a', scopeAccounts: [' Hesap A ', '', 3, null, 'company-c'] })!.scopeAccounts).toEqual(['Hesap A', '3', 'company-c']);
+        expect(parsePlan({ slug: 'a', scopeAccounts: 'Şirket' })!.scopeAccounts).toEqual(['Şirket']);
+        expect(parsePlan({ slug: 'a', scopeAccounts: ['  '] })!).not.toHaveProperty('scopeAccounts');
+        expect(parsePlan({ slug: 'a', scopeAccounts: { x: 1 } })!).not.toHaveProperty('scopeAccounts');
     });
 });
 

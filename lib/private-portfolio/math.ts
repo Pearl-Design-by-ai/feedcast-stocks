@@ -108,6 +108,60 @@ export function accountsForScope(accounts: Account[], scope: Plan['account']): A
     return picked.length ? picked : accounts;
 }
 
+/** Case- and dotted/dotless-i-insensitive fold for account matching. */
+const fold = (s: string) => s.normalize('NFD').replace(/\u0307/g, '').toLowerCase().replace(/ı/g, 'i');
+
+/** Accounts whose id or name contains any of the needles (case-insensitive). */
+export function accountsMatching(accounts: Account[], needles: string[]): Account[] {
+    const ns = needles.map((n) => fold(n.trim())).filter(Boolean);
+    if (!ns.length) return [];
+    return accounts.filter((a) => {
+        const hay = [fold(a.id), fold(a.name)];
+        return ns.some((n) => hay.some((h) => h.includes(n)));
+    });
+}
+
+export interface PlanScope {
+    accounts: Account[];
+    /** True when picked by the plan's `scopeAccounts`, false for the heuristic. */
+    explicit: boolean;
+    /** True when the scope is every snapshot account. */
+    whole: boolean;
+}
+
+/**
+ * The snapshot accounts a plan's "current" side uses: its explicit
+ * `scopeAccounts` when given (no fallback — an empty match stays empty, so a
+ * typo can't silently compare against the whole portfolio), otherwise the
+ * personal/company heuristic.
+ */
+export function planScope(accounts: Account[], plan: Pick<Plan, 'account' | 'scopeAccounts'>): PlanScope {
+    const explicit = !!plan.scopeAccounts?.length;
+    const picked = explicit ? accountsMatching(accounts, plan.scopeAccounts!) : accountsForScope(accounts, plan.account);
+    return { accounts: picked, explicit, whole: accounts.length > 0 && picked.length === accounts.length };
+}
+
+/**
+ * Current annual income of the accounts in scope — the synced total for the
+ * whole snapshot, otherwise the scoped holdings' income.
+ */
+export function scopeIncomeUsd(snapshot: Snapshot, scope: PlanScope): number {
+    if (scope.whole && snapshot.totals.annualIncomeUsd) return snapshot.totals.annualIncomeUsd;
+    return holdingsIncomeUsd(allHoldings(scope.accounts));
+}
+
+/**
+ * Fresh cash the plan needs (+) or frees (−). With a snapshot it's the target
+ * book minus the scoped current book; without one (or no target holdings) it
+ * falls back to the diff's buys − sells.
+ */
+export function netCashNeedUsd(plan: Plan, current: Holding[] | null): number {
+    if (current && plan.targetHoldings.length) {
+        return sum(plan.targetHoldings.map((h) => h.valueUsd)) - sum(current.map((h) => h.valueUsd));
+    }
+    return diffTotals(plan.diff).netCashUsd;
+}
+
 /** The plan's annual income: net if stated, else gross, else its holdings' income. */
 export function planIncomeUsd(p: Plan): number {
     const s = p.summary;
@@ -131,4 +185,63 @@ export function compareSlices(current: Slice[], target: Slice[]) {
             return { key, current: cur, currentShare: c?.share ?? 0, target: tgt, targetShare: t?.share ?? 0, delta: tgt - cur };
         })
         .sort((a, b) => Math.max(b.current, b.target) - Math.max(a.current, a.target));
+}
+
+export interface XY {
+    x: number;
+    y: number;
+}
+
+/**
+ * A projection path ready to plot: sorted by x numerically, negatives clamped
+ * to 0, and cut right after the first 0 so a depleted portfolio visibly ends
+ * on the axis instead of running along it.
+ */
+export function trimAtDepletion(points: XY[]): XY[] {
+    const out: XY[] = [];
+    for (const p of [...points].sort((a, b) => a.x - b.x)) {
+        const y = Math.max(0, p.y);
+        out.push({ x: p.x, y });
+        if (y === 0 && out.length > 1) break;
+    }
+    return out;
+}
+
+/** The stated depletion year, else the first year the portfolio hits 0. */
+export function depletionYear(points: { year: number; incomePortfolioUsd: number }[], stated?: number | null): number | null {
+    if (typeof stated === 'number' && Number.isFinite(stated)) return stated;
+    const hit = [...points].sort((a, b) => a.year - b.year).find((p, i) => i > 0 && p.incomePortfolioUsd <= 0);
+    return hit ? hit.year : null;
+}
+
+/** Underwater curve: % below the running peak at each point (0 at a new high, e.g. −23.4). */
+export function underwater(values: number[]): number[] {
+    let peak = -Infinity;
+    return values.map((v) => {
+        peak = Math.max(peak, v);
+        return peak > 0 ? (v / peak - 1) * 100 : 0;
+    });
+}
+
+/** 'YYYY-MM' → fractional year (2020-01 → 2020, 2020-07 → 2020.5); NaN when unparseable. */
+export function monthToYear(month: string): number {
+    const m = /^(\d{4})(?:-(\d{1,2}))?/.exec(month);
+    if (!m) return NaN;
+    return Number(m[1]) + (m[2] ? (Number(m[2]) - 1) / 12 : 0);
+}
+
+/** Up to ~`count` whole-number ticks spanning [min, max], always including both ends. */
+export function integerTicks(min: number, max: number, count = 5): number[] {
+    const lo = Math.ceil(min);
+    const hi = Math.floor(max);
+    if (hi <= lo) return [lo];
+    const step = Math.max(1, Math.ceil((hi - lo) / count));
+    const ticks: number[] = [];
+    for (let t = lo; t <= hi; t += step) ticks.push(t);
+    // Replace a last tick that would crowd the end label.
+    if (ticks[ticks.length - 1] !== hi) {
+        if (hi - ticks[ticks.length - 1] < step * 0.8 && ticks.length > 1) ticks.pop();
+        ticks.push(hi);
+    }
+    return ticks;
 }

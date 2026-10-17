@@ -1,6 +1,9 @@
+import { cn } from '@/lib/utils';
 import { LineChart } from './charts';
+import DrawdownChart from './DrawdownChart';
 import { Card, CardTitle, EmptyState } from './ui';
-import { fmtNum, fmtPct, fmtUsd, fmtUsdShort, variantLabel } from '@/lib/private-portfolio/format';
+import { depletionYear, trimAtDepletion } from '@/lib/private-portfolio/math';
+import { fmtPct, fmtUsd, fmtUsdShort, variantLabel } from '@/lib/private-portfolio/format';
 import type { Plan } from '@/lib/private-portfolio/types';
 
 export default function ScenarioTab({ plan }: { plan: Plan }) {
@@ -17,30 +20,30 @@ export default function ScenarioTab({ plan }: { plan: Plan }) {
 
     const years = [...new Set(projections.flatMap((p) => p.points.map((pt) => pt.year)))].sort((a, b) => a - b);
     const cspx = projections.find((p) => p.points.some((pt) => pt.cspxUsd != null));
-    const projSeries = projections.map((p) => ({ name: p.policy, points: p.points.map((pt) => ({ x: String(pt.year), y: pt.incomePortfolioUsd })) }));
+    const projSeries = projections.map((p) => ({ name: p.policy, points: trimAtDepletion(p.points.map((pt) => ({ x: pt.year, y: pt.incomePortfolioUsd }))) }));
     if (cspx) {
         projSeries.push({
             name: 'CSPX karşılaştırma',
-            points: cspx.points.filter((pt) => pt.cspxUsd != null).map((pt) => ({ x: String(pt.year), y: pt.cspxUsd as number })),
+            points: trimAtDepletion(cspx.points.filter((pt) => pt.cspxUsd != null).map((pt) => ({ x: pt.year, y: pt.cspxUsd as number }))),
         });
     }
+    const depletions = projections
+        .map((p) => ({ policy: p.policy, year: depletionYear(p.points, p.depletionYear) }))
+        .filter((d): d is { policy: string; year: number } => d.year !== null);
 
     return (
         <div className="flex flex-col gap-4">
             {projections.length > 0 && (
                 <Card>
                     <CardTitle
-                        aside={projections
-                            .filter((p) => p.depletionYear)
-                            .map((p) => `${p.policy}: tükenme ${p.depletionYear}`)
-                            .join(' · ')}
+                        aside={depletions.length ? depletions.map((d) => `${d.policy}: tükenme ${d.year}`).join(' · ') : 'Ufukta tükenme yok'}
                     >
                         Projeksiyon — gelir portföyü
                     </CardTitle>
                     <LineChart series={projSeries} />
-                    <div className="mt-4 max-h-80 overflow-auto">
+                    <div className="mt-4 overflow-x-auto">
                         <table className="w-full min-w-[420px] text-sm">
-                            <thead className="sticky top-0 bg-gray-900">
+                            <thead>
                                 <tr className="border-b border-gray-800 text-left text-[11px] uppercase tracking-wider text-gray-500">
                                     <th className="px-2 py-2 font-medium">Yıl</th>
                                     {projections.map((p) => (
@@ -57,9 +60,10 @@ export default function ScenarioTab({ plan }: { plan: Plan }) {
                                         <td className="px-2 py-1.5 text-gray-300 tabular-nums">{y}</td>
                                         {projections.map((p) => {
                                             const pt = p.points.find((x) => x.year === y);
+                                            const depleted = pt ? pt.incomePortfolioUsd <= 0 : false;
                                             return (
-                                                <td key={p.policy} className="px-2 py-1.5 text-right text-gray-200 tabular-nums">
-                                                    {pt ? fmtUsdShort(pt.incomePortfolioUsd) : '—'}
+                                                <td key={p.policy} className={cn('px-2 py-1.5 text-right tabular-nums', depleted ? 'text-red-400' : 'text-gray-200')}>
+                                                    {pt ? fmtUsdShort(Math.max(0, pt.incomePortfolioUsd)) : '—'}
                                                 </td>
                                             );
                                         })}
@@ -85,10 +89,7 @@ export default function ScenarioTab({ plan }: { plan: Plan }) {
                     >
                         Drawdown — kaldıraç varyantları
                     </CardTitle>
-                    <LineChart
-                        series={ddKeys.map((k) => ({ name: variantLabel(k), points: dd.series[k].map((p) => ({ x: p.month, y: p.value })) }))}
-                        format={(n) => fmtNum(n, 0)}
-                    />
+                    <DrawdownChart series={dd.series} />
                 </Card>
             )}
 

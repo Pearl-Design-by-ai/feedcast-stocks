@@ -1,19 +1,28 @@
 import { describe, expect, it } from 'vitest';
 import {
     accountsForScope,
+    accountsMatching,
     allocate,
     allocationByCustodian,
     cashUsd,
     compareSlices,
     custodianBucket,
+    depletionYear,
     diffTotals,
     groupDiff,
+    integerTicks,
+    monthToYear,
+    netCashNeedUsd,
     planIncomeUsd,
+    planScope,
+    scopeIncomeUsd,
     snapshotAllocation,
+    trimAtDepletion,
+    underwater,
 } from './math';
 import { parseDocuments } from './parse';
 import { MOCK_ROWS } from './mock';
-import type { DiffRow, Holding, Plan } from './types';
+import type { Account, DiffRow, Holding, Plan, Snapshot } from './types';
 
 const hold = (o: Partial<Holding>): Holding => ({ name: 'Example', ccy: 'USD', valueUsd: 0, group: 'Nakit', custodian: 'UBS', ...o });
 const row = (action: DiffRow['action'], amountUsd: number, name: string = action): DiffRow => ({ action, name, custodian: 'UBS', amountUsd });
@@ -90,5 +99,111 @@ describe('plan helpers', () => {
         expect(accountsForScope(accts, 'personal').map((a) => a.id)).toEqual(['p']);
         expect(accountsForScope(accts, 'both')).toHaveLength(2);
         expect(accountsForScope([accts[0]], 'company').map((a) => a.id)).toEqual(['p']);
+    });
+});
+
+describe('plan scoping (scopeAccounts)', () => {
+    const acct = (id: string, name: string, hs: Holding[] = []): Account => ({ id, name, custodian: 'UBS', totalUsd: 0, holdings: hs });
+    const accts = [
+        acct('personal-a', 'Örnek Hesap A', [hold({ group: 'Tahvil', valueUsd: 600, annualIncomeUsd: 30 })]),
+        acct('personal-b', 'Örnek Hesap B', [hold({ custodian: 'IBKR', group: 'Hisse', valueUsd: 400, annualIncomeUsd: 4 })]),
+        acct('company-c', 'Örnek Şirket Hesabı', [hold({ custodian: 'Example Bank', valueUsd: 250, annualIncomeUsd: 11 })]),
+    ];
+    const snapshot = { totals: { marketUsd: 1250, maturityUsd: 0, annualIncomeUsd: 999 }, accounts: accts } as Snapshot;
+
+    it('matches name or id, case-insensitively (incl. Turkish İ/ı)', () => {
+        expect(accountsMatching(accts, ['hesap a']).map((a) => a.id)).toEqual(['personal-a']);
+        expect(accountsMatching(accts, ['PERSONAL-B', 'ŞİRKET']).map((a) => a.id)).toEqual(['personal-b', 'company-c']);
+        expect(accountsMatching(accts, ['HESABI']).map((a) => a.id)).toEqual(['company-c']);
+        expect(accountsMatching(accts, ['', '  '])).toEqual([]);
+    });
+    it('uses scopeAccounts over the heuristic, with no fallback on an empty match', () => {
+        const s = planScope(accts, { account: 'company', scopeAccounts: ['Hesap B'] });
+        expect(s).toMatchObject({ explicit: true, whole: false });
+        expect(s.accounts.map((a) => a.id)).toEqual(['personal-b']);
+        expect(planScope(accts, { account: 'both', scopeAccounts: ['nope'] }).accounts).toEqual([]);
+    });
+    it('falls back to the personal/company heuristic when absent', () => {
+        const s = planScope(accts, { account: 'company' });
+        expect(s).toMatchObject({ explicit: false, whole: false });
+        expect(s.accounts.map((a) => a.id)).toEqual(['company-c']);
+        expect(planScope(accts, { account: 'both' }).whole).toBe(true);
+    });
+    it('scoped income is the scoped holdings; whole scope keeps the synced total', () => {
+        expect(scopeIncomeUsd(snapshot, planScope(accts, { account: 'both', scopeAccounts: ['personal'] }))).toBe(34);
+        expect(scopeIncomeUsd(snapshot, planScope(accts, { account: 'both' }))).toBe(999);
+    });
+    it('net cash need is target book minus the scoped current book', () => {
+        const plan: Plan = {
+            slug: 'x', title: 'x', asOf: '', account: 'both', summary: {},
+            targetHoldings: [hold({ valueUsd: 1000 })],
+            diff: [row('buy', 700), row('sell', 100)],
+        };
+        const scoped = planScope(accts, { account: 'both', scopeAccounts: ['hesap a'] }).accounts.flatMap((a) => a.holdings);
+        expect(netCashNeedUsd(plan, scoped)).toBe(400);
+        expect(netCashNeedUsd(plan, accts.flatMap((a) => a.holdings))).toBe(-250);
+        expect(netCashNeedUsd(plan, null)).toBe(600); // no snapshot → buys − sells
+        expect(netCashNeedUsd({ ...plan, targetHoldings: [] }, scoped)).toBe(600);
+    });
+});
+
+describe('projection series', () => {
+    it('sorts numerically, clamps negatives and ends at the first 0', () => {
+        const pts = [{ x: 2041, y: 0 }, { x: 2027, y: 100 }, { x: 2040, y: -5 }, { x: 2039, y: 20 }, { x: 2030, y: 80 }];
+        expect(trimAtDepletion(pts)).toEqual([
+            { x: 2027, y: 100 },
+            { x: 2030, y: 80 },
+            { x: 2039, y: 20 },
+            { x: 2040, y: 0 },
+        ]);
+        // Years 9 and 10 must not be string-sorted ("10" < "9").
+        expect(trimAtDepletion([{ x: 10, y: 1 }, { x: 9, y: 2 }]).map((p) => p.x)).toEqual([9, 10]);
+    });
+    it('derives the depletion year unless one is stated', () => {
+        const pts = [{ year: 2028, incomePortfolioUsd: 50 }, { year: 2027, incomePortfolioUsd: 100 }, { year: 2030, incomePortfolioUsd: 0 }, { year: 2029, incomePortfolioUsd: 0 }];
+        expect(depletionYear(pts)).toBe(2029);
+        expect(depletionYear(pts, 2035)).toBe(2035);
+        expect(depletionYear([{ year: 2027, incomePortfolioUsd: 1 }])).toBeNull();
+    });
+    it('calendar-year ticks span the range with whole years', () => {
+        const t = integerTicks(2027, 2041);
+        expect(t[0]).toBe(2027);
+        expect(t[t.length - 1]).toBe(2041);
+        expect(t.every((x) => Number.isInteger(x))).toBe(true);
+        expect(t.length).toBeLessThanOrEqual(7);
+        expect([...t].sort((a, b) => a - b)).toEqual(t);
+        expect(integerTicks(2006, 2025.9)).toContain(2025);
+    });
+    it('mock projections run 2027…2046 and the inflation-linked one depletes', () => {
+        const plan = parseDocuments(MOCK_ROWS).plans.find((p) => p.slug === 'income-example')!;
+        const p = plan.projections![1];
+        expect(p.points.map((x) => x.year)).toEqual(Array.from({ length: 20 }, (_, i) => 2027 + i));
+        expect(depletionYear(p.points, p.depletionYear)).toBe(2042);
+    });
+});
+
+describe('underwater / drawdown', () => {
+    it('is % below the running peak', () => {
+        const dd = underwater([100, 120, 90, 60, 120, 150, 135]);
+        expect(dd.map((x) => Math.round(x * 100) / 100)).toEqual([0, 0, -25, -50, 0, 0, -10]);
+    });
+    it('never goes positive and handles empty / non-positive input', () => {
+        expect(underwater([])).toEqual([]);
+        expect(underwater([0, 0])).toEqual([0, 0]);
+        expect(underwater([5, 4, 6]).every((x) => x <= 0)).toBe(true);
+    });
+    it('maps YYYY-MM to fractional years', () => {
+        expect(monthToYear('2020-01')).toBe(2020);
+        expect(monthToYear('2020-07')).toBe(2020.5);
+        expect(monthToYear('2021')).toBe(2021);
+        expect(monthToYear('nope')).toBeNaN();
+    });
+    it('matches the mock episodes\' max drawdown', () => {
+        const plan = parseDocuments(MOCK_ROWS).plans.find((p) => p.slug === 'income-example')!;
+        const dd = plan.drawdown!;
+        for (const k of Object.keys(dd.series)) {
+            const worst = Math.min(...underwater(dd.series[k].map((p) => p.value)));
+            expect(worst).toBeCloseTo(dd.maxDdPct[k], 0);
+        }
     });
 });

@@ -1,6 +1,7 @@
 /**
  * Static guards for the private portfolio: the migration keeps the table
- * owner-read-only, and the route never leaks into the sitemap.
+ * owner-read-only, and the route is noindex but never advertised (not in the
+ * sitemap, not named in robots.txt).
  */
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -40,10 +41,12 @@ describe('route exposure', () => {
     it('keeps /my-portfolio out of the sitemap', () => {
         expect(read('app/sitemap.ts')).not.toContain('my-portfolio');
     });
-    it('disallows /my-portfolio in robots', () => {
-        const rules = robots().rules;
-        const disallow = (Array.isArray(rules) ? rules[0] : rules).disallow;
-        expect(disallow).toContain('/my-portfolio');
+    it('marks the page noindex, nofollow', () => {
+        const page = read('app/(root)/my-portfolio/page.tsx').replace(/\s+/g, ' ');
+        expect(page).toMatch(/export const metadata: Metadata = \{[^}]*robots: \{ index: false, follow: false \}/);
+    });
+    it('does not name the path in robots.txt', () => {
+        expect(JSON.stringify(robots())).not.toContain('my-portfolio');
     });
     it('has no API route for the private portfolio', () => {
         const walk = (d: string): string[] =>

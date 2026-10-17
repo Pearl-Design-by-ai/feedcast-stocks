@@ -7,7 +7,7 @@
 
 import { cn } from '@/lib/utils';
 import { fmtShare, fmtUsdShort } from '@/lib/private-portfolio/format';
-import type { Slice } from '@/lib/private-portfolio/math';
+import { integerTicks, type Slice, type XY } from '@/lib/private-portfolio/math';
 
 export const SERIES_BG = ['bg-teal-400', 'bg-sky-400', 'bg-violet-400', 'bg-amber-400', 'bg-rose-400', 'bg-emerald-400', 'bg-fuchsia-400', 'bg-lime-400'];
 const SERIES_STROKE = ['stroke-teal-400', 'stroke-sky-400', 'stroke-violet-400', 'stroke-amber-400', 'stroke-rose-400', 'stroke-emerald-400', 'stroke-fuchsia-400', 'stroke-lime-400'];
@@ -108,34 +108,39 @@ export function GroupedBars({
 }
 
 /**
- * Multi-series line chart over a shared, ordered x axis (years or YYYY-MM).
- * Series may cover different x ranges; gaps are simply not drawn.
+ * Multi-series line chart over a numeric x axis (years, or fractional years
+ * for monthly data — see monthToYear). Points are sorted numerically and
+ * placed proportionally, so uneven or mixed ranges never reorder. Series may
+ * cover different x ranges. When every y is ≥ 0 the axis starts at 0 (≤ 0:
+ * ends at 0); a series whose last point is 0 gets an end dot — depletion.
  */
 export function LineChart({
     series,
     format = fmtUsdShort,
+    formatX = (x: number) => String(Math.round(x)),
     height = 220,
     zeroLine = false,
 }: {
-    series: { name: string; points: { x: string; y: number }[] }[];
+    series: { name: string; points: XY[] }[];
     format?: (n: number) => string;
+    formatX?: (x: number) => string;
     height?: number;
     zeroLine?: boolean;
 }) {
-    const xs = [...new Set(series.flatMap((s) => s.points.map((p) => p.x)))].sort();
-    const ys = series.flatMap((s) => s.points.map((p) => p.y));
-    if (xs.length < 2 || !ys.length) return <p className="text-sm text-gray-500">Grafik için yeterli veri yok.</p>;
+    const lines = series.map((s) => ({ ...s, points: s.points.filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y)).sort((a, b) => a.x - b.x) }));
+    const xsAll = lines.flatMap((s) => s.points.map((p) => p.x));
+    const ys = lines.flatMap((s) => s.points.map((p) => p.y));
+    const xmin = Math.min(...xsAll);
+    const xmax = Math.max(...xsAll);
+    if (new Set(xsAll).size < 2 || !ys.length) return <p className="text-sm text-gray-500">Grafik için yeterli veri yok.</p>;
     let min = Math.min(...ys);
     let max = Math.max(...ys);
-    if (zeroLine) {
-        min = Math.min(min, 0);
-        max = Math.max(max, 0);
-    }
+    if (zeroLine || min >= 0) min = Math.min(min, 0);
+    if (zeroLine || max <= 0) max = Math.max(max, 0);
     if (max === min) max = min + 1;
-    const xi = new Map(xs.map((x, i) => [x, i]));
-    const px = (x: string) => ((xi.get(x) ?? 0) / (xs.length - 1)) * 100;
+    const px = (x: number) => ((x - xmin) / (xmax - xmin)) * 100;
     const py = (y: number) => 100 - ((y - min) / (max - min)) * 100;
-    const mid = xs[Math.floor(xs.length / 2)];
+    const ticks = integerTicks(xmin, xmax);
 
     return (
         <div className="flex flex-col gap-2">
@@ -147,11 +152,11 @@ export function LineChart({
                 </div>
                 <div className="relative min-w-0 flex-1 border-b border-l border-gray-700" style={{ height }}>
                     <div className="pointer-events-none absolute inset-x-0 top-1/2 border-t border-dashed border-gray-800" />
-                    <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible" role="img" aria-label={series.map((s) => s.name).join(', ')}>
-                        {zeroLine && min < 0 && max > 0 && (
+                    <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible" role="img" aria-label={lines.map((s) => s.name).join(', ')}>
+                        {min < 0 && max > 0 && (
                             <line x1="0" x2="100" y1={py(0)} y2={py(0)} className="stroke-gray-600" strokeDasharray="2 2" vectorEffect="non-scaling-stroke" />
                         )}
-                        {series.map((s, j) => (
+                        {lines.map((s, j) => (
                             <polyline
                                 key={s.name}
                                 fill="none"
@@ -163,17 +168,41 @@ export function LineChart({
                             />
                         ))}
                     </svg>
+                    {/* End dots as HTML so they stay round on the stretched SVG. */}
+                    {lines.map((s, j) => {
+                        const last = s.points[s.points.length - 1];
+                        if (!last || last.y !== 0 || s.points.length < 2 || min < 0) return null;
+                        return (
+                            <span
+                                key={s.name}
+                                className={cn('absolute h-2.5 w-2.5 -translate-x-1/2 translate-y-1/2 rounded-full ring-2 ring-gray-900', SERIES_BG[j % SERIES_BG.length])}
+                                style={{ left: `${px(last.x)}%`, bottom: 0 }}
+                                title={`${s.name}: tükenme ${formatX(last.x)}`}
+                            />
+                        );
+                    })}
                 </div>
             </div>
             <div className="flex gap-2">
                 <div className="w-12 shrink-0" />
-                <div className="flex min-w-0 flex-1 justify-between text-[10px] text-gray-500 tabular-nums">
-                    <span>{xs[0]}</span>
-                    <span>{mid}</span>
-                    <span>{xs[xs.length - 1]}</span>
+                <div className="relative h-3 min-w-0 flex-1 text-[10px] text-gray-500 tabular-nums">
+                    {ticks.map((t, i) => (
+                        <span
+                            key={t}
+                            className={cn(
+                                'absolute top-0 whitespace-nowrap',
+                                i === 0 && px(t) < 4 ? '' : i === ticks.length - 1 && px(t) > 96 ? '-translate-x-full' : '-translate-x-1/2',
+                                // Every other inner tick only from sm up, so narrow screens don't crowd.
+                                i % 2 === 1 && i !== ticks.length - 1 && 'hidden sm:inline'
+                            )}
+                            style={{ left: `${px(t)}%` }}
+                        >
+                            {formatX(t)}
+                        </span>
+                    ))}
                 </div>
             </div>
-            <Legend items={series.map((s, j) => ({ label: s.name, className: SERIES_BG[j % SERIES_BG.length] }))} />
+            <Legend items={lines.map((s, j) => ({ label: s.name, className: SERIES_BG[j % SERIES_BG.length] }))} />
         </div>
     );
 }

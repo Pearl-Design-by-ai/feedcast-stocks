@@ -107,6 +107,12 @@ export interface Plan {
     subtitle?: string;
     asOf: string;
     account: 'personal' | 'company' | 'both';
+    /**
+     * Explicit scope: the snapshot accounts whose name or id contains one of
+     * these strings (case-insensitive) form the plan's "current" side. When
+     * absent, `account` picks them heuristically.
+     */
+    scopeAccounts?: string[];
     summary: PlanSummary;
     targetHoldings: Holding[];
     diff: DiffRow[];

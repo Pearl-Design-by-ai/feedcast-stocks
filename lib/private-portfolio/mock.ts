@@ -115,15 +115,17 @@ const series = Object.fromEntries(Object.entries(VARIANTS).map(([k, lev]) => [k,
 const episodes = Object.fromEntries(Object.entries(series).map(([k, s]) => [k, episodesOf(s)]));
 const maxDdPct = Object.fromEntries(Object.entries(episodes).map(([k, e]) => [k, Math.min(0, ...e.map((x) => x.ddPct))]));
 
-const projection = (policy: string, start: number, draw: number, growth: number, depletion?: number) => ({
-    policy,
-    depletionYear: depletion ?? null,
-    points: Array.from({ length: 20 }, (_, i) => ({
-        year: 2027 + i,
-        incomePortfolioUsd: Math.max(0, Math.round(start * Math.pow(1 + growth, i) - draw * i * (1 + i * 0.01))),
-        cspxUsd: Math.round(500_000 * Math.pow(1.07, i)),
-    })),
-});
+/** Grows at `growth`, withdraws `draw` rising with `inflation`; floors at 0 (depletion). */
+const projection = (policy: string, start: number, draw: number, growth: number, inflation = 0) => {
+    let v = start;
+    return {
+        policy,
+        points: Array.from({ length: 20 }, (_, i) => {
+            if (i > 0) v = Math.max(0, v * (1 + growth) - draw * Math.pow(1 + inflation, i - 1));
+            return { year: 2027 + i, incomePortfolioUsd: Math.round(v), cspxUsd: Math.round(500_000 * Math.pow(1.07, i)) };
+        }),
+    };
+};
 
 const incomePlan = {
     slug: 'income-example',
@@ -157,7 +159,7 @@ const incomePlan = {
     monthlyIncome: [8_000, 6_000, 12_000, 8_000, 6_000, 15_000, 12_000, 6_000, 12_000, 8_000, 6_000, 13_000],
     projections: [
         projection('Sabit çekim', 2_500_000, 100_000, 0.05),
-        projection('Enflasyona bağlı çekim', 2_500_000, 130_000, 0.045, 2044),
+        projection('Enflasyona bağlı çekim', 2_500_000, 190_000, 0.045, 0.04),
     ],
     drawdown: { series, maxDdPct, episodes },
     scenarios: [
@@ -180,6 +182,8 @@ const growthPlan = {
     subtitle: 'Şirket hesabı — sentetik',
     asOf: AS_OF,
     account: 'company',
+    // Upper-case on purpose: matching is case-insensitive.
+    scopeAccounts: ['ŞİRKET'],
     summary: { grossIncomeUsd: 14_000, feesUsd: 1_500, netIncomeUsd: 12_500, expectedReturnPct: 6.5 },
     targetHoldings: [
         h({ name: 'Example Equity Index ETF', valueUsd: 200_000, annualIncomeUsd: 2_400, group: 'Hisse ETF', custodian: 'IBKR' }),

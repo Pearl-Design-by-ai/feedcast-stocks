@@ -237,12 +237,17 @@ export function parsePlan(v: unknown, fallback?: { slug?: string; asOf?: string 
         .filter(isObj)
         .map((d) => ({ title: str(d.title), path: str(d.path) }))
         .filter((d): d is { title: string; path: string } => d.title !== null && d.path !== null);
+    // A bare string is read as a one-item list; blanks are dropped.
+    const scopeAccounts = strList(typeof v.scopeAccounts === 'string' ? [v.scopeAccounts] : v.scopeAccounts)
+        .map((s) => s.trim())
+        .filter(Boolean);
     return {
         slug,
         title: str(v.title) ?? slug,
         subtitle: str(v.subtitle) ?? undefined,
         asOf: str(v.asOf) ?? fallback?.asOf ?? '',
         account: account === 'personal' || account === 'company' ? account : 'both',
+        ...(scopeAccounts.length ? { scopeAccounts } : {}),
         summary: parseSummary(v.summary),
         targetHoldings: holdings(v.targetHoldings),
         diff: arr(v.diff).map(parseDiffRow).filter((d): d is DiffRow => d !== null),

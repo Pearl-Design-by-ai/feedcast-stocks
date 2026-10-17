@@ -1,22 +1,31 @@
 import { GroupedBars } from './charts';
 import { Card, CardTitle, Kpi, deltaTone } from './ui';
-import { planIncomeUsd, sum } from '@/lib/private-portfolio/math';
+import { planIncomeUsd, planScope, scopeIncomeUsd, sum } from '@/lib/private-portfolio/math';
 import { MONTHS_TR, fmtSignedUsd, fmtUsd, fmtUsdShort } from '@/lib/private-portfolio/format';
 import type { Plan, Snapshot } from '@/lib/private-portfolio/types';
 
 export default function IncomeTab({ snapshot, plan }: { snapshot: Snapshot | null; plan: Plan | null }) {
     const current = snapshot?.monthlyIncome ?? Array(12).fill(0);
     const planMonthly = plan?.monthlyIncome ?? null;
-    const currentTotal = snapshot ? snapshot.totals.annualIncomeUsd || sum(current) : 0;
+    // A plan with explicit scopeAccounts compares against those accounts only.
+    // The synced monthly calendar is portfolio-wide, so it is labelled as such.
+    const scope = snapshot && plan?.scopeAccounts?.length ? planScope(snapshot.accounts, plan) : null;
+    const partial = !!scope && !scope.whole;
+    const currentTotal = snapshot ? (scope ? scopeIncomeUsd(snapshot, scope) : snapshot.totals.annualIncomeUsd || sum(current)) : 0;
     const planTotal = plan ? (planMonthly ? sum(planMonthly) : planIncomeUsd(plan)) : null;
+    const currentLabel = partial ? 'Mevcut (tüm hesaplar)' : 'Mevcut';
 
-    const series = [{ name: 'Mevcut', values: current }];
+    const series = [{ name: currentLabel, values: current }];
     if (plan && planMonthly) series.push({ name: plan.title, values: planMonthly });
 
     return (
         <div className="flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-                <Kpi label="Mevcut yıllık gelir" value={fmtUsdShort(currentTotal)} sub={`Aylık ort. ${fmtUsdShort(currentTotal / 12)}`} />
+                <Kpi
+                    label="Mevcut yıllık gelir"
+                    value={fmtUsdShort(currentTotal)}
+                    sub={scope ? `Kapsam: ${scope.accounts.map((a) => a.name).join(', ') || 'eşleşen hesap yok'}` : `Aylık ort. ${fmtUsdShort(currentTotal / 12)}`}
+                />
                 {planTotal != null && (
                     <Kpi label="Plan yıllık gelir" value={fmtUsdShort(planTotal)} sub={`Aylık ort. ${fmtUsdShort(planTotal / 12)}`} />
                 )}
@@ -26,7 +35,11 @@ export default function IncomeTab({ snapshot, plan }: { snapshot: Snapshot | nul
             </div>
 
             <Card>
-                <CardTitle aside={plan && !planMonthly ? 'Planın aylık dağılımı yok' : undefined}>Aylık gelir takvimi</CardTitle>
+                <CardTitle
+                    aside={[partial && 'Mevcut takvim tüm hesapları kapsıyor', plan && !planMonthly && 'Planın aylık dağılımı yok'].filter(Boolean).join(' · ') || undefined}
+                >
+                    Aylık gelir takvimi
+                </CardTitle>
                 <GroupedBars labels={MONTHS_TR} series={series} />
             </Card>
 
@@ -37,7 +50,7 @@ export default function IncomeTab({ snapshot, plan }: { snapshot: Snapshot | nul
                         <thead>
                             <tr className="border-b border-gray-800 text-left text-[11px] uppercase tracking-wider text-gray-500">
                                 <th className="px-2 py-2 font-medium">Ay</th>
-                                <th className="px-2 py-2 text-right font-medium">Mevcut</th>
+                                <th className="px-2 py-2 text-right font-medium">{currentLabel}</th>
                                 {planMonthly && <th className="px-2 py-2 text-right font-medium">Plan</th>}
                                 {planMonthly && <th className="px-2 py-2 text-right font-medium">Fark</th>}
                             </tr>
