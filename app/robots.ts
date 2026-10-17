@@ -12,7 +12,7 @@ export default function robots(): MetadataRoute.Robots {
         rules: {
             userAgent: '*',
             allow: '/',
-            disallow: ['/api/', '/admin', '/alerts', '/appearance', '/leverage', '/portfolio-lab', '/watchlist'],
+            disallow: ['/api/', '/admin', '/alerts', '/appearance', '/leverage', '/my-portfolio', '/portfolio-lab', '/watchlist'],
         },
         sitemap: `${SITE_URL}/sitemap.xml`,
         host: SITE_URL,
