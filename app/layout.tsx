@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
 import {Toaster} from "@/components/ui/sonner";
+import PageViewBeacon from "@/components/PageViewBeacon";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -71,6 +73,10 @@ export default function RootLayout({
             >
                 {children}
                 <Toaster/>
+                {/* Cookieless first-party page-view counting (POST /api/a). */}
+                <Suspense fallback={null}>
+                    <PageViewBeacon/>
+                </Suspense>
             </body>
         </html>
     );

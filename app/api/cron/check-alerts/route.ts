@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { isFeedcastEmailConfigured, sendStockAlertEmail } from '@/lib/email/feedcast';
 import { getValuationScreen, runValuationScan } from '@/lib/actions/valuation.actions';
 import { currentSession } from '@/lib/valuation';
+import { isRetentionDue, retentionCutoff } from '@/lib/analytics/retention';
 
 /**
  * Rebuild the valuation screen once per trading session. This 5-minute cron is
@@ -24,6 +25,25 @@ async function rebuildValuationIfNeeded(): Promise<number> {
         console.error('check-alerts: valuation rebuild failed', err);
         return -1;
     }
+}
+
+/**
+ * Daily page-view retention: in the first tick after 03:00 UTC, delete
+ * markets_page_views rows older than 400 days. Returns rows deleted, or -1
+ * when not due / on error (never fails the alert run).
+ */
+async function prunePageViewsIfDue(admin: SupabaseClient): Promise<number> {
+  const now = new Date();
+  if (!isRetentionDue(now)) return -1;
+  const { count, error } = await admin
+    .from('markets_page_views')
+    .delete({ count: 'exact' })
+    .lt('created_at', retentionCutoff(now));
+  if (error) {
+    console.error('check-alerts: page-view retention failed', error);
+    return -1;
+  }
+  return count ?? 0;
 }
 
 /**
@@ -293,11 +313,15 @@ async function handle(request: NextRequest) {
   // Rebuild the valuation screen once per session (after each close).
   const valuationScored = await rebuildValuationIfNeeded();
 
+  // Once a day, prune page views past the 400-day retention window.
+  const pageViewsPruned = await prunePageViewsIfDue(admin);
+
   return NextResponse.json({
     checked,
     triggered: triggeredIds.length,
     notified,
     valuationScored,
+    pageViewsPruned,
   });
 }
 

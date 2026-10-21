@@ -144,7 +144,10 @@ export function isPowerUserEmail(email: string | null | undefined): boolean {
 
 /** Nav items injected only for power users, by section id. */
 const POWER_NAV_ITEMS: Record<string, NavItem[]> = {
-    lists: [{ href: 'https://pf.feedcast.news', label: 'Private', external: true }],
+    lists: [
+        { href: 'https://pf.feedcast.news', label: 'Private', external: true },
+        { href: '/my-stats', label: 'My Stats' },
+    ],
     research: [{ href: '/leverage', label: 'Leverage Rotation' }],
     more: [{ href: '/admin', label: 'Admin Console' }],
 };
