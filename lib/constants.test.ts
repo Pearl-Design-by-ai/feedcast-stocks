@@ -24,3 +24,11 @@ describe('navSectionsForUser', () => {
         }
     });
 });
+
+describe('owner stats link', () => {
+    it('shows /my-stats next to the owner tools link, for power users only', () => {
+        const lists = navSectionsForUser(true).find((s) => s.id === 'lists')!.items.map((it) => it.href);
+        expect(lists.indexOf('/my-stats')).toBe(lists.indexOf('https://pf.feedcast.news') + 1);
+        expect(allItems(false).some((it) => it.href === '/my-stats')).toBe(false);
+    });
+});

@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import { Shield, FileText, Check, AlertTriangle, Scale } from 'lucide-react';
+import { Shield, FileText, Check, AlertTriangle, Scale, EyeOff } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Terms of Service | FeedCast Markets',
@@ -73,6 +73,29 @@ export default function TermsPage() {
               </ul>
             </div>
           </div>
+        </section>
+
+        {/* Privacy & analytics */}
+        <section id="privacy" className="scroll-mt-24 bg-gray-900 border border-gray-800 rounded-2xl p-8">
+          <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
+            <EyeOff className="text-teal-500" />
+            Privacy &amp; Analytics
+          </h2>
+          <p className="text-gray-400 leading-relaxed">
+            We use cookieless first-party page-view counting, a daily-rotating hashed IP, and no cross-site tracking.
+            Each page view records the page, the referring site&apos;s domain, your country and a coarse device type.
+            Your IP address and full browser string are never stored; they only feed a one-way hash whose salt changes
+            every day, so visits can&apos;t be linked across days or sites. Do Not Track and Global Privacy Control are
+            honoured (the view is counted without the hash). There are no third-party analytics or ad scripts, and the
+            data is deleted after 400 days.
+          </p>
+          <p className="text-gray-400 leading-relaxed mt-3">
+            FeedCast&apos;s full privacy policy, which also covers your FeedCast account, is at{' '}
+            <a href="https://www.feedcast.news/privacy" className="text-teal-400 hover:underline">
+              feedcast.news/privacy
+            </a>
+            .
+          </p>
         </section>
 
         {/* Footer Note */}

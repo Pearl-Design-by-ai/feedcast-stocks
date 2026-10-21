@@ -5,6 +5,7 @@
  */
 import {
     LayoutDashboard,
+    BarChart3,
     Search,
     Star,
     Bell,
@@ -74,6 +75,7 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
     '/markets/options-strategies': Layers,
     '/terms': FileText,
     '/admin': ShieldCheck,
+    '/my-stats': BarChart3,
 };
 
 export const SECTION_ICONS: Record<string, LucideIcon> = {
