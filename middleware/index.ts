@@ -19,6 +19,8 @@ import {
  * NOTE: this file lives at `middleware/index.ts`, which Next.js does NOT pick
  * up as middleware (it expects a root `middleware.ts`). It is currently inert;
  * kept here so the SSO session-refresh logic is ready if we ever wire it.
+ * Since Next 16 the convention is a root `proxy.ts` exporting `proxy` (the
+ * `middleware` name is deprecated) — use that when wiring this up.
  *
  * `/api/*` is excluded from the matcher — `/api/cron/*` carries its own
  * Bearer-token auth and must stay reachable.
