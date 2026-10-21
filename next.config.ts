@@ -24,6 +24,10 @@ const nextConfig: NextConfig = {
                 pathname: '/**',
             },
         ],
+        // Next 16 dropped 16 from the default imageSizes; keep the Next 15
+        // list so generated srcsets (and their edge-cached transforms) are
+        // unchanged.
+        imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
         ...(isCloudflareBuild
             ? {
                   // Custom loader routes the upstream src through
@@ -33,9 +37,6 @@ const nextConfig: NextConfig = {
                   loaderFile: './lib/cloudflare-image-loader.ts',
               }
             : {}),
-    },
-    eslint: {
-        ignoreDuringBuilds: true,
     },
     typescript: {
         ignoreBuildErrors: true,
