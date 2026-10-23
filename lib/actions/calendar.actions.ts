@@ -6,7 +6,7 @@
 
 import { fetchJSON } from '@/lib/actions/finnhub.actions';
 
-const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
+import { FINNHUB_BASE_URL } from '@/lib/finnhub-base';
 const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY ?? '';
 
 export interface EarningsEvent {

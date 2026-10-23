@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import TradingViewWidget from "@/components/TradingViewWidget";
-import { Suspense } from "react";
+import { Suspense, cache } from "react";
 import StockSentimentCard from "@/components/stocks/StockSentimentCard";
 import AnalystRatings from "@/components/stocks/AnalystRatings";
 import CompanyBrief from "@/components/stocks/CompanyBrief";
@@ -21,7 +21,7 @@ import { getStockSentimentInsights } from '@/lib/actions/adanos.actions';
 import { getCompanyProfile } from '@/lib/actions/finnhub.actions';
 import { getRecommendationTrends } from '@/lib/actions/stock-insights.actions';
 import { getGroupsWithMembership } from '@/lib/actions/watchlist-groups.actions';
-import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { getCurrentUser } from '@/lib/supabase/server';
 import WatchlistStar from '@/components/stocks/WatchlistStar';
 import {
     KeyStats,
@@ -35,17 +35,17 @@ import { formatSymbolForTradingView } from '@/lib/utils';
 import BackButton from '@/components/common/BackButton';
 import CompanyScore from '@/components/stocks/CompanyScore';
 import { getCompanyScore } from '@/lib/actions/company-score.actions';
+import CardSkeleton from '@/components/stocks/CardSkeleton';
 
 /**
  * Per-stock SEO metadata. The page is public, so every company gets a unique
- * title/description/canonical for indexing. getCompanyProfile is cached, so
- * this shares the one upstream call the page already makes.
+ * title/description/canonical for indexing. Shares the page's (SWR-cached,
+ * ≤2.5s) profile read; falls back to the bare ticker when it's slow.
  */
 export async function generateMetadata({ params }: StockDetailsPageProps): Promise<Metadata> {
     const { symbol } = await params;
     const sym = symbol.toUpperCase();
-    const profile = await getCompanyProfile(symbol).catch(() => null);
-    const name = profile?.name || sym;
+    const name = await companyNameOf(symbol);
     const title = `${name} (${sym}) Stock`;
     const description = `${name} (${sym}) — live (delayed) price, charts, analyst ratings, key stats, news and AI insights on FeedCast Markets.`;
     return {
@@ -63,40 +63,84 @@ async function CompanyScoreCard({ symbol }: { symbol: string }) {
     return <CompanyScore data={data} />;
 }
 
+// Per-request memo over the SWR-cached profile — the header, metadata and the
+// AI cards all need the company name; this is one upstream read at most.
+const profileOf = cache((symbol: string) => getCompanyProfile(symbol));
+async function companyNameOf(symbol: string): Promise<string> {
+    const profile = await profileOf(symbol).catch(() => null);
+    return profile?.name || symbol.toUpperCase();
+}
+
+/*
+ * Every upstream read on this page lives inside its own Suspense slot, so the
+ * shell (title, disclaimer, TradingView embeds, skeletons) flushes without
+ * waiting on Finnhub / Adanos / the engine / Supabase. Each read is SWR-cached
+ * with a ≤2.5s cold-miss wait (lib/swr-cache.ts), so one slow upstream only
+ * delays its own card — and a cold card fills in on the next view.
+ */
+
+async function CompanyName({ symbol }: { symbol: string }) {
+    const name = await companyNameOf(symbol);
+    if (name === symbol.toUpperCase()) return null;
+    return <span className="text-sm text-gray-400">{name}</span>;
+}
+
+async function WatchlistControl({ symbol }: { symbol: string }) {
+    const user = await getCurrentUser();
+    const membership = user ? await getGroupsWithMembership(symbol) : { groups: [], memberOf: [] };
+    return (
+        <WatchlistStar
+            symbol={symbol}
+            initialGroups={membership.groups}
+            initialMemberOf={membership.memberOf}
+            signedIn={!!user}
+        />
+    );
+}
+
+async function AnalystRatingsCard({ symbol }: { symbol: string }) {
+    return <AnalystRatings trends={await getRecommendationTrends(symbol)} />;
+}
+
+async function SentimentCard({ symbol }: { symbol: string }) {
+    return <StockSentimentCard insight={await getStockSentimentInsights(symbol)} />;
+}
+
+async function CompanyBriefCard({ symbol }: { symbol: string }) {
+    return <CompanyBrief symbol={symbol} name={await companyNameOf(symbol)} />;
+}
+
+async function PerformanceNoteCard({ symbol }: { symbol: string }) {
+    return <PerformanceNote symbol={symbol} name={await companyNameOf(symbol)} />;
+}
+
+async function ConsensusCard({ symbol }: { symbol: string }) {
+    return <Consensus symbol={symbol} name={await companyNameOf(symbol)} />;
+}
+
+async function BullBearCard({ symbol }: { symbol: string }) {
+    return <BullBear symbol={symbol} name={await companyNameOf(symbol)} />;
+}
+
 export default async function StockDetails({ params }: StockDetailsPageProps) {
-    const { symbol } = await params;
-    const tvSymbol = formatSymbolForTradingView(symbol);
+    const { symbol: rawSymbol } = await params;
+    const symbol = rawSymbol.toUpperCase();
+    const tvSymbol = formatSymbolForTradingView(rawSymbol);
     const scriptUrl = `https://s3.tradingview.com/external-embedding/embed-widget-`;
-
-    const supabase = await getSupabaseServerClient();
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
-
-    const [sentimentInsights, profile, recommendationTrends, membership] = await Promise.all([
-        getStockSentimentInsights(symbol),
-        getCompanyProfile(symbol),
-        getRecommendationTrends(symbol),
-        user ? getGroupsWithMembership(symbol) : Promise.resolve({ groups: [], memberOf: [] }),
-    ]);
-    const companyName = profile?.name || symbol.toUpperCase();
 
     return (
         <div className="flex flex-col min-h-screen p-4 md:p-6 lg:p-8">
             <BackButton fallback="/stocks" />
             <div className="mb-6 mt-3 flex items-start justify-between gap-4">
                 <div className="flex flex-col">
-                    <h1 className="text-2xl font-bold text-white">{symbol.toUpperCase()}</h1>
-                    {companyName !== symbol.toUpperCase() && (
-                        <span className="text-sm text-gray-400">{companyName}</span>
-                    )}
+                    <h1 className="text-2xl font-bold text-white">{symbol}</h1>
+                    <Suspense fallback={<span className="mt-1 h-4 w-32 rounded bg-gray-800 motion-safe:animate-pulse" />}>
+                        <CompanyName symbol={symbol} />
+                    </Suspense>
                 </div>
-                <WatchlistStar
-                    symbol={symbol.toUpperCase()}
-                    initialGroups={membership.groups}
-                    initialMemberOf={membership.memberOf}
-                    signedIn={!!user}
-                />
+                <Suspense fallback={<span aria-hidden="true" className="h-9 w-9 rounded-md bg-gray-800/60" />}>
+                    <WatchlistControl symbol={symbol} />
+                </Suspense>
             </div>
             <DataDisclaimer className="mb-6 w-fit" />
             <section className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
@@ -124,54 +168,60 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
                         allowExpand={true}
                     />
 
-                    <Suspense fallback={null}>
-                        <TechSnapshot symbol={symbol.toUpperCase()} />
+                    <Suspense fallback={<CardSkeleton lines={4} />}>
+                        <TechSnapshot symbol={symbol} />
                     </Suspense>
 
-                    <Suspense fallback={null}>
-                        <StockNews symbol={symbol.toUpperCase()} />
+                    <Suspense fallback={<CardSkeleton lines={6} />}>
+                        <StockNews symbol={symbol} />
                     </Suspense>
                 </div>
 
                 {/* Right column */}
                 <div className="flex flex-col gap-6">
-                    <Suspense fallback={null}>
-                        <CompanyBrief symbol={symbol.toUpperCase()} name={companyName} />
+                    <Suspense fallback={<CardSkeleton lines={3} />}>
+                        <CompanyBriefCard symbol={symbol} />
                     </Suspense>
 
-                    <Suspense fallback={null}>
-                        <CompanyScoreCard symbol={symbol.toUpperCase()} />
+                    <Suspense fallback={<CardSkeleton lines={4} />}>
+                        <CompanyScoreCard symbol={symbol} />
                     </Suspense>
 
-                    <Suspense fallback={null}>
-                        <PerformanceNote symbol={symbol.toUpperCase()} name={companyName} />
+                    <Suspense fallback={<CardSkeleton lines={3} />}>
+                        <PerformanceNoteCard symbol={symbol} />
                     </Suspense>
 
-                    <Suspense fallback={null}>
-                        <Consensus symbol={symbol.toUpperCase()} name={companyName} />
+                    <Suspense fallback={<CardSkeleton lines={5} />}>
+                        <ConsensusCard symbol={symbol} />
                     </Suspense>
 
-                    <Suspense fallback={null}>
-                        <KeyStats symbol={symbol.toUpperCase()} />
+                    <Suspense fallback={<CardSkeleton lines={4} />}>
+                        <KeyStats symbol={symbol} />
                     </Suspense>
 
-                    <AnalystRatings trends={recommendationTrends} />
-
-                    <BullBear symbol={symbol.toUpperCase()} name={companyName} />
-
-                    <Suspense fallback={null}>
-                        <EarningsPanel symbol={symbol.toUpperCase()} />
+                    <Suspense fallback={<CardSkeleton lines={2} />}>
+                        <AnalystRatingsCard symbol={symbol} />
                     </Suspense>
 
-                    <Suspense fallback={null}>
-                        <InsiderActivity symbol={symbol.toUpperCase()} />
+                    <Suspense fallback={<CardSkeleton lines={2} />}>
+                        <BullBearCard symbol={symbol} />
                     </Suspense>
 
-                    <Suspense fallback={null}>
-                        <Peers symbol={symbol.toUpperCase()} />
+                    <Suspense fallback={<CardSkeleton lines={2} />}>
+                        <EarningsPanel symbol={symbol} />
                     </Suspense>
 
-                    <StockSentimentCard insight={sentimentInsights} />
+                    <Suspense fallback={<CardSkeleton lines={4} />}>
+                        <InsiderActivity symbol={symbol} />
+                    </Suspense>
+
+                    <Suspense fallback={<CardSkeleton lines={1} />}>
+                        <Peers symbol={symbol} />
+                    </Suspense>
+
+                    <Suspense fallback={<CardSkeleton lines={3} />}>
+                        <SentimentCard symbol={symbol} />
+                    </Suspense>
 
                     <TradingViewWidget
                         scriptUrl={`${scriptUrl}technical-analysis.js`}

@@ -87,9 +87,15 @@ export async function getMarketBrief(): Promise<MarketBrief | null> {
     return engineGet<MarketBrief | null>('/v1/market/brief', {}, null);
 }
 
+// Max wait for stock-page reads; see engine-client softTimeoutMs.
+const RENDER_SOFT_TIMEOUT_MS = 2_500;
+
 export async function getCompanyBrief(symbol: string, name: string): Promise<CompanyBrief | null> {
     if (!isTickerLike(symbol)) return null;
-    return engineGet<CompanyBrief | null>('/v1/company/brief', { symbol, name: cleanCompanyName(name) }, null);
+    // Render path: wait ≤2.5s; a cold generation finishes in the background and caches.
+    return engineGet<CompanyBrief | null>('/v1/company/brief', { symbol, name: cleanCompanyName(name) }, null, {
+        softTimeoutMs: RENDER_SOFT_TIMEOUT_MS,
+    });
 }
 
 export async function getWatchlistDigest(symbols: string[]): Promise<MarketBrief | null> {
@@ -111,7 +117,9 @@ export async function getBullBear(symbol: string, name: string): Promise<BullBea
 
 export async function getConsensus(symbol: string, name: string): Promise<Consensus | null> {
     if (!isTickerLike(symbol)) return null;
-    return engineGet<Consensus | null>('/v1/company/consensus', { symbol, name: cleanCompanyName(name) }, null);
+    return engineGet<Consensus | null>('/v1/company/consensus', { symbol, name: cleanCompanyName(name) }, null, {
+        softTimeoutMs: RENDER_SOFT_TIMEOUT_MS,
+    });
 }
 
 export async function getNewsImpact(symbols: string[]): Promise<NewsImpactItem[] | null> {

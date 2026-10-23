@@ -7,7 +7,7 @@
  */
 
 import { enginePost } from '@/lib/engine-client';
-import { kvCachedJSON } from '@/lib/market-cache';
+import { swrCached } from '@/lib/swr-cache';
 import { getReturns } from '@/lib/actions/returns.actions';
 import { isTickerLike } from '@/lib/utils';
 import { currentSession } from '@/lib/valuation';
@@ -34,7 +34,9 @@ export async function getPerformanceNote(symbol: string, name: string): Promise<
     // cached note via a direct call.
     const safeName = String(name ?? '').replace(/[^A-Za-z0-9 .,&'-]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
     const session = currentSession();
-    return kvCachedJSON<PerformanceNote | null>(`perfnote:${sym}:${session}`, 43_200, async () => {
+    // Session-keyed, so it never needs revalidating — just a bounded wait: a cold
+    // generation (~5-10s) finishes in the background and the next view has it.
+    return swrCached<PerformanceNote | null>(`perfnote:${sym}:${session}`, { fresh: 43_200, stale: 0, timeoutMs: 2_500 }, async () => {
         let ytd: number | null = null;
         let perf = '';
         try {

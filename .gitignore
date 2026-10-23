@@ -49,3 +49,6 @@ next-env.d.ts
 # PRIVATE markets-engine — proprietary, MUST NOT land in this public AGPL repo.
 # Lives locally / in its own private repo. See markets-engine/README.md.
 /markets-engine/
+
+# wrangler local secrets
+.dev.vars*

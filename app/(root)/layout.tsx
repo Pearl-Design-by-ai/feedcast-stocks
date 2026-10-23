@@ -4,7 +4,7 @@ import MarketPulseTape from "@/components/MarketPulseTape";
 import HomeOnlyFooter from "@/components/HomeOnlyFooter";
 import DisclaimerFooter from "@/components/DisclaimerFooter";
 import SideNav from "@/components/SideNav";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getCurrentUser, getSupabaseServerClient } from "@/lib/supabase/server";
 import { searchStocks } from "@/lib/actions/finnhub.actions";
 import { accentHex } from "@/lib/accent";
 import { buildThemeCss, themeFromMain, lightIdFromMain } from "@/lib/appearance";
@@ -20,9 +20,8 @@ import { AuthProvider } from "@/components/AuthProvider";
 
 const Layout = async ({ children }: { children: React.ReactNode }) => {
     const supabase = await getSupabaseServerClient();
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
+    // Request-memoized — the page below reuses this lookup.
+    const user = await getCurrentUser();
 
     const meta = (user?.user_metadata ?? {}) as Record<string, unknown>;
     const sessionUser: User | null = user

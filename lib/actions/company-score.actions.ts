@@ -36,5 +36,6 @@ export interface CompanyScore {
 export async function getCompanyScore(symbol: string): Promise<CompanyScore | null> {
     const clean = symbol.toUpperCase().trim();
     if (!clean) return null;
-    return engineGet<CompanyScore | null>('/v1/company/score', { symbol: clean }, null);
+    // Render path: wait ≤2.5s; a cold score finishes in the background and caches.
+    return engineGet<CompanyScore | null>('/v1/company/score', { symbol: clean }, null, { softTimeoutMs: 2_500 });
 }

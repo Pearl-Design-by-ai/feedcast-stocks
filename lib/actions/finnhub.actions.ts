@@ -2,11 +2,11 @@
 
 import { getDateRange, validateArticle, formatArticle } from '@/lib/utils';
 import { POPULAR_STOCK_SYMBOLS } from '@/lib/constants';
-import { getMarketKV } from '@/lib/market-cache';
+import { swrCached } from '@/lib/swr-cache';
 import { fetchDailyClosesMap } from '@/lib/actions/returns.actions';
 import { cache } from 'react';
 
-const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
+import { FINNHUB_BASE_URL, noteFinnhubCall } from '@/lib/finnhub-base';
 // Server-only key — these actions all run server-side, so no NEXT_PUBLIC_.
 const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY ?? '';
 
@@ -42,47 +42,54 @@ const FINNHUB_EXCHANGE_SUFFIXES = new Set([
     'TA', 'TO', 'TW', 'TWO', 'V', 'VI', 'WA',
 ]);
 
-// Cross-isolate cache (Cloudflare KV) — see lib/market-cache.ts for why
-// per-isolate Maps and fetch revalidate hints aren't enough on Workers.
-// Cache keys must not embed the API token.
+// Cross-isolate stale-while-revalidate cache (memory → Cloudflare KV) — see
+// lib/swr-cache.ts. Cache keys must not embed the API token.
 function stripToken(url: string): string {
     return url.replace(/([?&])token=[^&]*&?/, '$1').replace(/[?&]$/, '');
 }
 
-async function fetchJSON<T>(url: string, revalidateSeconds?: number): Promise<T> {
-    const kv = revalidateSeconds ? await getMarketKV() : null;
-    const kvKey = `fh:${stripToken(url)}`;
-    if (kv) {
-        try {
-            const hit = (await kv.get(kvKey, 'json')) as T | null;
-            if (hit !== null) return hit;
-        } catch {
-            // KV read failure — fall through to a live fetch.
-        }
-    }
+/** Max wait on a cold miss before the caller falls back; the fetch finishes in the background. */
+const FINNHUB_SOFT_TIMEOUT_MS = 2_500;
+/** Hard ceiling on any single Finnhub request (background refreshes included). */
+const FINNHUB_HARD_TIMEOUT_MS = 10_000;
 
-    const options: RequestInit & { next?: { revalidate?: number } } = revalidateSeconds
-        ? { cache: 'force-cache', next: { revalidate: revalidateSeconds } }
-        : { cache: 'no-store' };
-
-    const res = await fetch(url, options);
+async function fetchLive<T>(url: string): Promise<T> {
+    noteFinnhubCall();
+    const res = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(FINNHUB_HARD_TIMEOUT_MS) });
     if (!res.ok) {
         const text = await res.text().catch(() => '');
-        throw new Error(`Fetch failed ${res.status}: ${text}`);
+        throw new Error(`Fetch failed ${res.status}: ${text.slice(0, 200)}`);
     }
-    const data = (await res.json()) as T;
+    return (await res.json()) as T;
+}
 
-    if (kv && revalidateSeconds) {
+/**
+ * Finnhub GET. With `freshSeconds` the response is SWR-cached per URL
+ * (stale window = max(4×fresh, 1h)); a cold miss waits at most 2.5s. Throws
+ * when no value is available in time — every caller already maps that to its
+ * empty fallback.
+ */
+async function fetchJSON<T>(url: string, freshSeconds?: number): Promise<T> {
+    if (!freshSeconds) {
+        let timer: ReturnType<typeof setTimeout> | undefined;
         try {
-            // KV's minimum TTL is 60s; shorter-lived data (quotes) has its own path.
-            await kv.put(kvKey, JSON.stringify(data), {
-                expirationTtl: Math.max(60, revalidateSeconds),
-            });
-        } catch {
-            // Cache write failure is non-fatal.
+            return await Promise.race([
+                fetchLive<T>(url),
+                new Promise<never>((_, reject) => {
+                    timer = setTimeout(() => reject(new Error('Finnhub timeout')), FINNHUB_SOFT_TIMEOUT_MS);
+                }),
+            ]);
+        } finally {
+            clearTimeout(timer);
         }
     }
-    return data;
+    const value = await swrCached<T>(
+        `fh:${stripToken(url)}`,
+        { fresh: freshSeconds, timeoutMs: FINNHUB_SOFT_TIMEOUT_MS },
+        () => fetchLive<T>(url)
+    );
+    if (value === null) throw new Error(`Finnhub unavailable (timeout or error): ${stripToken(url)}`);
+    return value;
 }
 
 export { fetchJSON };
@@ -103,104 +110,42 @@ function getExchangeLabel(symbol: string, exchange?: string) {
 }
 
 // ---------------------------------------------------------------------------
-// In-memory quote cache (per server isolate).
-//
-// Finnhub quotes are ~15-20 min delayed, so a short shared TTL is invisible to
-// users but collapses many concurrent watchlist polls into a single Finnhub
-// call per symbol per window — keeping us well under the 60 req/min free-tier
-// limit no matter how many users are polling. Cloudflare keeps Worker isolates
-// warm and reuses them across requests, so this cache is shared across the
-// requests an isolate serves. R2/ISR isn't relied on (it's intentionally off,
-// see open-next.config.ts). The alert cron uses its own uncached fetch, so
-// alert accuracy is never affected by this cache.
+// Quotes. Finnhub quotes are ~15-20 min delayed, so a short shared TTL is
+// invisible to users but collapses many concurrent watchlist polls into a
+// single Finnhub call per symbol per window — keeping us well under the
+// 60 req/min free-tier limit. Fresh for 30s; for up to 10 min after that the
+// last quote is served instantly while one background refresh runs. The alert
+// cron uses its own uncached fetch, so alert accuracy is never affected.
 // ---------------------------------------------------------------------------
-const QUOTE_CACHE_TTL_MS = 30_000;
-const quoteCache = new Map<string, { value: FinnhubQuote; expiresAt: number }>();
-const quoteInflight = new Map<string, Promise<FinnhubQuote | null>>();
-
-function readQuoteCache(key: string): FinnhubQuote | undefined {
-    const hit = quoteCache.get(key);
-    if (hit && hit.expiresAt > Date.now()) return hit.value;
-    if (hit) quoteCache.delete(key);
-    return undefined;
-}
-
-function writeQuoteCache(key: string, value: FinnhubQuote) {
-    // Bound memory: sweep expired entries if the map grows unexpectedly large.
-    if (quoteCache.size > 2000) {
-        const now = Date.now();
-        for (const [k, v] of quoteCache) {
-            if (v.expiresAt <= now) quoteCache.delete(k);
-        }
-    }
-    quoteCache.set(key, { value, expiresAt: Date.now() + QUOTE_CACHE_TTL_MS });
-}
+const QUOTE_FRESH_SECONDS = 30;
+const QUOTE_STALE_SECONDS = 600;
 
 export async function getQuote(symbol: string): Promise<FinnhubQuote | null> {
     const key = symbol.toUpperCase();
-
-    const cached = readQuoteCache(key);
-    if (cached) return cached;
-
-    // Collapse simultaneous requests for the same symbol into one fetch.
-    const existing = quoteInflight.get(key);
-    if (existing) return existing;
-
-    const fetchPromise = (async () => {
-        try {
-            // Cross-isolate quote cache: KV can't expire under 60s, so the 30s
-            // freshness window is embedded in the value and checked here.
-            const kv = await getMarketKV();
-            if (kv) {
-                try {
-                    const hit = (await kv.get(`fhq:${key}`, 'json')) as {
-                        value: FinnhubQuote;
-                        expiresAt: number;
-                    } | null;
-                    if (hit && hit.expiresAt > Date.now() && hit.value?.c) {
-                        writeQuoteCache(key, hit.value);
-                        return hit.value;
-                    }
-                } catch {
-                    // KV read failure — fetch live.
-                }
-            }
-
-            const token = FINNHUB_API_KEY;
-            const url = `${FINNHUB_BASE_URL}/quote?symbol=${encodeURIComponent(symbol)}&token=${token}`;
-            const quote = await fetchJSON<FinnhubQuote>(url, 0);
-            if (quote) {
-                writeQuoteCache(key, quote);
-                if (kv && quote.c) {
-                    try {
-                        await kv.put(
-                            `fhq:${key}`,
-                            JSON.stringify({ value: quote, expiresAt: Date.now() + QUOTE_CACHE_TTL_MS }),
-                            { expirationTtl: 120 }
-                        );
-                    } catch {
-                        // Cache write failure is non-fatal.
-                    }
-                }
-            }
-            return quote;
-        } catch (e) {
-            console.error('Error fetching quote for', symbol, e);
-            return null;
-        } finally {
-            quoteInflight.delete(key);
-        }
-    })();
-
-    quoteInflight.set(key, fetchPromise);
-    return fetchPromise;
+    const url = `${FINNHUB_BASE_URL}/quote?symbol=${encodeURIComponent(symbol)}&token=${FINNHUB_API_KEY}`;
+    try {
+        return await swrCached<FinnhubQuote | null>(
+            `fhq:${key}`,
+            {
+                fresh: QUOTE_FRESH_SECONDS,
+                stale: QUOTE_STALE_SECONDS,
+                timeoutMs: FINNHUB_SOFT_TIMEOUT_MS,
+                // An empty quote ({c: 0}) is a miss, not a price — never cache it.
+                shouldCache: (q) => !!q?.c,
+            },
+            () => fetchLive<FinnhubQuote>(url)
+        );
+    } catch (e) {
+        console.error('Error fetching quote for', symbol, e);
+        return null;
+    }
 }
 
 export async function getCompanyProfile(symbol: string) {
     try {
         const token = FINNHUB_API_KEY;
         const url = `${FINNHUB_BASE_URL}/stock/profile2?symbol=${encodeURIComponent(symbol)}&token=${token}`;
-        // Cache profile for 24 hours
+        // Profiles barely change: fresh 24h, then served stale while revalidating.
         return await fetchJSON<FinnhubCompanyProfile>(url, 86400);
     } catch (e) {
         console.error('Error fetching profile for', symbol, e);
@@ -212,15 +157,14 @@ type FinnhubMetricResponse = {
     metric?: Record<string, number | null>;
 };
 
-// Trailing P/E from the `stock/metric` endpoint. Cached for an hour to keep
-// well under the Finnhub free-tier rate limit (fundamentals barely move
-// intraday). Returns null when unavailable.
+// Trailing P/E from the `stock/metric` endpoint. Fundamentals barely move
+// intraday, so cached 6h (shares the KeyStats entry). Returns null when unavailable.
 export async function getPeRatio(symbol: string): Promise<number | null> {
     try {
         const token = FINNHUB_API_KEY;
         if (!token) return null;
         const url = `${FINNHUB_BASE_URL}/stock/metric?symbol=${encodeURIComponent(symbol)}&metric=all&token=${token}`;
-        const data = await fetchJSON<FinnhubMetricResponse>(url, 3600);
+        const data = await fetchJSON<FinnhubMetricResponse>(url, 21600);
         const pe = data?.metric?.peTTM ?? data?.metric?.peBasicExclExtraTTM ?? null;
         return typeof pe === 'number' && Number.isFinite(pe) ? pe : null;
     } catch (e) {
@@ -427,7 +371,7 @@ export async function getNews(symbols?: string[]): Promise<MarketNewsArticle[]> 
                 cleanSymbols.map(async (sym) => {
                     try {
                         const url = `${FINNHUB_BASE_URL}/company-news?symbol=${encodeURIComponent(sym)}&from=${range.from}&to=${range.to}&token=${token}`;
-                        const articles = await fetchJSON<RawNewsArticle[]>(url, 300);
+                        const articles = await fetchJSON<RawNewsArticle[]>(url, 600);
                         perSymbolArticles[sym] = (articles || []).filter(validateArticle);
                     } catch (e) {
                         console.error('Error fetching company news for', sym, e);
@@ -502,8 +446,8 @@ export const searchStocks = cache(async (query?: string): Promise<StockWithWatch
                 top.map(async (sym) => {
                     try {
                         const url = `${FINNHUB_BASE_URL}/stock/profile2?symbol=${encodeURIComponent(sym)}&token=${token}`;
-                        // Revalidate every hour
-                        const profile = await fetchJSON<FinnhubCompanyProfile>(url, 3600);
+                        // Same URL/key as getCompanyProfile — keep the TTL in step.
+                        const profile = await fetchJSON<FinnhubCompanyProfile>(url, 86400);
                         return { sym, profile } as { sym: string; profile: FinnhubCompanyProfile | null };
                     } catch (e) {
                         console.error('Error fetching profile2 for', sym, e);
