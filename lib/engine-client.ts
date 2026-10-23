@@ -9,14 +9,15 @@
  * errors, we return `fallback` so the AI/analysis features simply hide rather
  * than break the page.
  *
- * Responses for shareable endpoints are cached in Cloudflare KV (cross-isolate,
- * see lib/market-cache.ts) — without it, every page view re-generates the same
+ * Responses for shareable endpoints are stale-while-revalidate cached in
+ * Cloudflare KV (cross-isolate, see lib/swr-cache.ts) — without it, every page view re-generates the same
  * company brief / commentary and burns engine capacity. /v1/ask is deliberately
  * uncached (conversational), and fallback or `{ ok: false }` results are never
  * cached so errors don't stick for the TTL.
  */
 
-import { getMarketKV, fnv1a } from '@/lib/market-cache';
+import { fnv1a } from '@/lib/market-cache';
+import { swrCached } from '@/lib/swr-cache';
 
 const BASE = (process.env.MARKETS_ENGINE_URL ?? '').replace(/\/$/, '');
 const TOKEN = (process.env.MARKETS_ENGINE_TOKEN ?? '').trim();
@@ -67,66 +68,91 @@ function isErrorShaped(value: unknown): boolean {
   );
 }
 
+export interface EngineCallOptions {
+  /** Hard ceiling on the engine request. Default 28s. */
+  timeoutMs?: number;
+  /**
+   * Max ms the caller waits before getting `fallback` (render paths use 2.5s).
+   * For cached endpoints the request keeps running in the background and
+   * fills the cache, so the next view is instant.
+   */
+  softTimeoutMs?: number;
+}
+
 async function call<T>(
   path: string,
-  init: RequestInit & { fallback: T; timeoutMs?: number }
+  init: RequestInit & { fallback: T } & EngineCallOptions
 ): Promise<T> {
-  const { fallback, timeoutMs = 28_000, ...rest } = init;
+  const { fallback, timeoutMs = 28_000, softTimeoutMs, ...rest } = init;
   if (!BASE || !TOKEN) return fallback;
 
-  const ttl = cacheTtlFor(path);
-  const kv = ttl > 0 ? await getMarketKV() : null;
-  const cacheKey = `eng:${path}:${typeof rest.body === 'string' ? fnv1a(rest.body) : ''}`;
-  if (kv) {
+  const live = async (): Promise<T | null> => {
     try {
-      const hit = await kv.get(cacheKey, 'json');
-      if (hit !== null) return hit as T;
+      const res = await fetch(`${BASE}${path}`, {
+        ...rest,
+        headers: {
+          Authorization: `Bearer ${TOKEN}`,
+          ...(rest.body ? { 'Content-Type': 'application/json' } : {}),
+          ...rest.headers,
+        },
+        signal: AbortSignal.timeout(timeoutMs),
+        cache: 'no-store',
+      });
+      if (!res.ok) return null;
+      return (await res.json()) as T;
     } catch {
-      // KV read failure — fall through to the live call.
+      return null;
     }
-  }
+  };
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(`${BASE}${path}`, {
-      ...rest,
-      headers: {
-        Authorization: `Bearer ${TOKEN}`,
-        ...(rest.body ? { 'Content-Type': 'application/json' } : {}),
-        ...rest.headers,
+  const ttl = cacheTtlFor(path);
+  if (ttl > 0) {
+    // Stale-while-revalidate (memory → KV): fresh for the endpoint TTL, then
+    // served stale while one background refresh runs. Fallback / `{ ok: false }`
+    // results are returned but never cached so errors don't stick.
+    const cacheKey = `eng:${path}:${typeof rest.body === 'string' ? fnv1a(rest.body) : ''}`;
+    const data = await swrCached<T | null>(
+      cacheKey,
+      {
+        fresh: ttl,
+        timeoutMs: softTimeoutMs,
+        shouldCache: (v) => v !== null && v !== undefined && !isErrorShaped(v),
       },
-      signal: controller.signal,
-      cache: 'no-store',
-    });
-    if (!res.ok) return fallback;
-    const data = (await res.json()) as T;
-
-    if (kv && data !== null && data !== undefined && !isErrorShaped(data)) {
-      try {
-        await kv.put(cacheKey, JSON.stringify(data), {
-          // KV's minimum TTL is 60s.
-          expirationTtl: Math.max(60, ttl),
-        });
-      } catch {
-        // Cache write failure is non-fatal.
-      }
-    }
-    return data;
-  } catch {
-    return fallback;
-  } finally {
-    clearTimeout(timeout);
+      live
+    );
+    return data ?? fallback;
   }
+
+  if (!softTimeoutMs) return (await live()) ?? fallback;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const result = await Promise.race([
+    live(),
+    new Promise<null>((resolve) => {
+      timer = setTimeout(() => resolve(null), softTimeoutMs);
+    }),
+  ]);
+  clearTimeout(timer);
+  return result ?? fallback;
 }
 
 /** GET with query params. */
-export async function engineGet<T>(path: string, params: Record<string, string>, fallback: T): Promise<T> {
+export async function engineGet<T>(
+  path: string,
+  params: Record<string, string>,
+  fallback: T,
+  opts: EngineCallOptions = {}
+): Promise<T> {
   const qs = new URLSearchParams(params).toString();
-  return call<T>(`${path}${qs ? `?${qs}` : ''}`, { method: 'GET', fallback });
+  return call<T>(`${path}${qs ? `?${qs}` : ''}`, { method: 'GET', fallback, ...opts });
 }
 
 /** POST with a JSON body. */
-export async function enginePost<T>(path: string, body: unknown, fallback: T, timeoutMs?: number): Promise<T> {
-  return call<T>(path, { method: 'POST', body: JSON.stringify(body), fallback, timeoutMs });
+export async function enginePost<T>(
+  path: string,
+  body: unknown,
+  fallback: T,
+  timeoutMs?: number,
+  opts: Omit<EngineCallOptions, 'timeoutMs'> = {}
+): Promise<T> {
+  return call<T>(path, { method: 'POST', body: JSON.stringify(body), fallback, timeoutMs, ...opts });
 }

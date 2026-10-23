@@ -1,6 +1,7 @@
 'use server';
 
 import { kvCachedJSON } from '@/lib/market-cache';
+import { swrCached } from '@/lib/swr-cache';
 import { enginePost } from '@/lib/engine-client';
 import { sanitizeSymbols } from '@/lib/utils';
 
@@ -47,16 +48,19 @@ function tickerOf(symbol: string): string {
 }
 
 export async function fetchDailyCloses(
-    symbol: string
+    symbol: string,
+    /** Max ms to wait on a cold miss (render paths); the fetch still completes and caches. */
+    timeoutMs?: number
 ): Promise<Array<{ date: string; close: number }>> {
     const t = tickerOf(symbol);
     // Cross-isolate KV cache — fetch revalidate hints are per-isolate no-ops on
     // Workers, so without this every fresh isolate re-downloads 2y of history
     // per symbol (the main cost of the enriched watchlist). Empty results are
     // returned as null inside the cache helper so a Yahoo/engine blip isn't cached.
-    const cached = await kvCachedJSON<Array<{ date: string; close: number }> | null>(
+    // EOD data: fresh 6h, then served stale (up to 1 day) while revalidating.
+    const cached = await swrCached<Array<{ date: string; close: number }> | null>(
         `yh:${t}`,
-        21600,
+        { fresh: 21600, timeoutMs },
         async () => {
             // Engine seam first (its own cache + Yahoo retry); direct Yahoo only
             // if the engine returned nothing.

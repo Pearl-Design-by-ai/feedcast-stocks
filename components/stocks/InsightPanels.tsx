@@ -3,7 +3,9 @@
  * data: Finnhub metric/earnings/peers/insider endpoints (KV-cached via
  * fetchJSON), the shared earnings calendar, company news, and an EOD
  * technical snapshot computed from 2y of Yahoo daily closes (cached 6h).
- * Each panel renders nothing when its data is unavailable.
+ * Each panel renders nothing when its data is unavailable, and every upstream
+ * read is SWR-cached with a ≤2.5s cold-miss wait (lib/swr-cache.ts), so a slow
+ * upstream only costs its own Suspense slot.
  */
 
 import Link from 'next/link';
@@ -245,7 +247,7 @@ export async function StockNews({ symbol }: { symbol: string }) {
 
 /* 7 — EOD technical snapshot from 2y of daily closes. */
 export async function TechSnapshot({ symbol }: { symbol: string }) {
-    const series = await fetchDailyCloses(symbol).catch(() => []);
+    const series = await fetchDailyCloses(symbol, 2_500).catch(() => []);
     const closes = series.map((c) => c.close);
     const n = closes.length;
     if (n < 60) return null;

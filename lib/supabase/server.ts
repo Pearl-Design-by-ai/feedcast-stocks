@@ -7,6 +7,7 @@
  */
 
 import { cookies, headers } from 'next/headers';
+import { cache } from 'react';
 import { createServerClient } from '@supabase/ssr';
 import type { SupabaseClient, User } from '@supabase/supabase-js';
 import { getCookieOptions, SESSION_STORAGE_KEY } from './cookie-storage';
@@ -53,11 +54,14 @@ export async function getSupabaseServerClient(): Promise<SupabaseClient> {
  * for anonymous visitors — use this only to gate the costly, user-initiated AI
  * generators (e.g. /ask, the Explain button) so they can't be abused
  * anonymously. Rendered content stays public.
+ *
+ * Memoized per request (React `cache`), so the layout and page share one
+ * Supabase Auth round-trip instead of each paying for it.
  */
-export async function getCurrentUser(): Promise<User | null> {
+export const getCurrentUser = cache(async (): Promise<User | null> => {
   const supabase = await getSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   return user ?? null;
-}
+});

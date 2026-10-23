@@ -4,7 +4,7 @@
 
 import { fetchJSON } from '@/lib/actions/finnhub.actions';
 
-const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
+import { FINNHUB_BASE_URL } from '@/lib/finnhub-base';
 const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY ?? '';
 
 export interface RecommendationTrend {
@@ -23,7 +23,7 @@ export async function getRecommendationTrends(symbol: string): Promise<Recommend
         const url = `${FINNHUB_BASE_URL}/stock/recommendation?symbol=${encodeURIComponent(
             symbol.toUpperCase()
         )}&token=${FINNHUB_API_KEY}`;
-        const data = await fetchJSON<RecommendationTrend[]>(url, 3600);
+        const data = await fetchJSON<RecommendationTrend[]>(url, 21600);
         return Array.isArray(data) ? data : [];
     } catch (err) {
         console.error('getRecommendationTrends error:', err);
@@ -33,7 +33,7 @@ export async function getRecommendationTrends(symbol: string): Promise<Recommend
 
 // ---------------------------------------------------------------------------
 // Key fundamentals — the same `stock/metric?metric=all` response getPeRatio
-// reads one number from. All free tier; cached 1h (KV-shared).
+// reads one number from. All free tier; cached 6h (KV-shared, SWR).
 // ---------------------------------------------------------------------------
 
 export interface KeyMetrics {
@@ -66,7 +66,7 @@ export async function getKeyMetrics(symbol: string): Promise<KeyMetrics | null> 
         const url = `${FINNHUB_BASE_URL}/stock/metric?symbol=${encodeURIComponent(
             symbol.toUpperCase()
         )}&metric=all&token=${FINNHUB_API_KEY}`;
-        const data = await fetchJSON<{ metric?: Record<string, unknown> }>(url, 3600);
+        const data = await fetchJSON<{ metric?: Record<string, unknown> }>(url, 21600);
         const m = data?.metric;
         if (!m) return null;
         return {
