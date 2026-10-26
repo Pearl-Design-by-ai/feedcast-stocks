@@ -14,6 +14,7 @@
  * `cf.image` API. For everything else, falls through to OpenNext.
  */
 import openNextHandler from './.open-next/worker.js';
+import { withImageSecurityHeaders } from './lib/security/headers.ts';
 
 // Sync SSRF check — this file is the outermost worker entry and runs on
 // every request, so the check is kept inline (no DNS lookup, no
@@ -51,7 +52,7 @@ export default {
       // sources fall through to OpenNext (assets binding serves them).
       if (upstream && width && !upstream.startsWith('/')) {
         if (!isUpstreamSafe(upstream)) {
-          return new Response('Bad upstream', { status: 400 });
+          return new Response('Bad upstream', { status: 400, headers: withImageSecurityHeaders(new Headers()) });
         }
         const res = await fetch(upstream, {
           cf: {
@@ -64,12 +65,28 @@ export default {
         });
         const ct = res.headers.get('content-type') || '';
         if (!ct.startsWith('image/')) {
-          return new Response('Bad upstream content', { status: 502 });
+          return new Response('Bad upstream content', { status: 502, headers: withImageSecurityHeaders(new Headers()) });
         }
-        const headers = new Headers(res.headers);
-        headers.delete('content-disposition');
-        return new Response(res.body, { status: res.status, headers });
+        // Only the headers an image response needs — never upstream cookies,
+        // CSP/CORS or disposition — plus our own nosniff + sandbox CSP
+        // (next.config headers never reach /_next/image: OpenNext answers it
+        // before Next's routing).
+        const headers = new Headers();
+        for (const name of ['content-type', 'content-length', 'cache-control', 'etag', 'last-modified', 'vary']) {
+          const v = res.headers.get(name);
+          if (v) headers.set(name, v);
+        }
+        return new Response(res.body, { status: res.status, headers: withImageSecurityHeaders(headers) });
       }
+
+      // Local-origin sources: OpenNext's own image handler. Add the same
+      // headers to its response (Response headers from fetch are immutable).
+      const local = await openNextHandler.fetch(request, env, ctx);
+      return new Response(local.body, {
+        status: local.status,
+        statusText: local.statusText,
+        headers: withImageSecurityHeaders(new Headers(local.headers)),
+      });
     }
 
     return openNextHandler.fetch(request, env, ctx);

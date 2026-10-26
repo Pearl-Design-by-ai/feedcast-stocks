@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { securityHeaderRules } from "./lib/security/headers";
 
 // When building for Cloudflare Workers (OpenNext adapter), swap the
 // Next image-optimization proxy for a custom loader that routes through
@@ -9,6 +10,7 @@ const isCloudflareBuild = process.env.OPENNEXT_TARGET === 'cloudflare';
 
 const nextConfig: NextConfig = {
     devIndicators: false,
+    poweredByHeader: false,
     images: {
         remotePatterns: [
             {
@@ -41,6 +43,12 @@ const nextConfig: NextConfig = {
     typescript: {
         ignoreBuildErrors: true,
     },
+    // Security headers on every Next-served response (pages + /api/*): HSTS,
+    // nosniff, XFO DENY, Referrer-Policy, Permissions-Policy, an enforced
+    // frame-ancestors / API CSP and the report-only page CSP. Static assets
+    // get the base set from public/_headers, /_next/image from
+    // worker-wrapper.mjs. See lib/security/headers.ts.
+    headers: async () => securityHeaderRules(),
 };
 
 export default nextConfig;
