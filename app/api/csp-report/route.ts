@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { CspReportAggregator, MAX_REPORT_BYTES, parseCspReports } from '@/lib/security/cspReport';
 
 /**
- * CSP violation reports from the Report-Only page policy
+ * CSP violation reports from the page policy
  * (lib/security/headers.ts). Same-origin on purpose: www.feedcast.news has its
  * own intake, but the Reporting API needs CORS for a cross-origin endpoint.
  * Anonymous, so: in-memory budget per IP and per isolate, no DB, aggregate log

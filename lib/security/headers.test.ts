@@ -1,5 +1,6 @@
 // Security headers (lib/security/headers.ts): base set on every response,
-// enforced frame-ancestors + report-only CSP on pages, locked-down CSP on
+// enforced page CSP (incl. frame-ancestors; CSP_ENFORCE=0 → frame-ancestors-only
+// + report-only), locked-down CSP on
 // /api/*, the /api/csp-report intake, and the two non-Next layers
 // (public/_headers, worker-wrapper.mjs). Run: npm test
 
@@ -15,6 +16,8 @@ import {
     OWN_CSP_API_ROUTES,
     PAGE_CSP_DIRECTIVES,
     PERMISSIONS_POLICY,
+    cspEnforced,
+    pageCspEnforced,
     pageCspReportOnly,
     securityHeaderRules,
     serializeCsp,
@@ -37,9 +40,9 @@ function sourceMatches(source: string, pathname: string): boolean {
 }
 
 /** Headers for a path, failing if two rules set the same key (last-wins would hide it). */
-function headersFor(pathname: string): Record<string, string> {
+function headersFor(pathname: string, enforce?: boolean): Record<string, string> {
     const out: Record<string, string> = {};
-    for (const rule of securityHeaderRules()) {
+    for (const rule of securityHeaderRules(enforce)) {
         if (!sourceMatches(rule.source, pathname)) continue;
         for (const h of rule.headers) {
             expect(out[h.key], `${h.key} set twice for ${pathname}`).toBeUndefined();
@@ -64,9 +67,33 @@ describe('security headers', () => {
         }
     });
 
-    it('pages: enforced frame-ancestors \'self\' + report-only policy + report endpoint', () => {
+    it('CSP_ENFORCE: enforced unless exactly "0"', () => {
+        expect(cspEnforced(undefined)).toBe(true);
+        expect(cspEnforced('')).toBe(true);
+        expect(cspEnforced('1')).toBe(true);
+        expect(cspEnforced('false')).toBe(true);
+        expect(cspEnforced('0')).toBe(false);
+    });
+
+    it('pages (default): ONE enforced CSP with frame-ancestors + report-uri, no Report-Only', () => {
+        for (const enforce of [undefined, true]) {
+            for (const p of PAGES) {
+                const h = headersFor(p, enforce);
+                expect(h['Content-Security-Policy'], p).toBe(pageCspEnforced());
+                expect(h['Content-Security-Policy-Report-Only'], p).toBeUndefined();
+                expect(h['Reporting-Endpoints'], p).toBe(`csp="${CSP_REPORT_PATH}"`);
+            }
+        }
+        const csp = pageCspEnforced();
+        expect(csp.startsWith(serializeCsp(PAGE_CSP_DIRECTIVES))).toBe(true);
+        expect(csp).toContain(`; ${FRAME_ANCESTORS_SITE};`);
+        expect(csp).toContain(`report-uri ${CSP_REPORT_PATH}; report-to csp`);
+        expect(csp.match(/frame-ancestors/g)?.length).toBe(1);
+    });
+
+    it('pages (CSP_ENFORCE=0): enforced frame-ancestors \'self\' + report-only policy + report endpoint', () => {
         for (const p of PAGES) {
-            const h = headersFor(p);
+            const h = headersFor(p, cspEnforced('0'));
             expect(h['Content-Security-Policy'], p).toBe(FRAME_ANCESTORS_SITE);
             expect(h['Content-Security-Policy-Report-Only'], p).toBe(pageCspReportOnly());
             expect(h['Reporting-Endpoints'], p).toBe(`csp="${CSP_REPORT_PATH}"`);
@@ -75,10 +102,12 @@ describe('security headers', () => {
     });
 
     it('/api/*: enforced default-src \'none\', no page policy', () => {
-        for (const p of APIS) {
-            const h = headersFor(p);
-            expect(h['Content-Security-Policy'], p).toBe(API_CSP);
-            expect(h['Content-Security-Policy-Report-Only'], p).toBeUndefined();
+        for (const enforce of [true, false]) {
+            for (const p of APIS) {
+                const h = headersFor(p, enforce);
+                expect(h['Content-Security-Policy'], p).toBe(API_CSP);
+                expect(h['Content-Security-Policy-Report-Only'], p).toBeUndefined();
+            }
         }
     });
 
@@ -124,7 +153,7 @@ describe('security headers', () => {
         expect(d['frame-src']).toContain('https://www.tradingview-widget.com');
         expect(d['connect-src']).toContain('wss://*.supabase.co');
         expect(d['connect-src']).toContain('https://auth.feedcast.news');
-        expect('frame-ancestors' in d, 'frame-ancestors is ignored in report-only; it is sent enforced').toBe(false);
+        expect('frame-ancestors' in d, 'frame-ancestors is appended by pageCspEnforced (ignored in report-only)').toBe(false);
         expect(serializeCsp({ a: ['x', 'y'], b: [] })).toBe('a x y; b');
     });
 
