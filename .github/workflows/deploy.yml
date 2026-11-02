@@ -24,6 +24,7 @@ jobs:
         run: npx opennextjs-cloudflare build
         env:
           OPENNEXT_TARGET: cloudflare
+          CSP_ENFORCE: ${{ vars.CSP_ENFORCE }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           # Build-time fetch of the Learn article library (SSG) from the private

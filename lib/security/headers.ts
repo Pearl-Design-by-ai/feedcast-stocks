@@ -15,10 +15,19 @@
  *   - worker-wrapper.mjs → `/_next/image`, which OpenNext answers before Next's
  *     routing (so next.config headers never reach it either).
  *
- * The page CSP is Report-Only for now. `frame-ancestors` is sent ENFORCED in a
- * separate `Content-Security-Policy` header because browsers ignore it inside a
- * Report-Only policy. Nothing on www.feedcast.news frames markets (it links out
- * in a new tab), so framing is denied to everyone but ourselves.
+ * The page CSP is ENFORCED: one `Content-Security-Policy` header per page path
+ * carrying the full policy plus `frame-ancestors 'self'` (nothing on
+ * www.feedcast.news frames markets — it links out in a new tab — so framing is
+ * denied to everyone but ourselves) and `report-uri` / `report-to`, so
+ * violations still reach /api/csp-report.
+ *
+ * Rollback switch: CSP_ENFORCE=0 at BUILD time (next.config `headers()` is
+ * evaluated during `next build`) restores the previous shape — an enforced
+ * `frame-ancestors`-only header plus the full policy as
+ * `Content-Security-Policy-Report-Only` (browsers ignore frame-ancestors in a
+ * Report-Only policy, hence the split). In production: set the GitHub repo
+ * variable CSP_ENFORCE=0 and redeploy (.github/workflows/deploy.yml passes it
+ * to the build), or git revert. Unset / any other value = enforced.
  *
  * Why `'unsafe-inline'` for scripts: Next streams its RSC payload as inline
  * <script> tags that differ per page, and the theme bootstrap is inline too,
@@ -84,13 +93,31 @@ export function serializeCsp(directives: Record<string, string[]>): string {
     .join('; ');
 }
 
-/** The Report-Only page policy, including where to send reports. */
-export function pageCspReportOnly(): string {
-  return `${serializeCsp(PAGE_CSP_DIRECTIVES)}; report-uri ${CSP_REPORT_PATH}; report-to ${CSP_REPORT_GROUP}`;
+/** Only we may frame ourselves. */
+export const FRAME_ANCESTORS_SITE = "frame-ancestors 'self'";
+
+const REPORT_DIRECTIVES = `report-uri ${CSP_REPORT_PATH}; report-to ${CSP_REPORT_GROUP}`;
+
+/** The enforced page policy: full policy + frame-ancestors + where to send reports. */
+export function pageCspEnforced(): string {
+  return `${serializeCsp(PAGE_CSP_DIRECTIVES)}; ${FRAME_ANCESTORS_SITE}; ${REPORT_DIRECTIVES}`;
 }
 
-/** Enforced on pages: only we may frame ourselves. */
-export const FRAME_ANCESTORS_SITE = "frame-ancestors 'self'";
+/** The Report-Only page policy (CSP_ENFORCE=0 fallback), including where to send reports. */
+export function pageCspReportOnly(): string {
+  return `${serializeCsp(PAGE_CSP_DIRECTIVES)}; ${REPORT_DIRECTIVES}`;
+}
+
+/**
+ * Whether the page CSP is enforced: true unless CSP_ENFORCE is exactly "0".
+ * Read via a defaulted parameter so this file stays import-free and safe where
+ * `process` doesn't exist.
+ */
+export function cspEnforced(
+  flag: string | undefined = typeof process !== 'undefined' ? process.env.CSP_ENFORCE : undefined,
+): boolean {
+  return flag !== '0';
+}
 /** Enforced on /api/*: JSON / 204 responses never render, never get framed. */
 export const API_CSP = "default-src 'none'; frame-ancestors 'none'";
 /** Image responses (/_next/image): no script, no subresources, sandboxed. */
@@ -111,11 +138,15 @@ export const BASE_SECURITY_HEADERS: HeaderPair[] = [
   { key: 'Permissions-Policy', value: PERMISSIONS_POLICY },
 ];
 
-const PAGE_CSP_HEADERS: HeaderPair[] = [
-  { key: 'Content-Security-Policy', value: FRAME_ANCESTORS_SITE },
-  { key: 'Content-Security-Policy-Report-Only', value: pageCspReportOnly() },
-  { key: 'Reporting-Endpoints', value: `${CSP_REPORT_GROUP}="${CSP_REPORT_PATH}"` },
-];
+function pageCspHeaders(enforce: boolean): HeaderPair[] {
+  const reporting = { key: 'Reporting-Endpoints', value: `${CSP_REPORT_GROUP}="${CSP_REPORT_PATH}"` };
+  if (enforce) return [{ key: 'Content-Security-Policy', value: pageCspEnforced() }, reporting];
+  return [
+    { key: 'Content-Security-Policy', value: FRAME_ANCESTORS_SITE },
+    { key: 'Content-Security-Policy-Report-Only', value: pageCspReportOnly() },
+    reporting,
+  ];
+}
 
 /**
  * /api routes (path below /api/, no leading slash) that send their OWN
@@ -136,12 +167,12 @@ function apiCspSource(): string {
 /**
  * next.config.ts header rules. The base set matches every path; the CSP rules
  * are disjoint (pages vs /api/*), so exactly one rule sets each CSP header per
- * path.
+ * path. `enforce` defaults from CSP_ENFORCE (see cspEnforced).
  */
-export function securityHeaderRules(): HeaderRule[] {
+export function securityHeaderRules(enforce: boolean = cspEnforced()): HeaderRule[] {
   return [
     { source: '/:path*', headers: BASE_SECURITY_HEADERS },
-    { source: '/((?!api(?:/|$)).*)', headers: PAGE_CSP_HEADERS },
+    { source: '/((?!api(?:/|$)).*)', headers: pageCspHeaders(enforce) },
     { source: apiCspSource(), headers: [{ key: 'Content-Security-Policy', value: API_CSP }] },
   ];
 }

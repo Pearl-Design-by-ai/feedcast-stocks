@@ -45,7 +45,7 @@ const nextConfig: NextConfig = {
     },
     // Security headers on every Next-served response (pages + /api/*): HSTS,
     // nosniff, XFO DENY, Referrer-Policy, Permissions-Policy, an enforced
-    // frame-ancestors / API CSP and the report-only page CSP. Static assets
+    // page CSP (report-only if CSP_ENFORCE=0 at build) and API CSP. Static assets
     // get the base set from public/_headers, /_next/image from
     // worker-wrapper.mjs. See lib/security/headers.ts.
     headers: async () => securityHeaderRules(),
